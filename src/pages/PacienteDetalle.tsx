@@ -1,0 +1,162 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Edit, FileText, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { getPacienteById, getConsultasByPaciente } from '@/lib/mockData';
+
+export default function PacienteDetalle() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const paciente = id ? getPacienteById(id) : undefined;
+  const consultas = id ? getConsultasByPaciente(id) : [];
+
+  if (!paciente) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold">Paciente no encontrado</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/pacientes')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold text-foreground">{paciente.nombre}</h1>
+          <p className="text-muted-foreground mt-1">{paciente.especie} • {paciente.raza}</p>
+        </div>
+        <Button variant="outline" className="gap-2">
+          <Edit className="h-4 w-4" />
+          Editar
+        </Button>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Información General</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Especie</span>
+              <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
+                {paciente.especie}
+              </Badge>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Raza</span>
+              <span className="font-medium">{paciente.raza || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Sexo</span>
+              <span className="font-medium">{paciente.sexo === 'M' ? 'Macho' : 'Hembra'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Edad</span>
+              <span className="font-medium">
+                {paciente.edadMeses ? `${Math.floor(paciente.edadMeses / 12)} años ${paciente.edadMeses % 12} meses` : 'N/A'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Peso</span>
+              <span className="font-medium">{paciente.pesoKg ? `${paciente.pesoKg} kg` : 'N/A'}</span>
+            </div>
+            {paciente.microchip && (
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-muted-foreground">Microchip</span>
+                <span className="font-medium">{paciente.microchip}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Propietario</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Nombre</p>
+              <p className="font-medium text-lg">{paciente.propietario?.nombre}</p>
+            </div>
+            {paciente.propietario?.documento && (
+              <div>
+                <p className="text-sm text-muted-foreground">Documento</p>
+                <p className="font-medium">{paciente.propietario.documento}</p>
+              </div>
+            )}
+            {paciente.propietario?.email && (
+              <div>
+                <p className="text-sm text-muted-foreground">Email</p>
+                <p className="font-medium">{paciente.propietario.email}</p>
+              </div>
+            )}
+            {paciente.propietario?.telefono && (
+              <div>
+                <p className="text-sm text-muted-foreground">Teléfono</p>
+                <p className="font-medium">{paciente.propietario.telefono}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Historial de Atenciones</CardTitle>
+            <Button onClick={() => navigate(`/historias/${paciente.id}`)} className="gap-2">
+              <FileText className="h-4 w-4" />
+              Ver Historia Completa
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {consultas.length > 0 ? (
+            <div className="space-y-3">
+              {consultas.slice(0, 3).map((consulta) => (
+                <div key={consulta.id} className="p-3 rounded-lg border border-border hover:bg-accent/50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {new Date(consulta.fecha).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Atendido por {consulta.profesional?.nombre}
+                      </p>
+                      {consulta.diagnosticos && consulta.diagnosticos.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {consulta.diagnosticos.map((diag, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {diag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">Sin atenciones registradas</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

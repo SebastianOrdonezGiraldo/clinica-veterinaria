@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
   { title: 'Pacientes', url: '/pacientes', icon: Dog, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
   { title: 'Propietarios', url: '/propietarios', icon: Users, roles: ['ADMIN', 'VET', 'RECEPCION'] },
   { title: 'Agenda', url: '/agenda', icon: Calendar, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
-  { title: 'Historias Clínicas', url: '/historias', icon: FileText, roles: ['ADMIN', 'VET', 'ESTUDIANTE'] },
+  { title: 'Historias', url: '/historias', icon: FileText, roles: ['ADMIN', 'VET', 'ESTUDIANTE'] },
   { title: 'Prescripciones', url: '/prescripciones', icon: Pill, roles: ['ADMIN', 'VET'] },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, roles: ['ADMIN', 'VET'] },
   { title: 'Seguridad', url: '/seguridad/roles', icon: Shield, roles: ['ADMIN'] },
