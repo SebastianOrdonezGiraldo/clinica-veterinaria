@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Rol } from '@/types';
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +28,7 @@ interface NavItem {
   title: string;
   url: string;
   icon: any;
-  roles?: string[];
+  roles?: Rol[];
 }
 
 const navItems: NavItem[] = [

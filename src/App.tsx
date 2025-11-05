@@ -43,7 +43,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<AppRoutes />} />
             
             <Route element={
               <ProtectedRoute>
@@ -57,11 +57,31 @@ const App = () => (
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/historias" element={<HistoriasClinicas />} />
               <Route path="/historias/:id" element={<HistoriaDetalle />} />
-              <Route path="/prescripciones" element={<Prescripciones />} />
-              <Route path="/prescripciones/:id" element={<PrescripcionDetalle />} />
-              <Route path="/reportes" element={<Reportes />} />
-              <Route path="/seguridad/roles" element={<SeguridadRoles />} />
-              <Route path="/seguridad/usuarios" element={<SeguridadUsuarios />} />
+              <Route path="/prescripciones" element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
+                  <Prescripciones />
+                </ProtectedRoute>
+              } />
+              <Route path="/prescripciones/:id" element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
+                  <PrescripcionDetalle />
+                </ProtectedRoute>
+              } />
+              <Route path="/reportes" element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
+                  <Reportes />
+                </ProtectedRoute>
+              } />
+              <Route path="/seguridad/roles" element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <SeguridadRoles />
+                </ProtectedRoute>
+              } />
+              <Route path="/seguridad/usuarios" element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <SeguridadUsuarios />
+                </ProtectedRoute>
+              } />
             </Route>
 
             <Route path="*" element={<NotFound />} />
