@@ -12,10 +12,15 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Pacientes from "./pages/Pacientes";
 import PacienteDetalle from "./pages/PacienteDetalle";
+import PacienteForm from "./pages/PacienteForm";
 import Propietarios from "./pages/Propietarios";
+import PropietarioDetalle from "./pages/PropietarioDetalle";
+import PropietarioForm from "./pages/PropietarioForm";
 import Agenda from "./pages/Agenda";
+import CitaForm from "./pages/CitaForm";
 import HistoriasClinicas from "./pages/HistoriasClinicas";
 import HistoriaDetalle from "./pages/HistoriaDetalle";
+import ConsultaForm from "./pages/ConsultaForm";
 import Prescripciones from "./pages/Prescripciones";
 import PrescripcionDetalle from "./pages/PrescripcionDetalle";
 import Reportes from "./pages/Reportes";
@@ -52,11 +57,19 @@ const App = () => (
             }>
               <Route path="/" element={<Dashboard />} />
               <Route path="/pacientes" element={<Pacientes />} />
+              <Route path="/pacientes/nuevo" element={<PacienteForm />} />
               <Route path="/pacientes/:id" element={<PacienteDetalle />} />
+              <Route path="/pacientes/:id/editar" element={<PacienteForm />} />
               <Route path="/propietarios" element={<Propietarios />} />
+              <Route path="/propietarios/nuevo" element={<PropietarioForm />} />
+              <Route path="/propietarios/:id" element={<PropietarioDetalle />} />
+              <Route path="/propietarios/:id/editar" element={<PropietarioForm />} />
               <Route path="/agenda" element={<Agenda />} />
+              <Route path="/agenda/nuevo" element={<CitaForm />} />
+              <Route path="/agenda/:id/editar" element={<CitaForm />} />
               <Route path="/historias" element={<HistoriasClinicas />} />
               <Route path="/historias/:id" element={<HistoriaDetalle />} />
+              <Route path="/historias/:pacienteId/nueva-consulta" element={<ConsultaForm />} />
               <Route path="/prescripciones" element={
                 <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
                   <Prescripciones />

@@ -163,3 +163,76 @@ export function getPrescripcionByConsulta(consultaId: string): Prescripcion | un
   }
   return undefined;
 }
+
+// Funciones de escritura (simuladas con arrays en memoria)
+export function savePaciente(paciente: Omit<Paciente, 'id'> & { id?: string }): Paciente {
+  if (paciente.id) {
+    // Actualizar existente
+    const index = mockPacientes.findIndex(p => p.id === paciente.id);
+    if (index !== -1) {
+      mockPacientes[index] = { ...paciente, id: paciente.id };
+      return mockPacientes[index];
+    }
+  }
+  // Crear nuevo
+  const newPaciente: Paciente = {
+    ...paciente,
+    id: (mockPacientes.length + 1).toString(),
+  };
+  mockPacientes.push(newPaciente);
+  return newPaciente;
+}
+
+export function savePropietario(propietario: Omit<Propietario, 'id'> & { id?: string }): Propietario {
+  if (propietario.id) {
+    // Actualizar existente
+    const index = mockPropietarios.findIndex(p => p.id === propietario.id);
+    if (index !== -1) {
+      mockPropietarios[index] = { ...propietario, id: propietario.id };
+      return mockPropietarios[index];
+    }
+  }
+  // Crear nuevo
+  const newPropietario: Propietario = {
+    ...propietario,
+    id: (mockPropietarios.length + 1).toString(),
+  };
+  mockPropietarios.push(newPropietario);
+  return newPropietario;
+}
+
+export function saveCita(cita: Omit<Cita, 'id'> & { id?: string }): Cita {
+  if (cita.id) {
+    // Actualizar existente
+    const index = mockCitas.findIndex(c => c.id === cita.id);
+    if (index !== -1) {
+      mockCitas[index] = { ...cita, id: cita.id };
+      return mockCitas[index];
+    }
+  }
+  // Crear nueva
+  const newCita: Cita = {
+    ...cita,
+    id: (mockCitas.length + 1).toString(),
+  };
+  mockCitas.push(newCita);
+  return newCita;
+}
+
+export function saveConsulta(consulta: Omit<Consulta, 'id'> & { id?: string }): Consulta {
+  if (consulta.id) {
+    // Actualizar existente
+    const index = mockConsultas.findIndex(c => c.id === consulta.id);
+    if (index !== -1) {
+      mockConsultas[index] = { ...consulta, id: consulta.id };
+      return mockConsultas[index];
+    }
+  }
+  // Crear nueva
+  const newConsulta: Consulta = {
+    ...consulta,
+    id: (mockConsultas.length + 1).toString(),
+  };
+  mockConsultas.push(newConsulta);
+  return newConsulta;
+}

@@ -30,7 +30,7 @@ export default function HistoriaDetalle() {
           <h1 className="text-3xl font-bold text-foreground">Historia Clínica - {paciente.nombre}</h1>
           <p className="text-muted-foreground mt-1">{paciente.especie} • {paciente.raza}</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => navigate(`/historias/${id}/nueva-consulta`)}>
           <Plus className="h-4 w-4" />
           Nueva Consulta
         </Button>

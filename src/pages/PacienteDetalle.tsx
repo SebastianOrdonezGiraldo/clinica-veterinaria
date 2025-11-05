@@ -29,7 +29,7 @@ export default function PacienteDetalle() {
           <h1 className="text-3xl font-bold text-foreground">{paciente.nombre}</h1>
           <p className="text-muted-foreground mt-1">{paciente.especie} • {paciente.raza}</p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => navigate(`/pacientes/${id}/editar`)}>
           <Edit className="h-4 w-4" />
           Editar
         </Button>
