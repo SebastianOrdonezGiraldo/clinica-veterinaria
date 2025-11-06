@@ -77,6 +77,17 @@ public class CitaService {
     }
 
     /**
+     * Obtiene citas por estado
+     */
+    @Transactional(readOnly = true)
+    public List<CitaDTO> findByEstado(Cita.EstadoCita estado) {
+        log.debug("Buscando citas con estado: {}", estado);
+        return citaRepository.findByEstado(estado).stream()
+            .map(c -> CitaDTO.fromEntity(c, true))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Obtiene citas por rango de fechas
      */
     @Transactional(readOnly = true)

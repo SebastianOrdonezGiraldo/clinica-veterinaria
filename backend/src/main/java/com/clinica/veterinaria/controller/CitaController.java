@@ -64,6 +64,15 @@ public class CitaController {
     }
 
     /**
+     * Obtener citas por estado
+     */
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<List<CitaDTO>> getByEstado(@PathVariable Cita.EstadoCita estado) {
+        log.info("GET /api/citas/estado/{}", estado);
+        return ResponseEntity.ok(citaService.findByEstado(estado));
+    }
+
+    /**
      * Obtener citas por rango de fechas
      */
     @GetMapping("/rango")
