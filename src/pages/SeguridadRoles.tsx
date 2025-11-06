@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { toast } from 'sonner';
 
 const roles = [
   { id: 'ADMIN', nombre: 'Administrador', descripcion: 'Acceso total al sistema', usuarios: 1, color: 'bg-destructive/10 text-destructive' },
@@ -20,7 +21,7 @@ const roles = [
   { id: 'ESTUDIANTE', nombre: 'Estudiante', descripcion: 'Solo lectura de historias', usuarios: 1, color: 'bg-info/10 text-info' },
 ];
 
-const permisos = [
+const permisosIniciales = [
   { modulo: 'Dashboard', ver: true, crear: false, editar: false, eliminar: false },
   { modulo: 'Pacientes', ver: true, crear: true, editar: true, eliminar: true },
   { modulo: 'Propietarios', ver: true, crear: true, editar: true, eliminar: false },
@@ -31,8 +32,39 @@ const permisos = [
   { modulo: 'Seguridad', ver: true, crear: true, editar: true, eliminar: true },
 ];
 
+type Permiso = {
+  modulo: string;
+  ver: boolean;
+  crear: boolean;
+  editar: boolean;
+  eliminar: boolean;
+};
+
 export default function SeguridadRoles() {
   const [selectedRole, setSelectedRole] = useState<string | null>('VET');
+  const [permisos, setPermisos] = useState<Permiso[]>(permisosIniciales);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const handlePermissionChange = (index: number, field: keyof Omit<Permiso, 'modulo'>) => {
+    const newPermisos = [...permisos];
+    newPermisos[index] = {
+      ...newPermisos[index],
+      [field]: !newPermisos[index][field]
+    };
+    setPermisos(newPermisos);
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    toast.success('Permisos guardados exitosamente');
+    setHasChanges(false);
+  };
+
+  const handleCancel = () => {
+    setPermisos(permisosIniciales);
+    setHasChanges(false);
+    toast.info('Cambios descartados');
+  };
 
   return (
     <div className="space-y-6">
@@ -116,7 +148,8 @@ export default function SeguridadRoles() {
                         <div className="flex justify-center">
                           <Checkbox
                             checked={permiso.ver}
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            onCheckedChange={() => handlePermissionChange(index, 'ver')}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
                           />
                         </div>
                       </TableCell>
@@ -124,7 +157,8 @@ export default function SeguridadRoles() {
                         <div className="flex justify-center">
                           <Checkbox
                             checked={permiso.crear}
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            onCheckedChange={() => handlePermissionChange(index, 'crear')}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
                           />
                         </div>
                       </TableCell>
@@ -132,7 +166,8 @@ export default function SeguridadRoles() {
                         <div className="flex justify-center">
                           <Checkbox
                             checked={permiso.editar}
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            onCheckedChange={() => handlePermissionChange(index, 'editar')}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
                           />
                         </div>
                       </TableCell>
@@ -140,7 +175,8 @@ export default function SeguridadRoles() {
                         <div className="flex justify-center">
                           <Checkbox
                             checked={permiso.eliminar}
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            onCheckedChange={() => handlePermissionChange(index, 'eliminar')}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary cursor-pointer"
                           />
                         </div>
                       </TableCell>
@@ -150,9 +186,25 @@ export default function SeguridadRoles() {
               </Table>
             </div>
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline">Cancelar</Button>
-              <Button>Guardar Cambios</Button>
+              <Button 
+                variant="outline" 
+                onClick={handleCancel}
+                disabled={!hasChanges}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSave}
+                disabled={!hasChanges}
+              >
+                Guardar Cambios
+              </Button>
             </div>
+            {hasChanges && (
+              <p className="text-sm text-warning text-right mt-2">
+                Hay cambios sin guardar
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

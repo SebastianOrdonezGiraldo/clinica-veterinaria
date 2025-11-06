@@ -1,14 +1,16 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { getPropietarioById } from '@/lib/mockData';
 
 const propietarioSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -26,9 +28,51 @@ export default function PropietarioForm() {
   const { toast } = useToast();
   const isEdit = !!id;
 
-  const { register, handleSubmit, formState: { errors } } = useForm<PropietarioFormData>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<PropietarioFormData>({
     resolver: zodResolver(propietarioSchema),
   });
+
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Pre-llenar el formulario en modo edición
+  useEffect(() => {
+    if (isEdit && id) {
+      const propietario = getPropietarioById(id);
+      if (propietario) {
+        reset({
+          nombre: propietario.nombre,
+          documento: propietario.documento || '',
+          email: propietario.email || '',
+          telefono: propietario.telefono || '',
+          direccion: propietario.direccion || '',
+        });
+      }
+    }
+  }, [isEdit, id, reset]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Error',
+          description: 'La imagen no debe superar los 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+  };
 
   const onSubmit = (data: PropietarioFormData) => {
     console.log('Guardar propietario:', data);
@@ -59,6 +103,46 @@ export default function PropietarioForm() {
             <CardTitle>Información del Propietario</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Upload de imagen */}
+            <div className="space-y-2">
+              <Label>Foto del Propietario</Label>
+              <div className="flex items-start gap-4">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-32 w-32 rounded-lg object-cover border-2 border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="h-32 w-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-accent/50">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre Completo *</Label>

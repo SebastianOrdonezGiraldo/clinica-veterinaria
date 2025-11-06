@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog, User, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockPropietarios, mockPacientes } from '@/lib/mockData';
 
 export default function PropietarioDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('informacion');
   
   const propietario = mockPropietarios.find(p => p.id === id);
   const mascotas = mockPacientes.filter(p => p.propietarioId === id);
@@ -38,116 +41,134 @@ export default function PropietarioDetalle() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Información Personal</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {propietario.documento && (
-              <div className="flex items-start gap-3">
-                <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Documento</p>
-                  <p className="font-medium">{propietario.documento}</p>
-                </div>
-              </div>
-            )}
-            
-            {propietario.email && (
-              <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{propietario.email}</p>
-                </div>
-              </div>
-            )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="informacion" className="gap-2">
+            <User className="h-4 w-4" />
+            Información
+          </TabsTrigger>
+          <TabsTrigger value="mascotas" className="gap-2">
+            <Dog className="h-4 w-4" />
+            Mascotas ({mascotas.length})
+          </TabsTrigger>
+        </TabsList>
 
-            {propietario.telefono && (
-              <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Teléfono</p>
-                  <p className="font-medium">{propietario.telefono}</p>
-                </div>
-              </div>
-            )}
-
-            {propietario.direccion && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Dirección</p>
-                  <p className="font-medium">{propietario.direccion}</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Dog className="h-5 w-5 text-primary" />
-                Mascotas ({mascotas.length})
-              </CardTitle>
-              <Button size="sm" onClick={() => navigate('/pacientes/nuevo')}>
-                Agregar Mascota
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {mascotas.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {mascotas.map((mascota) => (
-                  <div
-                    key={mascota.id}
-                    className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/pacientes/${mascota.id}`)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-lg">{mascota.nombre}</h4>
-                        <p className="text-sm text-muted-foreground">{mascota.raza || 'Sin raza'}</p>
-                      </div>
-                      <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
-                        {mascota.especie}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-                      {mascota.sexo && (
-                        <div>
-                          <span className="text-muted-foreground">Sexo:</span>
-                          <span className="ml-1 font-medium">{mascota.sexo === 'M' ? 'Macho' : 'Hembra'}</span>
-                        </div>
-                      )}
-                      {mascota.edadMeses && (
-                        <div>
-                          <span className="text-muted-foreground">Edad:</span>
-                          <span className="ml-1 font-medium">{Math.floor(mascota.edadMeses / 12)} años</span>
-                        </div>
-                      )}
-                      {mascota.pesoKg && (
-                        <div>
-                          <span className="text-muted-foreground">Peso:</span>
-                          <span className="ml-1 font-medium">{mascota.pesoKg} kg</span>
-                        </div>
-                      )}
-                    </div>
+        <TabsContent value="informacion" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Personal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {propietario.documento && (
+                <div className="flex items-start gap-3">
+                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Documento</p>
+                    <p className="font-medium">{propietario.documento}</p>
                   </div>
-                ))}
+                </div>
+              )}
+              
+              {propietario.email && (
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{propietario.email}</p>
+                  </div>
+                </div>
+              )}
+
+              {propietario.telefono && (
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Teléfono</p>
+                    <p className="font-medium">{propietario.telefono}</p>
+                  </div>
+                </div>
+              )}
+
+              {propietario.direccion && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Dirección</p>
+                    <p className="font-medium">{propietario.direccion}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="mascotas" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Dog className="h-5 w-5 text-primary" />
+                  Mascotas Registradas
+                </CardTitle>
+                <Button size="sm" onClick={() => navigate('/pacientes/nuevo')}>
+                  Agregar Mascota
+                </Button>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <Dog className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No hay mascotas registradas</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent>
+              {mascotas.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {mascotas.map((mascota) => (
+                    <div
+                      key={mascota.id}
+                      className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/pacientes/${mascota.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold text-lg">{mascota.nombre}</h4>
+                          <p className="text-sm text-muted-foreground">{mascota.raza || 'Sin raza'}</p>
+                        </div>
+                        <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
+                          {mascota.especie}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                        {mascota.sexo && (
+                          <div>
+                            <span className="text-muted-foreground">Sexo:</span>
+                            <span className="ml-1 font-medium">{mascota.sexo === 'M' ? 'Macho' : 'Hembra'}</span>
+                          </div>
+                        )}
+                        {mascota.edadMeses && (
+                          <div>
+                            <span className="text-muted-foreground">Edad:</span>
+                            <span className="ml-1 font-medium">{Math.floor(mascota.edadMeses / 12)} años</span>
+                          </div>
+                        )}
+                        {mascota.pesoKg && (
+                          <div>
+                            <span className="text-muted-foreground">Peso:</span>
+                            <span className="ml-1 font-medium">{mascota.pesoKg} kg</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Dog className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No hay mascotas registradas</p>
+                  <Button variant="outline" className="mt-4" onClick={() => navigate('/pacientes/nuevo')}>
+                    Agregar Primera Mascota
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

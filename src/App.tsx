@@ -23,6 +23,7 @@ import HistoriaDetalle from "./pages/HistoriaDetalle";
 import ConsultaForm from "./pages/ConsultaForm";
 import Prescripciones from "./pages/Prescripciones";
 import PrescripcionDetalle from "./pages/PrescripcionDetalle";
+import PrescripcionForm from "./pages/PrescripcionForm";
 import Reportes from "./pages/Reportes";
 import SeguridadRoles from "./pages/SeguridadRoles";
 import SeguridadUsuarios from "./pages/SeguridadUsuarios";
@@ -73,6 +74,11 @@ const App = () => (
               <Route path="/prescripciones" element={
                 <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
                   <Prescripciones />
+                </ProtectedRoute>
+              } />
+              <Route path="/prescripciones/nuevo" element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
+                  <PrescripcionForm />
                 </ProtectedRoute>
               } />
               <Route path="/prescripciones/:id" element={

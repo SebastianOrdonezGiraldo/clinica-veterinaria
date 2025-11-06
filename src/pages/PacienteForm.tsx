@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { mockPropietarios } from '@/lib/mockData';
+import { mockPropietarios, getPacienteById } from '@/lib/mockData';
 
 const pacienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -32,9 +33,55 @@ export default function PacienteForm() {
   const { toast } = useToast();
   const isEdit = !!id;
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PacienteFormData>({
+  const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
   });
+
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Pre-llenar el formulario en modo edición
+  useEffect(() => {
+    if (isEdit && id) {
+      const paciente = getPacienteById(id);
+      if (paciente) {
+        reset({
+          nombre: paciente.nombre,
+          especie: paciente.especie as any,
+          raza: paciente.raza || '',
+          sexo: paciente.sexo || undefined,
+          edadMeses: paciente.edadMeses || undefined,
+          pesoKg: paciente.pesoKg || undefined,
+          propietarioId: paciente.propietarioId,
+          microchip: paciente.microchip || '',
+          notas: '',
+        });
+      }
+    }
+  }, [isEdit, id, reset]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Error',
+          description: 'La imagen no debe superar los 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+  };
 
   const onSubmit = (data: PacienteFormData) => {
     console.log('Guardar paciente:', data);
@@ -65,6 +112,46 @@ export default function PacienteForm() {
             <CardTitle>Información del Paciente</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Upload de imagen */}
+            <div className="space-y-2">
+              <Label>Foto del Paciente</Label>
+              <div className="flex items-start gap-4">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-32 w-32 rounded-lg object-cover border-2 border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="h-32 w-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-accent/50">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 space-y-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre *</Label>

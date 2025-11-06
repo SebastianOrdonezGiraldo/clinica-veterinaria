@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { Users, Plus, Search, Mail, Shield } from 'lucide-react';
+import { Users, Plus, Search, Mail, Shield, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { mockUsuarios } from '@/lib/mockData';
 import { Rol } from '@/types';
+import { toast } from 'sonner';
 
 const roleLabels: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -21,8 +26,68 @@ const roleColors: Record<Rol, string> = {
   ESTUDIANTE: 'bg-info/10 text-info border-info/20',
 };
 
+type Usuario = {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: Rol;
+  activo: boolean;
+};
+
 export default function SeguridadUsuarios() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    rol: 'VET' as Rol,
+    activo: true,
+    password: '',
+  });
+
+  const openCreateDialog = () => {
+    setEditingUser(null);
+    setFormData({
+      nombre: '',
+      email: '',
+      rol: 'VET' as Rol,
+      activo: true,
+      password: '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (usuario: Usuario) => {
+    setEditingUser(usuario);
+    setFormData({
+      nombre: usuario.nombre,
+      email: usuario.email,
+      rol: usuario.rol,
+      activo: usuario.activo,
+      password: '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formData.nombre || !formData.email) {
+      toast.error('Nombre y email son requeridos');
+      return;
+    }
+    if (!editingUser && !formData.password) {
+      toast.error('La contraseña es requerida para nuevos usuarios');
+      return;
+    }
+    
+    const action = editingUser ? 'actualizado' : 'creado';
+    toast.success(`Usuario ${action} exitosamente`);
+    setIsDialogOpen(false);
+  };
+
+  const handleResetPassword = (usuario: Usuario) => {
+    toast.success(`Contraseña de ${usuario.nombre} reiniciada exitosamente`);
+  };
 
   const filteredUsuarios = mockUsuarios.filter(u =>
     u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,7 +101,7 @@ export default function SeguridadUsuarios() {
           <h1 className="text-3xl font-bold text-foreground">Gestión de Usuarios</h1>
           <p className="text-muted-foreground mt-1">Administración de usuarios del sistema</p>
         </div>
-        <Button className="gap-2">
+        <Button onClick={openCreateDialog} className="gap-2">
           <Plus className="h-4 w-4" />
           Nuevo Usuario
         </Button>
@@ -86,10 +151,20 @@ export default function SeguridadUsuarios() {
                 </Badge>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => openEditDialog(usuario)}
+                >
                   Editar
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleResetPassword(usuario)}
+                >
                   Reset Clave
                 </Button>
               </div>
@@ -105,6 +180,94 @@ export default function SeguridadUsuarios() {
           <p className="text-muted-foreground mt-1">Intenta con otros términos de búsqueda</p>
         </div>
       )}
+
+      {/* Dialog para crear/editar usuario */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser 
+                ? 'Modifica los datos del usuario' 
+                : 'Completa la información del nuevo usuario'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nombre">Nombre Completo *</Label>
+              <Input
+                id="nombre"
+                value={formData.nombre}
+                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                placeholder="Nombre del usuario"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="correo@ejemplo.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rol">Rol *</Label>
+              <Select 
+                value={formData.rol} 
+                onValueChange={(value: Rol) => setFormData({ ...formData, rol: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Administrador</SelectItem>
+                  <SelectItem value="VET">Veterinario</SelectItem>
+                  <SelectItem value="RECEPCION">Recepcionista</SelectItem>
+                  <SelectItem value="ESTUDIANTE">Estudiante</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!editingUser && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Contraseña inicial"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between py-2">
+              <Label htmlFor="activo">Usuario Activo</Label>
+              <Switch
+                id="activo"
+                checked={formData.activo}
+                onCheckedChange={(checked) => setFormData({ ...formData, activo: checked })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave}>
+              {editingUser ? 'Actualizar' : 'Crear Usuario'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
