@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class JwtUtil {
     /**
      * Obtiene la clave de firma
      */
-    private Key getSigningKey() {
+    private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -61,10 +61,10 @@ public class JwtUtil {
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-            .setSigningKey(getSigningKey())
+            .verifyWith(getSigningKey())
             .build()
-            .parseClaimsJws(token)
-            .getBody();
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     /**
