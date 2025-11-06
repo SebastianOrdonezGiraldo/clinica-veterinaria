@@ -327,3 +327,13 @@ El backend de la clínica veterinaria está **100% funcional** con:
 
 **¡El proyecto está listo para conectarse con el frontend y continuar el desarrollo!** 🚀
 
+---
+
+## 👨‍💻 Autor
+
+**Sebastian Ordoñez**
+- Proyecto: API REST Clínica Veterinaria
+- Fecha: Noviembre 2025
+- Tecnologías: Java 17, Spring Boot 3.x, PostgreSQL
+- Arquitectura: Layered Architecture con patrones de diseño
+

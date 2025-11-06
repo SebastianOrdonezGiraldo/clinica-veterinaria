@@ -32,8 +32,9 @@
  * - Builder pattern con Lombok
  * - Documentación JavaDoc
  * 
- * @author Clínica Veterinaria Team
+ * @author Sebastian Ordoñez
  * @version 1.0.0
+ * @since 2025-11-06
  */
 package com.clinica.veterinaria.dto;
 

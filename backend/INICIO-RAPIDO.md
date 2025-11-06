@@ -1,5 +1,11 @@
 # 🚀 Guía de Inicio Rápido - API Clínica Veterinaria
 
+**Autor:** Sebastian Ordoñez  
+**Versión:** 1.0.0  
+**Fecha:** Noviembre 2025
+
+---
+
 ## ✅ Pre-requisitos Instalados
 
 - ✅ Java 17
