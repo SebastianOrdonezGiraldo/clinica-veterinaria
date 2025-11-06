@@ -18,12 +18,14 @@ CREATE DATABASE vetclinic;
 ```
 
 La aplicación está configurada con:
+- **Puerto:** `5433`
 - **Usuario:** `postgres`
-- **Contraseña:** `postgres`
+- **Contraseña:** `root`
 - **Base de datos:** `vetclinic`
 
 Si tus credenciales son diferentes, edita `backend/src/main/resources/application.properties`:
 ```properties
+spring.datasource.url=jdbc:postgresql://localhost:PUERTO/vetclinic
 spring.datasource.username=TU_USUARIO
 spring.datasource.password=TU_CONTRASEÑA
 ```

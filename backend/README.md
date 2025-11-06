@@ -156,9 +156,9 @@ El proyecto usa **PostgreSQL** como base de datos principal.
 
 **Configuración actual:**
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/vetclinic
+spring.datasource.url=jdbc:postgresql://localhost:5433/vetclinic
 spring.datasource.username=postgres
-spring.datasource.password=postgres
+spring.datasource.password=root
 spring.jpa.hibernate.ddl-auto=update
 ```
 
