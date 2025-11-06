@@ -1,24 +1,119 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# ================================
+# Clínica Veterinaria - .gitignore
+# ================================
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ===========================
+# IDEs y Editores
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.iml
+
+# ===========================
+# Backend (Java/Spring Boot)
+# ===========================
+apps/backend/target/
+apps/backend/.mvn/
+apps/backend/mvnw
+apps/backend/mvnw.cmd
+
+# Maven
+apps/backend/*.jar
+apps/backend/*.war
+apps/backend/*.ear
+
+# Logs
+apps/backend/*.log
+apps/backend/logs/
+
+# Spring Boot
+apps/backend/.springBeans
+
+# ===========================
+# Frontend (React/Vite)
+# ===========================
+apps/frontend/node_modules/
+apps/frontend/dist/
+apps/frontend/build/
+apps/frontend/.vite/
+apps/frontend/.env.local
+apps/frontend/.env.development.local
+apps/frontend/.env.test.local
+apps/frontend/.env.production.local
+
+# Logs
+apps/frontend/npm-debug.log*
+apps/frontend/yarn-debug.log*
+apps/frontend/yarn-error.log*
+apps/frontend/pnpm-debug.log*
+apps/frontend/lerna-debug.log*
+
+# ===========================
+# Dependencias
+# ===========================
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# ===========================
+# Sistema Operativo
+# ===========================
+Thumbs.db
+Desktop.ini
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ===========================
+# Variables de Entorno
+# ===========================
+.env
+.env.local
+.env.*.local
+
+# ===========================
+# Base de Datos
+# ===========================
+*.sqlite
+*.db
+
+# ===========================
+# Backups y Temporales
+# ===========================
+*_backup/
+*_old/
+*_tmp/
+*.bak
+*.tmp
+
+# ===========================
+# Documentación Generada
+# ===========================
+docs/generated/
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+.nyc_output/
+apps/frontend/coverage/
+apps/backend/target/site/
+
+# ===========================
+# Build Tools
+# ===========================
+.gradle/
+build/
+
+# ===========================
+# Otros
+# ===========================
+*.class
+*.pyc
+__pycache__/

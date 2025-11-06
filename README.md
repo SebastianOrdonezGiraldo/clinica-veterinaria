@@ -13,16 +13,13 @@ Sistema completo de gestión para clínicas veterinarias desarrollado con Spring
 
 ## 🚀 Inicio Rápido
 
-¿Primera vez usando este proyecto? Lee la **[📖 Guía de Inicio Completa](GUIA_INICIO.md)** para instrucciones paso a paso.
-
-### Inicio Express (si ya tienes todo configurado)
-
 ```bash
 # Terminal 1: Iniciar Backend
-cd backend
+cd apps/backend
 mvn spring-boot:run
 
 # Terminal 2: Iniciar Frontend
+cd apps/frontend
 npm run dev
 ```
 
@@ -32,23 +29,55 @@ npm run dev
 - 📚 **Swagger UI:** http://localhost:8080/swagger-ui.html
 
 **Credenciales de prueba:**
-- Email: `admin@vetclinic.com`
+- Email: `admin@clinica.com`
 - Password: `admin123`
 
 ---
 
-## 📋 Tabla de Contenidos
+## 📁 Estructura del Proyecto (Nueva Organización)
 
-- [Características](#-características)
-- [Tecnologías](#-tecnologías)
-- [Requisitos Previos](#-requisitos-previos)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Ejecución](#-ejecución)
-- [Testing](#-testing)
-- [Documentación API](#-documentación-api)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Contribuir](#-contribuir)
+```
+clinica-veterinaria/
+│
+├── 📁 apps/                    # Aplicaciones del proyecto
+│   ├── backend/                # API REST (Spring Boot)
+│   └── frontend/               # Aplicación web (React + TypeScript)
+│       ├── src/
+│       │   ├── core/           # Lógica central (auth, api, router)
+│       │   ├── features/       # Características por módulo
+│       │   │   ├── auth/
+│       │   │   ├── pacientes/
+│       │   │   ├── propietarios/
+│       │   │   ├── agenda/
+│       │   │   ├── historias/
+│       │   │   ├── prescripciones/
+│       │   │   └── usuarios/
+│       │   └── shared/         # Código compartido
+│       │       ├── components/ # Componentes UI
+│       │       ├── hooks/      # Hooks personalizados
+│       │       └── utils/      # Utilidades
+│       └── ...
+│
+├── 📁 docs/                    # Documentación organizada
+│   ├── architecture/           # Arquitectura y patrones
+│   ├── api/                    # Documentación de API
+│   ├── deployment/             # Guías de deployment
+│   ├── development/            # Guías de desarrollo
+│   ├── database/               # Documentación de BD
+│   └── guides/                 # Guías generales
+│
+├── 📁 scripts/                 # Scripts de automatización
+│   ├── setup/                  # Configuración inicial
+│   ├── dev/                    # Desarrollo local
+│   ├── db/                     # Base de datos
+│   └── deploy/                 # Despliegue
+│
+├── 📁 docker/                  # Configuración Docker
+│
+└── README.md                   # Este archivo
+```
+
+---
 
 ## ✨ Características
 
@@ -58,6 +87,7 @@ npm run dev
 - 👨‍👩‍👧 **Propietarios**: Administración de dueños de mascotas
 - 📅 **Citas**: Sistema de agendamiento con estados y seguimiento
 - 🏥 **Consultas**: Registro detallado de consultas médicas
+- 💊 **Prescripciones**: Recetas médicas digitales
 
 ### Seguridad
 - 🔐 Autenticación JWT
@@ -73,20 +103,17 @@ npm run dev
 - 🐳 Docker ready
 - 🔄 Perfiles de configuración (dev, prod, test)
 
+---
+
 ## 🛠 Tecnologías
 
 ### Frontend
-- **React 18.3**
-- **TypeScript 5.8**
+- **React 18.3** con TypeScript
 - **Vite 5.4** (Build tool)
 - **React Router v6** (Routing)
 - **TanStack Query** (Data fetching)
 - **shadcn/ui** (Componentes UI)
 - **Tailwind CSS** (Estilos)
-- **Radix UI** (Componentes primitivos)
-- **React Hook Form** + **Zod** (Formularios y validación)
-- **Lucide React** (Iconos)
-- **Recharts** (Gráficas)
 
 ### Backend
 - **Java 17**
@@ -96,32 +123,10 @@ npm run dev
   - Spring Web
 - **PostgreSQL 15**
 - **JWT (io.jsonwebtoken)**
-- **Lombok**
-- **Maven**
 
-### Testing
-- **JUnit 5**
-- **Mockito**
-- **Spring Boot Test**
-- **H2 Database** (tests)
+---
 
-## 📦 Requisitos Previos
-
-Antes de comenzar, asegúrate de tener instalado:
-
-### Backend
-- **Java 17** o superior
-- **Maven 3.8** o superior
-- **PostgreSQL 15** o superior
-
-### Frontend
-- **Node.js 18** o superior
-- **npm** o **bun**
-
-### General
-- **Git**
-
-## 🚀 Instalación
+## 📦 Instalación
 
 ### 1. Clonar el repositorio
 
@@ -132,295 +137,87 @@ cd clinica-veterinaria
 
 ### 2. Configurar la base de datos
 
-Crea las bases de datos en PostgreSQL:
-
 ```sql
--- Base de datos de desarrollo
 CREATE DATABASE vetclinic_dev;
-
--- Base de datos de producción
 CREATE DATABASE vetclinic_prod;
 ```
 
-### 3. Configurar variables de entorno (Producción)
-
-Para producción, configura las siguientes variables de entorno:
+### 3. Configurar Backend
 
 ```bash
-export DB_HOST=localhost
-export DB_PORT=5433
-export DB_NAME=vetclinic_prod
-export DB_USERNAME=tu_usuario
-export DB_PASSWORD=tu_contraseña
-export JWT_SECRET=tu_secret_key_muy_segura_de_al_menos_256_bits
-export JWT_EXPIRATION=36000000
+cd apps/backend
+# Editar src/main/resources/application.properties
+mvn clean install
 ```
 
-## ⚙️ Configuración
+### 4. Configurar Frontend
 
-### Perfiles de Configuración
-
-El proyecto utiliza tres perfiles:
-
-#### Development (`application-dev.properties`)
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5433/vetclinic_dev
-spring.jpa.hibernate.ddl-auto=update
+```bash
+cd apps/frontend
+npm install
 ```
 
-#### Production (`application-prod.properties`)
-```properties
-spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-spring.jpa.hibernate.ddl-auto=validate
-```
-
-#### Test (`application-test.properties`)
-```properties
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.jpa.hibernate.ddl-auto=create-drop
-```
-
-### Activar un perfil
-
-En `application.properties`:
-```properties
-spring.profiles.active=dev
-```
+---
 
 ## 🏃 Ejecución
 
-### Backend (Modo Desarrollo)
+### Con Scripts (Windows)
 
 ```bash
-cd backend
+# Iniciar todo el sistema
+scripts\dev\start-all.bat
+
+# O iniciar individualmente
+scripts\dev\start-backend.bat
+scripts\dev\start-frontend.bat
+```
+
+### Manual
+
+```bash
+# Backend
+cd apps/backend
 mvn spring-boot:run
-```
 
-El backend estará disponible en: `http://localhost:8080`
-
-### Frontend (Modo Desarrollo)
-
-En otra terminal:
-
-```bash
-# Instalar dependencias (solo la primera vez)
-npm install
-# o con bun
-bun install
-
-# Iniciar servidor de desarrollo
-npm run dev
-# o con bun
-bun dev
-```
-
-El frontend estará disponible en: `http://localhost:8080`
-
-### Iniciar todo el stack
-
-```bash
-# Terminal 1 - Backend
-cd backend && mvn spring-boot:run
-
-# Terminal 2 - Frontend
+# Frontend (en otra terminal)
+cd apps/frontend
 npm run dev
 ```
 
-### Modo Producción
-
-```bash
-cd backend
-mvn clean package -DskipTests
-java -jar target/veterinaria-1.0.0.jar --spring.profiles.active=prod
-```
-
-### Con Docker
-
-```bash
-docker-compose up -d
-```
+---
 
 ## 🧪 Testing
 
-### Ejecutar todos los tests
-
 ```bash
-cd backend
+# Backend
+cd apps/backend
 mvn test
-```
 
-### Solo tests unitarios
-
-```bash
-mvn test -Dtest="*ServiceTest"
-```
-
-### Solo tests de integración
-
-```bash
-mvn test -Dtest="*IntegrationTest"
-```
-
-### Cobertura de Tests
-
-```bash
+# Cobertura
 mvn clean test jacoco:report
 ```
 
-El reporte estará en: `backend/target/site/jacoco/index.html`
+---
 
-## 📚 Documentación API
+## 📚 Documentación
 
-### Swagger UI
+La documentación está organizada por categorías en la carpeta `docs/`:
 
-Una vez iniciada la aplicación, accede a:
+- **[Arquitectura](docs/architecture/)** - Patrones de diseño y decisiones arquitectónicas
+- **[API](docs/api/)** - Documentación de endpoints y Postman
+- **[Guías](docs/guides/)** - Guías de inicio rápido y tutoriales
+- **[Base de Datos](docs/database/)** - Configuración y migraciones
+- **[Desarrollo](docs/development/)** - Guías para contributors
+- **[Deployment](docs/deployment/)** - Guías de despliegue
 
-```
-http://localhost:8080/swagger-ui.html
-```
+### Documentación Rápida
 
-### Endpoints Principales
+- [📖 Guía de Inicio](docs/guides/GUIA_INICIO.md)
+- [🏗️ Arquitectura del Sistema](docs/architecture/ARQUITECTURA.md)
+- [🔌 Documentación de API](docs/api/DOCUMENTACION.md)
+- [💻 Guía Frontend](docs/guides/FRONTEND.md)
 
-#### Autenticación
-```http
-POST /api/auth/login
-POST /api/auth/register
-GET  /api/auth/validate
-```
-
-#### Usuarios
-```http
-GET    /api/usuarios
-GET    /api/usuarios/{id}
-POST   /api/usuarios
-PUT    /api/usuarios/{id}
-DELETE /api/usuarios/{id}
-```
-
-#### Propietarios
-```http
-GET    /api/propietarios
-GET    /api/propietarios/{id}
-POST   /api/propietarios
-PUT    /api/propietarios/{id}
-DELETE /api/propietarios/{id}
-GET    /api/propietarios/buscar?nombre={nombre}
-```
-
-#### Pacientes
-```http
-GET    /api/pacientes
-GET    /api/pacientes/{id}
-POST   /api/pacientes
-PUT    /api/pacientes/{id}
-DELETE /api/pacientes/{id}
-GET    /api/pacientes/propietario/{id}
-GET    /api/pacientes/buscar?nombre={nombre}
-```
-
-#### Citas
-```http
-GET    /api/citas
-GET    /api/citas/{id}
-POST   /api/citas
-PUT    /api/citas/{id}
-DELETE /api/citas/{id}
-GET    /api/citas/estado/{estado}
-GET    /api/citas/paciente/{id}
-GET    /api/citas/profesional/{id}
-```
-
-#### Consultas
-```http
-GET    /api/consultas
-GET    /api/consultas/{id}
-POST   /api/consultas
-PUT    /api/consultas/{id}
-DELETE /api/consultas/{id}
-GET    /api/consultas/paciente/{id}
-```
-
-### Autenticación
-
-La API utiliza JWT Bearer Token:
-
-```bash
-# 1. Login
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@clinica.com","password":"admin123"}'
-
-# 2. Usar el token
-curl -X GET http://localhost:8080/api/usuarios \
-  -H "Authorization: Bearer {tu_token_jwt}"
-```
-
-## 📁 Estructura del Proyecto
-
-```
-clinica-veterinaria/
-├── backend/                          # API REST (Spring Boot)
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/clinica/veterinaria/
-│   │   │   │   ├── config/          # Configuración
-│   │   │   │   ├── controller/      # Controladores REST
-│   │   │   │   ├── dto/             # Data Transfer Objects
-│   │   │   │   ├── entity/          # Entidades JPA
-│   │   │   │   ├── exception/       # Manejo de excepciones
-│   │   │   │   ├── repository/      # Repositorios JPA
-│   │   │   │   ├── security/        # Configuración de seguridad
-│   │   │   │   └── service/         # Lógica de negocio
-│   │   │   └── resources/
-│   │   │       ├── application.properties
-│   │   │       ├── application-dev.properties
-│   │   │       ├── application-prod.properties
-│   │   │       └── application-test.properties
-│   │   └── test/
-│   │       ├── java/com/clinica/veterinaria/
-│   │       │   ├── integration/     # Tests de integración
-│   │       │   └── service/         # Tests unitarios
-│   │       └── resources/
-│   └── pom.xml
-│
-├── src/                              # Frontend (React + TypeScript)
-│   ├── components/
-│   │   ├── layout/                  # Layout components
-│   │   │   ├── AppHeader.tsx
-│   │   │   ├── AppLayout.tsx
-│   │   │   └── AppSidebar.tsx
-│   │   ├── ui/                      # shadcn/ui components
-│   │   └── ProtectedRoute.tsx
-│   ├── contexts/                    # React Context
-│   │   └── AuthContext.tsx          # Autenticación
-│   ├── hooks/                       # Custom Hooks
-│   ├── lib/                         # Utilidades
-│   ├── pages/                       # Páginas de la aplicación
-│   │   ├── Dashboard.tsx            # Panel principal
-│   │   ├── Login.tsx                # Login
-│   │   ├── Pacientes.tsx            # Gestión de pacientes
-│   │   ├── Propietarios.tsx         # Gestión de propietarios
-│   │   ├── Agenda.tsx               # Gestión de citas
-│   │   ├── HistoriasClinicas.tsx    # Historias clínicas
-│   │   ├── Prescripciones.tsx       # Prescripciones
-│   │   ├── Reportes.tsx             # Reportes
-│   │   ├── SeguridadRoles.tsx       # Gestión de roles
-│   │   └── SeguridadUsuarios.tsx    # Gestión de usuarios
-│   ├── types/                       # TypeScript types
-│   ├── App.tsx                      # Componente principal
-│   └── main.tsx                     # Entry point
-│
-├── guias/                           # Documentación
-│   ├── ARQUITECTURA.md
-│   ├── DEPLOYMENT.md
-│   └── TEST_GUIDE.md
-│
-├── package.json                     # Dependencias frontend
-├── vite.config.ts                   # Configuración Vite
-├── tailwind.config.ts               # Configuración Tailwind
-├── tsconfig.json                    # Configuración TypeScript
-└── README.md
-```
+---
 
 ## 👥 Roles y Permisos
 
@@ -431,9 +228,9 @@ clinica-veterinaria/
 | **RECEPCION** | Gestión de citas y propietarios |
 | **ESTUDIANTE** | Solo lectura |
 
-## 🔑 Usuarios de Prueba
+---
 
-Al iniciar la aplicación por primera vez, se crean usuarios de prueba:
+## 🔑 Usuarios de Prueba
 
 | Email | Password | Rol |
 |-------|----------|-----|
@@ -443,70 +240,51 @@ Al iniciar la aplicación por primera vez, se crean usuarios de prueba:
 | ana@clinica.com | recep123 | RECEPCION |
 | juan@clinica.com | est123 | ESTUDIANTE |
 
-## 🐛 Solución de Problemas
+---
 
-### Error de conexión a PostgreSQL
+## 🎯 Beneficios de la Nueva Estructura
 
-```bash
-# Verificar que PostgreSQL esté corriendo
-sudo systemctl status postgresql
+### ✅ Organización Modular
+- **Features autocontenidas**: Cada módulo (pacientes, citas, etc.) tiene sus propios componentes, páginas, servicios y hooks
+- **Fácil navegación**: Encuentra todo lo relacionado con una feature en un solo lugar
+- **Escalabilidad**: Agregar nuevas features sin afectar las existentes
 
-# Verificar el puerto
-netstat -an | grep 5433
-```
+### ✅ Separación Clara
+- **Core**: Lógica central compartida (auth, api, routing)
+- **Features**: Funcionalidades específicas del negocio
+- **Shared**: Componentes y utilidades reutilizables
 
-### Error de compilación
+### ✅ Documentación Estructurada
+- **Por categorías**: Encuentra fácilmente la información que necesitas
+- **Centralizada**: Todo en la carpeta `docs/`
 
-```bash
-# Limpiar y recompilar
-mvn clean install -DskipTests
-```
+### ✅ Scripts Organizados
+- **Por propósito**: Setup, desarrollo, base de datos, deploy
+- **Fácil acceso**: Todos en la carpeta `scripts/`
 
-### Tests fallando
-
-```bash
-# Verificar perfil de test
-cat backend/src/test/resources/application-test.properties
-
-# Ejecutar tests con más información
-mvn test -X
-```
+---
 
 ## 🤝 Contribuir
 
-Las contribuciones son bienvenidas. Por favor:
-
-1. Haz fork del proyecto
+1. Fork del proyecto
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
 3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-## 📝 Convenciones de Código
+Lee la [Guía de Contribución](docs/development/CONTRIBUTING.md) para más detalles.
 
-- Usar Java Code Conventions
-- Comentarios en español
-- Tests para nuevas funcionalidades
-- Documentación de endpoints
+---
 
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
+---
+
 ## 👨‍💻 Autor
 
 **Sebastian Ordoñez**
-
-## 🙏 Agradecimientos
-
-- Spring Boot Team
-- Comunidad de desarrolladores Java
-- Todos los contribuidores
-
-## 📞 Contacto
-
-- Email: tu-email@ejemplo.com
-- GitHub: [@tu-usuario](https://github.com/tu-usuario)
 
 ---
 
