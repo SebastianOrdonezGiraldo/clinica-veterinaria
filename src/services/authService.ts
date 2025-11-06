@@ -21,11 +21,9 @@ export const authService = {
     return response.data;
   },
 
-  async validateToken(token: string): Promise<Usuario> {
-    const response = await axios.get<Usuario>('/auth/validate', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  async validateToken(token: string): Promise<boolean> {
+    const response = await axios.get<boolean>('/auth/validate', {
+      params: { token },
     });
     return response.data;
   },

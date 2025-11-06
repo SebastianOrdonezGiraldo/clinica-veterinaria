@@ -1,12 +1,41 @@
 # 🏥 Sistema de Gestión para Clínica Veterinaria
 
-Sistema completo de gestión para clínicas veterinarias desarrollado con Spring Boot y arquitectura REST.
+Sistema completo de gestión para clínicas veterinarias desarrollado con Spring Boot (Backend) + React (Frontend) y arquitectura REST.
 
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen)
+![React](https://img.shields.io/badge/React-18.3-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
 ![Tests](https://img.shields.io/badge/Tests-60%20passed-success)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
+
+---
+
+## 🚀 Inicio Rápido
+
+¿Primera vez usando este proyecto? Lee la **[📖 Guía de Inicio Completa](GUIA_INICIO.md)** para instrucciones paso a paso.
+
+### Inicio Express (si ya tienes todo configurado)
+
+```bash
+# Terminal 1: Iniciar Backend
+cd backend
+mvn spring-boot:run
+
+# Terminal 2: Iniciar Frontend
+npm run dev
+```
+
+**Acceder a:**
+- 🌐 **Frontend:** http://localhost:5173
+- 🔧 **Backend API:** http://localhost:8080
+- 📚 **Swagger UI:** http://localhost:8080/swagger-ui.html
+
+**Credenciales de prueba:**
+- Email: `admin@vetclinic.com`
+- Password: `admin123`
+
+---
 
 ## 📋 Tabla de Contenidos
 

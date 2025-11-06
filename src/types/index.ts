@@ -20,27 +20,26 @@ export interface Propietario {
 export interface Paciente {
   id: string;
   nombre: string;
-  especie: 'Canino' | 'Felino' | 'Otro';
+  especie: string;
   raza?: string;
   sexo?: 'M' | 'F';
   edadMeses?: number;
   pesoKg?: number;
   propietarioId: string;
   microchip?: string;
-  notas?: string;
+  observaciones?: string;
   propietario?: Propietario;
 }
 
 export interface Cita {
   id: string;
   pacienteId: string;
-  propietarioId: string;
   profesionalId: string;
   fecha: string;
-  estado: 'Pendiente' | 'Confirmada' | 'Cancelada' | 'Atendida';
-  motivo?: string;
+  estado: 'PENDIENTE' | 'CONFIRMADA' | 'ATENDIDA' | 'CANCELADA';
+  motivo: string;
+  observaciones?: string;
   paciente?: Paciente;
-  propietario?: Propietario;
   profesional?: Usuario;
 }
 

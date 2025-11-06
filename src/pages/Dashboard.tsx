@@ -13,11 +13,9 @@ import { Cita, Paciente, Propietario } from '@/types';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed',
-  PROGRAMADA: 'bg-status-pending/10 text-status-pending',
+  PENDIENTE: 'bg-status-pending/10 text-status-pending',
   CANCELADA: 'bg-status-cancelled/10 text-status-cancelled',
-  COMPLETADA: 'bg-status-completed/10 text-status-completed',
-  EN_CURSO: 'bg-status-confirmed/10 text-status-confirmed',
-  NO_ASISTIO: 'bg-status-cancelled/10 text-status-cancelled',
+  ATENDIDA: 'bg-status-completed/10 text-status-completed',
 };
 
 // Datos para gráficos (estos serían calculados con datos reales)
@@ -70,7 +68,7 @@ export default function Dashboard() {
     return citaDate.getTime() === today.getTime();
   });
 
-  const consultasPendientes = citas.filter(c => c.estado === 'PROGRAMADA' || c.estado === 'CONFIRMADA');
+  const consultasPendientes = citas.filter(c => c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA');
 
   const stats = [
     { title: 'Citas Hoy', value: citasHoy.length.toString(), icon: Calendar, color: 'text-primary', link: '/agenda' },

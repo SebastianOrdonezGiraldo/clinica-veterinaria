@@ -18,11 +18,9 @@ import { toast } from 'sonner';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
-  PROGRAMADA: 'bg-status-pending/10 text-status-pending border-status-pending/20',
+  PENDIENTE: 'bg-status-pending/10 text-status-pending border-status-pending/20',
   CANCELADA: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
-  COMPLETADA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
-  EN_CURSO: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
-  NO_ASISTIO: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+  ATENDIDA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
 };
 
 export default function Agenda() {
@@ -146,12 +144,10 @@ export default function Agenda() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="PROGRAMADA">Programada</SelectItem>
+                  <SelectItem value="PENDIENTE">Pendiente</SelectItem>
                   <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
-                  <SelectItem value="EN_CURSO">En Curso</SelectItem>
-                  <SelectItem value="COMPLETADA">Completada</SelectItem>
+                  <SelectItem value="ATENDIDA">Atendida</SelectItem>
                   <SelectItem value="CANCELADA">Cancelada</SelectItem>
-                  <SelectItem value="NO_ASISTIO">No Asistió</SelectItem>
                 </SelectContent>
               </Select>
             </div>

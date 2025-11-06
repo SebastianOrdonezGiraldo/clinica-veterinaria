@@ -1,7 +1,7 @@
 import axios from '@/lib/axios';
 import { Cita } from '@/types';
 
-export type EstadoCita = 'PROGRAMADA' | 'CONFIRMADA' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA' | 'NO_ASISTIO';
+export type EstadoCita = 'PENDIENTE' | 'CONFIRMADA' | 'ATENDIDA' | 'CANCELADA';
 
 export interface CitaDTO {
   fecha: string;

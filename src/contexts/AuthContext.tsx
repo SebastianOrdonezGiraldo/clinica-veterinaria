@@ -23,11 +23,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token && savedUser) {
       // Validar el token con el backend
       authService.validateToken(token)
-        .then((validatedUser) => {
-          setUser(validatedUser);
+        .then((isValid) => {
+          if (isValid) {
+            setUser(JSON.parse(savedUser));
+          } else {
+            // Token inválido
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
         })
         .catch(() => {
-          // Token inválido o expirado
+          // Error al validar token
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
