@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ const statusColors = {
 };
 
 export default function Agenda() {
+  const navigate = useNavigate();
   const [selectedDate] = useState(new Date());
 
   const citasConDetalles = mockCitas.map(cita => ({

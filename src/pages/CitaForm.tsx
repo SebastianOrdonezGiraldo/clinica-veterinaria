@@ -1,204 +1,132 @@
-import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Calendar as CalendarIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { mockCitas, saveCita, mockPacientes, mockPropietarios, mockUsuarios } from '@/lib/mockData';
-import { Cita } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import { mockPacientes, mockPropietarios, mockUsuarios } from '@/lib/mockData';
+
+const citaSchema = z.object({
+  pacienteId: z.string().min(1, 'Paciente es requerido'),
+  propietarioId: z.string().min(1, 'Propietario es requerido'),
+  profesionalId: z.string().min(1, 'Profesional es requerido'),
+  fecha: z.string().min(1, 'Fecha es requerida'),
+  hora: z.string().min(1, 'Hora es requerida'),
+  estado: z.enum(['Pendiente', 'Confirmada', 'Cancelada', 'Atendida']),
+  motivo: z.string().max(500).optional(),
+});
+
+type CitaFormData = z.infer<typeof citaSchema>;
 
 export default function CitaForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = id && id !== 'nuevo';
+  const { toast } = useToast();
+  const isEdit = !!id;
 
-  const [formData, setFormData] = useState<Partial<Cita>>({
-    pacienteId: '',
-    propietarioId: '',
-    profesionalId: '',
-    fecha: '',
-    estado: 'Pendiente',
-    motivo: '',
-  });
-
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Filtrar solo veterinarios
   const veterinarios = mockUsuarios.filter(u => u.rol === 'VET' || u.rol === 'ADMIN');
 
-  useEffect(() => {
-    if (isEdit) {
-      const cita = mockCitas.find(c => c.id === id);
-      if (cita) {
-        setFormData({
-          pacienteId: cita.pacienteId,
-          propietarioId: cita.propietarioId,
-          profesionalId: cita.profesionalId,
-          fecha: cita.fecha.slice(0, 16), // Formato para datetime-local
-          estado: cita.estado,
-          motivo: cita.motivo || '',
-        });
-      } else {
-        toast.error('Cita no encontrada');
-        navigate('/agenda');
-      }
-    } else {
-      // Fecha por defecto: mañana a las 9:00
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
-      setFormData(prev => ({
-        ...prev,
-        fecha: tomorrow.toISOString().slice(0, 16),
-      }));
-    }
-  }, [id, isEdit, navigate]);
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CitaFormData>({
+    resolver: zodResolver(citaSchema),
+    defaultValues: {
+      estado: 'Pendiente',
+    },
+  });
 
-  // Cuando se selecciona un paciente, auto-seleccionar su propietario
-  useEffect(() => {
-    if (formData.pacienteId) {
-      const paciente = mockPacientes.find(p => p.id === formData.pacienteId);
-      if (paciente && paciente.propietarioId !== formData.propietarioId) {
-        setFormData(prev => ({ ...prev, propietarioId: paciente.propietarioId }));
-      }
-    }
-  }, [formData.pacienteId]);
+  const pacienteSeleccionado = watch('pacienteId');
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.pacienteId) {
-      newErrors.pacienteId = 'Debe seleccionar un paciente';
-    }
-
-    if (!formData.profesionalId) {
-      newErrors.profesionalId = 'Debe seleccionar un veterinario';
-    }
-
-    if (!formData.fecha) {
-      newErrors.fecha = 'La fecha y hora son obligatorias';
-    } else {
-      const citaDate = new Date(formData.fecha);
-      const now = new Date();
-      if (citaDate < now && !isEdit) {
-        newErrors.fecha = 'La fecha no puede ser en el pasado';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Por favor corrige los errores del formulario');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const citaData = {
-        ...(isEdit && { id }),
-        pacienteId: formData.pacienteId!,
-        propietarioId: formData.propietarioId!,
-        profesionalId: formData.profesionalId!,
-        fecha: new Date(formData.fecha!).toISOString(),
-        estado: formData.estado as 'Pendiente' | 'Confirmada' | 'Cancelada' | 'Atendida',
-        motivo: formData.motivo,
-      };
-
-      saveCita(citaData);
-
-      toast.success(isEdit ? 'Cita actualizada correctamente' : 'Cita creada correctamente');
-      navigate('/agenda');
-    } catch (error) {
-      toast.error('Error al guardar la cita');
-    } finally {
-      setLoading(false);
+  const handlePacienteChange = (pacienteId: string) => {
+    setValue('pacienteId', pacienteId);
+    const paciente = mockPacientes.find(p => p.id === pacienteId);
+    if (paciente) {
+      setValue('propietarioId', paciente.propietarioId);
     }
   };
 
-  const handleChange = (field: keyof Cita, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpiar error del campo
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+  const onSubmit = (data: CitaFormData) => {
+    const fechaHora = `${data.fecha}T${data.hora}:00`;
+    console.log('Guardar cita:', { ...data, fecha: fechaHora });
+    toast({
+      title: isEdit ? 'Cita actualizada' : 'Cita agendada',
+      description: `La cita ha sido ${isEdit ? 'actualizada' : 'agendada'} exitosamente.`,
+    });
+    navigate('/agenda');
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/agenda')}>
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-foreground">
             {isEdit ? 'Editar Cita' : 'Nueva Cita'}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {isEdit ? 'Actualiza la información de la cita' : 'Agenda una nueva cita médica'}
-          </p>
+          <p className="text-muted-foreground mt-1">Complete la información de la cita</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
             <CardTitle>Información de la Cita</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Paciente */}
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="paciente">
-                  Paciente <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={formData.pacienteId}
-                  onValueChange={(value) => handleChange('pacienteId', value)}
-                >
-                  <SelectTrigger className={errors.pacienteId ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Selecciona un paciente" />
+                <Label htmlFor="pacienteId">Paciente *</Label>
+                <Select onValueChange={handlePacienteChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione paciente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockPacientes.map((paciente) => {
-                      const propietario = mockPropietarios.find(p => p.id === paciente.propietarioId);
-                      return (
-                        <SelectItem key={paciente.id} value={paciente.id}>
-                          {paciente.nombre} - {propietario?.nombre}
-                        </SelectItem>
-                      );
-                    })}
+                    {mockPacientes.map((paciente) => (
+                      <SelectItem key={paciente.id} value={paciente.id}>
+                        {paciente.nombre} ({paciente.especie})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.pacienteId && (
-                  <p className="text-sm text-destructive">{errors.pacienteId}</p>
+                  <p className="text-sm text-destructive">{errors.pacienteId.message}</p>
                 )}
               </div>
 
-              {/* Veterinario */}
               <div className="space-y-2">
-                <Label htmlFor="profesional">
-                  Veterinario <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={formData.profesionalId}
-                  onValueChange={(value) => handleChange('profesionalId', value)}
+                <Label htmlFor="propietarioId">Propietario *</Label>
+                <Select 
+                  value={watch('propietarioId')} 
+                  onValueChange={(value) => setValue('propietarioId', value)}
+                  disabled={!!pacienteSeleccionado}
                 >
-                  <SelectTrigger className={errors.profesionalId ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Selecciona un veterinario" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione propietario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockPropietarios.map((prop) => (
+                      <SelectItem key={prop.id} value={prop.id}>
+                        {prop.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.propietarioId && (
+                  <p className="text-sm text-destructive">{errors.propietarioId.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="profesionalId">Veterinario *</Label>
+                <Select onValueChange={(value) => setValue('profesionalId', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione veterinario" />
                   </SelectTrigger>
                   <SelectContent>
                     {veterinarios.map((vet) => (
@@ -209,75 +137,67 @@ export default function CitaForm() {
                   </SelectContent>
                 </Select>
                 {errors.profesionalId && (
-                  <p className="text-sm text-destructive">{errors.profesionalId}</p>
+                  <p className="text-sm text-destructive">{errors.profesionalId.message}</p>
                 )}
               </div>
 
-              {/* Fecha y Hora */}
-              <div className="space-y-2">
-                <Label htmlFor="fecha">
-                  Fecha y Hora <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="fecha"
-                    type="datetime-local"
-                    value={formData.fecha}
-                    onChange={(e) => handleChange('fecha', e.target.value)}
-                    className={`pl-10 ${errors.fecha ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.fecha && (
-                  <p className="text-sm text-destructive">{errors.fecha}</p>
-                )}
-              </div>
-
-              {/* Estado */}
               <div className="space-y-2">
                 <Label htmlFor="estado">Estado</Label>
-                <Select
-                  value={formData.estado}
-                  onValueChange={(value) => handleChange('estado', value)}
-                >
+                <Select onValueChange={(value) => setValue('estado', value as any)} defaultValue="Pendiente">
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pendiente">Pendiente</SelectItem>
                     <SelectItem value="Confirmada">Confirmada</SelectItem>
-                    <SelectItem value="Atendida">Atendida</SelectItem>
                     <SelectItem value="Cancelada">Cancelada</SelectItem>
+                    <SelectItem value="Atendida">Atendida</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fecha">Fecha *</Label>
+                <Input
+                  id="fecha"
+                  type="date"
+                  {...register('fecha')}
+                />
+                {errors.fecha && (
+                  <p className="text-sm text-destructive">{errors.fecha.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hora">Hora *</Label>
+                <Input
+                  id="hora"
+                  type="time"
+                  {...register('hora')}
+                />
+                {errors.hora && (
+                  <p className="text-sm text-destructive">{errors.hora.message}</p>
+                )}
+              </div>
             </div>
 
-            {/* Motivo */}
             <div className="space-y-2">
               <Label htmlFor="motivo">Motivo de la Consulta</Label>
               <Textarea
                 id="motivo"
-                value={formData.motivo}
-                onChange={(e) => handleChange('motivo', e.target.value)}
-                placeholder="Ej: Vacunación anual, control general, revisión..."
-                rows={3}
+                {...register('motivo')}
+                placeholder="Describa el motivo de la consulta"
+                rows={4}
               />
             </div>
 
-            {/* Botones */}
-            <div className="flex gap-3 justify-end pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/agenda')}
-                disabled={loading}
-              >
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => navigate('/agenda')}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading} className="gap-2">
+              <Button type="submit" className="gap-2">
                 <Save className="h-4 w-4" />
-                {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear Cita'}
+                {isEdit ? 'Actualizar' : 'Agendar'}
               </Button>
             </div>
           </CardContent>
@@ -286,4 +206,3 @@ export default function CitaForm() {
     </div>
   );
 }
-

@@ -1,46 +1,47 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getPropietarioById, mockPacientes } from '@/lib/mockData';
+import { mockPropietarios, mockPacientes } from '@/lib/mockData';
 
 export default function PropietarioDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const propietario = id ? getPropietarioById(id) : undefined;
-  const pacientes = mockPacientes.filter(p => p.propietarioId === id);
+  
+  const propietario = mockPropietarios.find(p => p.id === id);
+  const mascotas = mockPacientes.filter(p => p.propietarioId === id);
 
   if (!propietario) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold">Propietario no encontrado</h2>
+        <h3 className="text-lg font-medium">Propietario no encontrado</h3>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/propietarios')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">{propietario.nombre}</h1>
-          <p className="text-muted-foreground mt-1">
-            {pacientes.length} {pacientes.length === 1 ? 'mascota' : 'mascotas'} registradas
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/propietarios')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{propietario.nombre}</h1>
+            <p className="text-muted-foreground mt-1">Información del propietario</p>
+          </div>
         </div>
-        <Button variant="outline" className="gap-2" onClick={() => navigate(`/propietarios/${id}/editar`)}>
+        <Button className="gap-2" onClick={() => navigate(`/propietarios/${id}/editar`)}>
           <Edit className="h-4 w-4" />
           Editar
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>Información de Contacto</CardTitle>
+            <CardTitle>Información Personal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {propietario.documento && (
@@ -52,7 +53,7 @@ export default function PropietarioDetalle() {
                 </div>
               </div>
             )}
-
+            
             {propietario.email && (
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -82,58 +83,66 @@ export default function PropietarioDetalle() {
                 </div>
               </div>
             )}
-
-            {!propietario.documento && !propietario.email && !propietario.telefono && !propietario.direccion && (
-              <p className="text-sm text-muted-foreground">No hay información de contacto adicional</p>
-            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Mascotas</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Dog className="h-5 w-5 text-primary" />
+                Mascotas ({mascotas.length})
+              </CardTitle>
               <Button size="sm" onClick={() => navigate('/pacientes/nuevo')}>
                 Agregar Mascota
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {pacientes.length > 0 ? (
-              <div className="space-y-3">
-                {pacientes.map((paciente) => (
+            {mascotas.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {mascotas.map((mascota) => (
                   <div
-                    key={paciente.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/pacientes/${paciente.id}`)}
+                    key={mascota.id}
+                    className="p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/pacientes/${mascota.id}`)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Dog className="h-5 w-5 text-primary" />
-                      </div>
+                    <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium">{paciente.nombre}</p>
-                        <p className="text-sm text-muted-foreground">{paciente.raza || 'Sin raza'}</p>
+                        <h4 className="font-semibold text-lg">{mascota.nombre}</h4>
+                        <p className="text-sm text-muted-foreground">{mascota.raza || 'Sin raza'}</p>
                       </div>
+                      <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
+                        {mascota.especie}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
-                      {paciente.especie}
-                    </Badge>
+                    <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                      {mascota.sexo && (
+                        <div>
+                          <span className="text-muted-foreground">Sexo:</span>
+                          <span className="ml-1 font-medium">{mascota.sexo === 'M' ? 'Macho' : 'Hembra'}</span>
+                        </div>
+                      )}
+                      {mascota.edadMeses && (
+                        <div>
+                          <span className="text-muted-foreground">Edad:</span>
+                          <span className="ml-1 font-medium">{Math.floor(mascota.edadMeses / 12)} años</span>
+                        </div>
+                      )}
+                      {mascota.pesoKg && (
+                        <div>
+                          <span className="text-muted-foreground">Peso:</span>
+                          <span className="ml-1 font-medium">{mascota.pesoKg} kg</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <Dog className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <Dog className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground">No hay mascotas registradas</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3"
-                  onClick={() => navigate('/pacientes/nuevo')}
-                >
-                  Registrar Primera Mascota
-                </Button>
               </div>
             )}
           </CardContent>
@@ -142,4 +151,3 @@ export default function PropietarioDetalle() {
     </div>
   );
 }
-

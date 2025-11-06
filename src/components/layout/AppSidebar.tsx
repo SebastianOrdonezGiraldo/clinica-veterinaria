@@ -47,7 +47,7 @@ export function AppSidebar() {
   const { open } = useSidebar();
 
   const filteredItems = navItems.filter(item => 
-    !item.roles || item.roles.includes(user?.rol || '')
+    !item.roles || (user?.rol && item.roles.includes(user.rol))
   );
 
   return (
