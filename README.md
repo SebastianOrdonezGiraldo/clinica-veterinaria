@@ -46,6 +46,19 @@ Sistema completo de gestión para clínicas veterinarias desarrollado con Spring
 
 ## 🛠 Tecnologías
 
+### Frontend
+- **React 18.3**
+- **TypeScript 5.8**
+- **Vite 5.4** (Build tool)
+- **React Router v6** (Routing)
+- **TanStack Query** (Data fetching)
+- **shadcn/ui** (Componentes UI)
+- **Tailwind CSS** (Estilos)
+- **Radix UI** (Componentes primitivos)
+- **React Hook Form** + **Zod** (Formularios y validación)
+- **Lucide React** (Iconos)
+- **Recharts** (Gráficas)
+
 ### Backend
 - **Java 17**
 - **Spring Boot 3.2.1**
@@ -67,9 +80,16 @@ Sistema completo de gestión para clínicas veterinarias desarrollado con Spring
 
 Antes de comenzar, asegúrate de tener instalado:
 
+### Backend
 - **Java 17** o superior
 - **Maven 3.8** o superior
 - **PostgreSQL 15** o superior
+
+### Frontend
+- **Node.js 18** o superior
+- **npm** o **bun**
+
+### General
 - **Git**
 
 ## 🚀 Instalación
@@ -140,14 +160,42 @@ spring.profiles.active=dev
 
 ## 🏃 Ejecución
 
-### Modo Desarrollo
+### Backend (Modo Desarrollo)
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-La aplicación estará disponible en: `http://localhost:8080`
+El backend estará disponible en: `http://localhost:8080`
+
+### Frontend (Modo Desarrollo)
+
+En otra terminal:
+
+```bash
+# Instalar dependencias (solo la primera vez)
+npm install
+# o con bun
+bun install
+
+# Iniciar servidor de desarrollo
+npm run dev
+# o con bun
+bun dev
+```
+
+El frontend estará disponible en: `http://localhost:8080`
+
+### Iniciar todo el stack
+
+```bash
+# Terminal 1 - Backend
+cd backend && mvn spring-boot:run
+
+# Terminal 2 - Frontend
+npm run dev
+```
 
 ### Modo Producción
 
@@ -282,7 +330,7 @@ curl -X GET http://localhost:8080/api/usuarios \
 
 ```
 clinica-veterinaria/
-├── backend/
+├── backend/                          # API REST (Spring Boot)
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/clinica/veterinaria/
@@ -305,11 +353,43 @@ clinica-veterinaria/
 │   │       │   └── service/         # Tests unitarios
 │   │       └── resources/
 │   └── pom.xml
-├── guias/
-│   ├── API_GUIDE.md
-│   ├── SETUP_GUIDE.md
+│
+├── src/                              # Frontend (React + TypeScript)
+│   ├── components/
+│   │   ├── layout/                  # Layout components
+│   │   │   ├── AppHeader.tsx
+│   │   │   ├── AppLayout.tsx
+│   │   │   └── AppSidebar.tsx
+│   │   ├── ui/                      # shadcn/ui components
+│   │   └── ProtectedRoute.tsx
+│   ├── contexts/                    # React Context
+│   │   └── AuthContext.tsx          # Autenticación
+│   ├── hooks/                       # Custom Hooks
+│   ├── lib/                         # Utilidades
+│   ├── pages/                       # Páginas de la aplicación
+│   │   ├── Dashboard.tsx            # Panel principal
+│   │   ├── Login.tsx                # Login
+│   │   ├── Pacientes.tsx            # Gestión de pacientes
+│   │   ├── Propietarios.tsx         # Gestión de propietarios
+│   │   ├── Agenda.tsx               # Gestión de citas
+│   │   ├── HistoriasClinicas.tsx    # Historias clínicas
+│   │   ├── Prescripciones.tsx       # Prescripciones
+│   │   ├── Reportes.tsx             # Reportes
+│   │   ├── SeguridadRoles.tsx       # Gestión de roles
+│   │   └── SeguridadUsuarios.tsx    # Gestión de usuarios
+│   ├── types/                       # TypeScript types
+│   ├── App.tsx                      # Componente principal
+│   └── main.tsx                     # Entry point
+│
+├── guias/                           # Documentación
+│   ├── ARQUITECTURA.md
+│   ├── DEPLOYMENT.md
 │   └── TEST_GUIDE.md
-├── docker-compose.yml
+│
+├── package.json                     # Dependencias frontend
+├── vite.config.ts                   # Configuración Vite
+├── tailwind.config.ts               # Configuración Tailwind
+├── tsconfig.json                    # Configuración TypeScript
 └── README.md
 ```
 

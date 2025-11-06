@@ -1,32 +1,26 @@
+import { useState, useEffect } from 'react';
 import { Calendar, Dog, Users, Activity, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-
-const stats = [
-  { title: 'Citas Hoy', value: '12', icon: Calendar, color: 'text-primary', link: '/agenda' },
-  { title: 'Pacientes Activos', value: '248', icon: Dog, color: 'text-secondary', link: '/pacientes' },
-  { title: 'Consultas Pendientes', value: '5', icon: Activity, color: 'text-warning', link: '/historias' },
-  { title: 'Propietarios', value: '156', icon: Users, color: 'text-info', link: '/propietarios' },
-];
-
-const upcomingAppointments = [
-  { id: '1', time: '09:00', patient: 'Max', owner: 'Juan Pérez', status: 'Confirmada' },
-  { id: '2', time: '10:30', patient: 'Luna', owner: 'María García', status: 'Pendiente' },
-  { id: '3', time: '11:00', patient: 'Rocky', owner: 'Carlos López', status: 'Confirmada' },
-  { id: '4', time: '14:00', patient: 'Mia', owner: 'Ana Martínez', status: 'Confirmada' },
-];
+import { citaService } from '@/services/citaService';
+import { pacienteService } from '@/services/pacienteService';
+import { propietarioService } from '@/services/propietarioService';
+import { consultaService } from '@/services/consultaService';
+import { Cita, Paciente, Propietario } from '@/types';
 
 const statusColors = {
-  Confirmada: 'bg-status-confirmed/10 text-status-confirmed',
-  Pendiente: 'bg-status-pending/10 text-status-pending',
-  Cancelada: 'bg-status-cancelled/10 text-status-cancelled',
-  Atendida: 'bg-status-completed/10 text-status-completed',
+  CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed',
+  PROGRAMADA: 'bg-status-pending/10 text-status-pending',
+  CANCELADA: 'bg-status-cancelled/10 text-status-cancelled',
+  COMPLETADA: 'bg-status-completed/10 text-status-completed',
+  EN_CURSO: 'bg-status-confirmed/10 text-status-confirmed',
+  NO_ASISTIO: 'bg-status-cancelled/10 text-status-cancelled',
 };
 
-// Datos para gráficos
+// Datos para gráficos (estos serían calculados con datos reales)
 const consultasPorDia = [
   { dia: 'Lun', consultas: 15 },
   { dia: 'Mar', consultas: 22 },
@@ -37,15 +31,88 @@ const consultasPorDia = [
   { dia: 'Dom', consultas: 8 },
 ];
 
-const especiesDistribucion = [
-  { nombre: 'Caninos', valor: 148, color: 'hsl(var(--primary))' },
-  { nombre: 'Felinos', valor: 85, color: 'hsl(var(--secondary))' },
-  { nombre: 'Otros', valor: 15, color: 'hsl(var(--info))' },
-];
-
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [citasData, pacientesData, propietariosData] = await Promise.all([
+        citaService.getAll(),
+        pacienteService.getAll(),
+        propietarioService.getAll(),
+      ]);
+      setCitas(citasData);
+      setPacientes(pacientesData);
+      setPropietarios(propietariosData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calcular estadísticas
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const citasHoy = citas.filter(cita => {
+    const citaDate = new Date(cita.fecha);
+    citaDate.setHours(0, 0, 0, 0);
+    return citaDate.getTime() === today.getTime();
+  });
+
+  const consultasPendientes = citas.filter(c => c.estado === 'PROGRAMADA' || c.estado === 'CONFIRMADA');
+
+  const stats = [
+    { title: 'Citas Hoy', value: citasHoy.length.toString(), icon: Calendar, color: 'text-primary', link: '/agenda' },
+    { title: 'Pacientes Activos', value: pacientes.length.toString(), icon: Dog, color: 'text-secondary', link: '/pacientes' },
+    { title: 'Consultas Pendientes', value: consultasPendientes.length.toString(), icon: Activity, color: 'text-warning', link: '/historias' },
+    { title: 'Propietarios', value: propietarios.length.toString(), icon: Users, color: 'text-info', link: '/propietarios' },
+  ];
+
+  // Próximas citas de hoy ordenadas por hora
+  const upcomingAppointments = citasHoy
+    .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+    .slice(0, 4)
+    .map(cita => {
+      const paciente = pacientes.find(p => p.id === cita.pacienteId);
+      const propietario = propietarios.find(p => p.id === paciente?.propietarioId);
+      return {
+        id: cita.id,
+        time: new Date(cita.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        patient: paciente?.nombre || 'N/A',
+        owner: propietario?.nombre || 'N/A',
+        status: cita.estado,
+      };
+    });
+
+  // Distribución por especies
+  const especiesDistribucion = [
+    { 
+      nombre: 'Caninos', 
+      valor: pacientes.filter(p => p.especie.toLowerCase().includes('canino')).length, 
+      color: 'hsl(var(--primary))' 
+    },
+    { 
+      nombre: 'Felinos', 
+      valor: pacientes.filter(p => p.especie.toLowerCase().includes('felino')).length, 
+      color: 'hsl(var(--secondary))' 
+    },
+    { 
+      nombre: 'Otros', 
+      valor: pacientes.filter(p => !p.especie.toLowerCase().includes('canino') && !p.especie.toLowerCase().includes('felino')).length, 
+      color: 'hsl(var(--info))' 
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -101,7 +168,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Badge className={statusColors[appointment.status as keyof typeof statusColors]}>
-                    {appointment.status}
+                    {appointment.status.replace(/_/g, ' ')}
                   </Badge>
                 </div>
               ))}

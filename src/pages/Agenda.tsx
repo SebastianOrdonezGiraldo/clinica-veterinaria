@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,15 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { mockCitas, mockPacientes, mockPropietarios, mockUsuarios } from '@/lib/mockData';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { citaService } from '@/services/citaService';
+import { pacienteService } from '@/services/pacienteService';
+import { propietarioService } from '@/services/propietarioService';
+import { usuarioService } from '@/services/usuarioService';
+import { Cita, Paciente, Propietario, Usuario } from '@/types';
+import { toast } from 'sonner';
 
 const statusColors = {
-  Confirmada: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
-  Pendiente: 'bg-status-pending/10 text-status-pending border-status-pending/20',
-  Cancelada: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
-  Atendida: 'bg-status-completed/10 text-status-completed border-status-completed/20',
+  CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
+  PROGRAMADA: 'bg-status-pending/10 text-status-pending border-status-pending/20',
+  CANCELADA: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
+  COMPLETADA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
+  EN_CURSO: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
+  NO_ASISTIO: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
 };
 
 export default function Agenda() {
@@ -23,13 +30,41 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filtroVet, setFiltroVet] = useState<string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const veterinarios = mockUsuarios.filter(u => u.rol === 'VET');
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  let citasFiltradas = mockCitas.map(cita => ({
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [citasData, pacientesData, propietariosData, usuariosData] = await Promise.all([
+        citaService.getAll(),
+        pacienteService.getAll(),
+        propietarioService.getAll(),
+        usuarioService.getAll(),
+      ]);
+      setCitas(citasData);
+      setPacientes(pacientesData);
+      setPropietarios(propietariosData);
+      setVeterinarios(usuariosData.filter(u => u.rol === 'VET'));
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar las citas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  let citasFiltradas = citas.map(cita => ({
     ...cita,
-    paciente: mockPacientes.find(p => p.id === cita.pacienteId),
-    propietario: mockPropietarios.find(p => p.id === cita.propietarioId),
+    paciente: pacientes.find(p => p.id === cita.pacienteId),
+    propietario: propietarios.find(p => pacientes.find(pac => pac.id === cita.pacienteId)?.propietarioId === p.id),
   }));
 
   // Filtrar por fecha
@@ -111,10 +146,12 @@ export default function Agenda() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="Pendiente">Pendiente</SelectItem>
-                  <SelectItem value="Confirmada">Confirmada</SelectItem>
-                  <SelectItem value="Atendida">Atendida</SelectItem>
-                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                  <SelectItem value="PROGRAMADA">Programada</SelectItem>
+                  <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
+                  <SelectItem value="EN_CURSO">En Curso</SelectItem>
+                  <SelectItem value="COMPLETADA">Completada</SelectItem>
+                  <SelectItem value="CANCELADA">Cancelada</SelectItem>
+                  <SelectItem value="NO_ASISTIO">No Asistió</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -148,12 +185,17 @@ export default function Agenda() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {citasFiltradas.length > 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Cargando citas...</p>
+              </div>
+            ) : citasFiltradas.length > 0 ? (
               <div className="space-y-3">
                 {citasFiltradas.map((cita) => (
                 <div
                   key={cita.id}
                   className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/agenda/${cita.id}`)}
                 >
                   <div className="flex flex-col items-center justify-center w-20 h-20 rounded-lg bg-primary/10 flex-shrink-0">
                     <span className="text-xs text-muted-foreground">Hora</span>
@@ -163,20 +205,20 @@ export default function Agenda() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-foreground">{cita.paciente?.nombre}</h4>
+                      <h4 className="font-semibold text-foreground">{cita.paciente?.nombre || 'N/A'}</h4>
                       <Badge variant="outline" className="text-xs">
-                        {cita.paciente?.especie}
+                        {cita.paciente?.especie || 'N/A'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      Propietario: {cita.propietario?.nombre}
+                      Propietario: {cita.propietario?.nombre || 'N/A'}
                     </p>
                     {cita.motivo && (
                       <p className="text-sm text-muted-foreground mt-1">{cita.motivo}</p>
                     )}
                   </div>
                   <Badge className={statusColors[cita.estado as keyof typeof statusColors]}>
-                    {cita.estado}
+                    {cita.estado.replace(/_/g, ' ')}
                   </Badge>
                 </div>
                 ))}

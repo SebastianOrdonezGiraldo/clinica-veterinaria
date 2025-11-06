@@ -7,13 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { mockPropietarios, mockPacientes } from '@/lib/mockData';
 import { LoadingCards } from '@/components/LoadingCards';
 import { Pagination } from '@/components/Pagination';
 import { toast } from 'sonner';
+import { propietarioService } from '@/services/propietarioService';
+import { pacienteService } from '@/services/pacienteService';
+import { Propietario, Paciente } from '@/types';
 
 export default function Propietarios() {
   const navigate = useNavigate();
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [orderBy, setOrderBy] = useState<'nombre' | 'documento' | 'mascotas'>('nombre');
   const [isLoading, setIsLoading] = useState(true);
@@ -22,17 +26,34 @@ export default function Propietarios() {
   const itemsPerPage = 9;
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 1000);
+    loadData();
   }, []);
 
-  let filteredPropietarios = mockPropietarios.filter(p =>
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [propietariosData, pacientesData] = await Promise.all([
+        propietarioService.getAll(),
+        pacienteService.getAll(),
+      ]);
+      setPropietarios(propietariosData);
+      setPacientes(pacientesData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los propietarios');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  let filteredPropietarios = propietarios.filter(p =>
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.documento?.includes(searchTerm)
   );
 
   const getPacientesCount = (propietarioId: string) => 
-    mockPacientes.filter(p => p.propietarioId === propietarioId).length;
+    pacientes.filter(p => p.propietarioId === propietarioId).length;
 
   // Ordenar
   filteredPropietarios.sort((a, b) => {
@@ -49,9 +70,18 @@ export default function Propietarios() {
     currentPage * itemsPerPage
   );
 
-  const handleDelete = () => {
-    toast.success('Propietario eliminado exitosamente (simulado)');
-    setDeleteId(null);
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      await propietarioService.delete(deleteId);
+      toast.success('Propietario eliminado exitosamente');
+      setDeleteId(null);
+      await loadData(); // Recargar los datos
+    } catch (error: any) {
+      console.error('Error al eliminar propietario:', error);
+      toast.error(error.response?.data?.message || 'Error al eliminar el propietario');
+    }
   };
 
   return (

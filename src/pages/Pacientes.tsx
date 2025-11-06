@@ -8,13 +8,17 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { mockPacientes, mockPropietarios } from '@/lib/mockData';
 import { LoadingCards } from '@/components/LoadingCards';
 import { Pagination } from '@/components/Pagination';
 import { toast } from 'sonner';
+import { pacienteService } from '@/services/pacienteService';
+import { propietarioService } from '@/services/propietarioService';
+import { Paciente, Propietario } from '@/types';
 
 export default function Pacientes() {
   const navigate = useNavigate();
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [especieFiltro, setEspecieFiltro] = useState('todos');
   const [orderBy, setOrderBy] = useState<'nombre' | 'especie' | 'edad'>('nombre');
@@ -24,10 +28,27 @@ export default function Pacientes() {
   const itemsPerPage = 9;
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 1000);
+    loadData();
   }, []);
 
-  let filteredPacientes = mockPacientes.filter(p => {
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [pacientesData, propietariosData] = await Promise.all([
+        pacienteService.getAll(),
+        propietarioService.getAll(),
+      ]);
+      setPacientes(pacientesData);
+      setPropietarios(propietariosData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los pacientes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  let filteredPacientes = pacientes.filter(p => {
     const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.especie.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.raza?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -50,11 +71,20 @@ export default function Pacientes() {
     currentPage * itemsPerPage
   );
 
-  const getPropietario = (id: string) => mockPropietarios.find(p => p.id === id);
+  const getPropietario = (id: string) => propietarios.find(p => p.id === id);
 
-  const handleDelete = () => {
-    toast.success('Paciente eliminado exitosamente (simulado)');
-    setDeleteId(null);
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      await pacienteService.delete(deleteId);
+      toast.success('Paciente eliminado exitosamente');
+      setDeleteId(null);
+      await loadData(); // Recargar los datos
+    } catch (error: any) {
+      console.error('Error al eliminar paciente:', error);
+      toast.error(error.response?.data?.message || 'Error al eliminar el paciente');
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Usuario, Rol } from '@/types';
+import { authService } from '@/services/authService';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -10,42 +11,53 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Usuarios de prueba
-const MOCK_USERS: Usuario[] = [
-  { id: '1', nombre: 'Dr. Admin', email: 'admin@vetclinic.com', rol: 'ADMIN', activo: true },
-  { id: '2', nombre: 'Dra. María Pérez', email: 'maria@vetclinic.com', rol: 'VET', activo: true },
-  { id: '3', nombre: 'Juan Recepción', email: 'recepcion@vetclinic.com', rol: 'RECEPCION', activo: true },
-  { id: '4', nombre: 'Ana Estudiante', email: 'estudiante@vetclinic.com', rol: 'ESTUDIANTE', activo: true },
-];
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Verificar si hay sesión guardada
+    const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    
+    if (token && savedUser) {
+      // Validar el token con el backend
+      authService.validateToken(token)
+        .then((validatedUser) => {
+          setUser(validatedUser);
+        })
+        .catch(() => {
+          // Token inválido o expirado
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simular login (password: "demo123" para todos)
-    const foundUser = MOCK_USERS.find(u => u.email === email);
-    
-    if (!foundUser || password !== 'demo123') {
-      throw new Error('Credenciales inválidas');
+    try {
+      const response = await authService.login(email, password);
+      
+      // Guardar token y usuario en localStorage
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.usuario));
+      
+      setUser(response.usuario);
+    } catch (error: any) {
+      console.error('Error en login:', error);
+      throw new Error(error.response?.data?.message || 'Error al iniciar sesión');
     }
-
-    setUser(foundUser);
-    localStorage.setItem('user', JSON.stringify(foundUser));
   };
 
   const logout = () => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem('user');
   };
 
   return (
