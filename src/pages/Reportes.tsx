@@ -3,11 +3,15 @@ import { BarChart3, Download, Calendar, TrendingUp, Users, Dog } from 'lucide-re
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCitas, mockPacientes, mockConsultas, mockUsuarios } from '@/lib/mockData';
 import { toast } from 'sonner';
+import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--info))', 'hsl(var(--warning))'];
 
 export default function Reportes() {
-  const [dateRange] = useState({ start: '2024-01-01', end: '2024-12-31' });
+  const [periodo, setPeriodo] = useState('mes');
 
   // Estadísticas
   const citasPorEstado = {
@@ -17,10 +21,15 @@ export default function Reportes() {
     Cancelada: mockCitas.filter(c => c.estado === 'Cancelada').length,
   };
 
+  const dataEstados = Object.entries(citasPorEstado).map(([name, value]) => ({
+    name,
+    value
+  }));
+
   const atencionesVet = mockUsuarios
     .filter(u => u.rol === 'VET')
     .map(vet => ({
-      nombre: vet.nombre,
+      nombre: vet.nombre.split(' ')[0],
       consultas: mockConsultas.filter(c => c.profesionalId === vet.id).length,
     }));
 
@@ -29,6 +38,21 @@ export default function Reportes() {
     Felino: mockPacientes.filter(p => p.especie === 'Felino').length,
     Otro: mockPacientes.filter(p => p.especie === 'Otro').length,
   };
+
+  const dataEspecies = Object.entries(pacientesPorEspecie).map(([name, value]) => ({
+    name,
+    value
+  }));
+
+  // Datos de tendencia (simulados)
+  const tendenciaCitas = [
+    { mes: 'Ene', citas: 45 },
+    { mes: 'Feb', citas: 52 },
+    { mes: 'Mar', citas: 48 },
+    { mes: 'Abr', citas: 61 },
+    { mes: 'May', citas: 55 },
+    { mes: 'Jun', citas: 67 },
+  ];
 
   const handleExport = () => {
     toast.success('Reporte exportado a CSV (simulado)');
@@ -41,10 +65,23 @@ export default function Reportes() {
           <h1 className="text-3xl font-bold text-foreground">Reportes Operativos</h1>
           <p className="text-muted-foreground mt-1">Análisis y estadísticas de la clínica</p>
         </div>
-        <Button onClick={handleExport} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-3">
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoy">Hoy</SelectItem>
+              <SelectItem value="semana">Esta Semana</SelectItem>
+              <SelectItem value="mes">Este Mes</SelectItem>
+              <SelectItem value="año">Este Año</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -57,7 +94,7 @@ export default function Reportes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockCitas.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Este período</p>
+            <p className="text-xs text-muted-foreground mt-1">+12% vs mes anterior</p>
           </CardContent>
         </Card>
 
@@ -70,7 +107,7 @@ export default function Reportes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockConsultas.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Registradas</p>
+            <p className="text-xs text-muted-foreground mt-1">+8% vs mes anterior</p>
           </CardContent>
         </Card>
 
@@ -83,7 +120,7 @@ export default function Reportes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockPacientes.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Activos</p>
+            <p className="text-xs text-muted-foreground mt-1">+5% vs mes anterior</p>
           </CardContent>
         </Card>
 
@@ -98,7 +135,7 @@ export default function Reportes() {
             <div className="text-2xl font-bold">
               {mockUsuarios.filter(u => u.rol === 'VET').length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">En el sistema</p>
+            <p className="text-xs text-muted-foreground mt-1">Activos en el sistema</p>
           </CardContent>
         </Card>
       </div>
@@ -112,46 +149,35 @@ export default function Reportes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(citasPorEstado).map(([estado, cantidad]) => (
-                <div key={estado}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">{estado}</span>
-                    <span className="text-sm font-bold">{cantidad}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary rounded-full h-2 transition-all"
-                      style={{ width: `${(cantidad / mockCitas.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={dataEstados}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-secondary" />
-              Atenciones por Veterinario
+              <TrendingUp className="h-5 w-5 text-secondary" />
+              Tendencia de Citas
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {atencionesVet.map((vet) => (
-                <div
-                  key={vet.nombre}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border"
-                >
-                  <span className="font-medium">{vet.nombre}</span>
-                  <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
-                    {vet.consultas} consultas
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={tendenciaCitas}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="mes" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip />
+                <Line type="monotone" dataKey="citas" stroke="hsl(var(--secondary))" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -163,51 +189,74 @@ export default function Reportes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(pacientesPorEspecie).map(([especie, cantidad]) => (
-                <div key={especie}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">{especie}</span>
-                    <span className="text-sm font-bold">{cantidad}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-info rounded-full h-2 transition-all"
-                      style={{ width: `${(cantidad / mockPacientes.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={dataEspecies}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {dataEspecies.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Motivos de Consulta</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-secondary" />
+              Atenciones por Veterinario
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                <span className="text-sm font-medium">Vacunación</span>
-                <Badge>35%</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                <span className="text-sm font-medium">Consulta General</span>
-                <Badge>28%</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                <span className="text-sm font-medium">Control</span>
-                <Badge>20%</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                <span className="text-sm font-medium">Desparasitación</span>
-                <Badge>17%</Badge>
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={atencionesVet} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis type="number" className="text-xs" />
+                <YAxis dataKey="nombre" type="category" className="text-xs" width={80} />
+                <Tooltip />
+                <Bar dataKey="consultas" fill="hsl(var(--secondary))" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Motivos de Consulta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+              <span className="text-sm font-medium">Vacunación</span>
+              <Badge>35%</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+              <span className="text-sm font-medium">Consulta General</span>
+              <Badge>28%</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+              <span className="text-sm font-medium">Control</span>
+              <Badge>20%</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+              <span className="text-sm font-medium">Desparasitación</span>
+              <Badge>17%</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

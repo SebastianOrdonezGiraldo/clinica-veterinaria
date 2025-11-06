@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mockCitas, mockPacientes, mockPropietarios } from '@/lib/mockData';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { mockCitas, mockPacientes, mockPropietarios, mockUsuarios } from '@/lib/mockData';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const statusColors = {
   Confirmada: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
@@ -15,13 +20,33 @@ const statusColors = {
 
 export default function Agenda() {
   const navigate = useNavigate();
-  const [selectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [filtroVet, setFiltroVet] = useState<string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
 
-  const citasConDetalles = mockCitas.map(cita => ({
+  const veterinarios = mockUsuarios.filter(u => u.rol === 'VET');
+
+  let citasFiltradas = mockCitas.map(cita => ({
     ...cita,
     paciente: mockPacientes.find(p => p.id === cita.pacienteId),
     propietario: mockPropietarios.find(p => p.id === cita.propietarioId),
   }));
+
+  // Filtrar por fecha
+  citasFiltradas = citasFiltradas.filter(cita => {
+    const citaDate = new Date(cita.fecha);
+    return citaDate.toDateString() === selectedDate.toDateString();
+  });
+
+  // Filtrar por veterinario
+  if (filtroVet !== 'todos') {
+    citasFiltradas = citasFiltradas.filter(cita => cita.profesionalId === filtroVet);
+  }
+
+  // Filtrar por estado
+  if (filtroEstado !== 'todos') {
+    citasFiltradas = citasFiltradas.filter(cita => cita.estado === filtroEstado);
+  }
 
   return (
     <div className="space-y-6">
@@ -36,6 +61,67 @@ export default function Agenda() {
         </Button>
       </div>
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-primary" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Fecha</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, 'PPP', { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Veterinario</label>
+              <Select value={filtroVet} onValueChange={setFiltroVet}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {veterinarios.map(vet => (
+                    <SelectItem key={vet.id} value={vet.id}>{vet.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Estado</label>
+              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="Pendiente">Pendiente</SelectItem>
+                  <SelectItem value="Confirmada">Confirmada</SelectItem>
+                  <SelectItem value="Atendida">Atendida</SelectItem>
+                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -45,14 +131,12 @@ export default function Agenda() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center p-8 border rounded-lg bg-accent/50">
-              <div className="text-6xl font-bold text-primary">
-                {selectedDate.getDate()}
-              </div>
-              <div className="text-lg text-muted-foreground mt-2">
-                {selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-              </div>
-            </div>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              className="rounded-md border"
+            />
           </CardContent>
         </Card>
 
@@ -60,12 +144,13 @@ export default function Agenda() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
-              Citas del Día
+              Citas del Día ({citasFiltradas.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {citasConDetalles.map((cita) => (
+            {citasFiltradas.length > 0 ? (
+              <div className="space-y-3">
+                {citasFiltradas.map((cita) => (
                 <div
                   key={cita.id}
                   className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
@@ -94,8 +179,15 @@ export default function Agenda() {
                     {cita.estado}
                   </Badge>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground">No hay citas para esta fecha</h3>
+                <p className="text-muted-foreground mt-1">Selecciona otra fecha o ajusta los filtros</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
