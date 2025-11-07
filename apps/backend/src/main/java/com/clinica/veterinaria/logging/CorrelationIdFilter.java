@@ -11,13 +11,30 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Filtro que añade un Correlation ID único a cada request
- * para trazabilidad end-to-end de las peticiones.
+ * Filtro Servlet que añade un Correlation ID único a cada petición HTTP.
  * 
- * El Correlation ID se propaga a través de:
- * - MDC (Mapped Diagnostic Context) para logging
- * - Headers de respuesta HTTP
- * - Logs de toda la cadena de procesamiento
+ * <p>Este filtro proporciona trazabilidad end-to-end de las peticiones, permitiendo
+ * rastrear una petición desde el frontend hasta el backend y a través de todos los logs.
+ * Es especialmente útil para debugging en producción y análisis de problemas.</p>
+ * 
+ * <p><strong>Funcionalidad:</strong></p>
+ * <ul>
+ *   <li>Genera un Correlation ID único (UUID) si no viene en el header</li>
+ *   <li>Reutiliza el Correlation ID si viene del frontend (header X-Correlation-ID)</li>
+ *   <li>Añade el ID al MDC para que aparezca en todos los logs</li>
+ *   <li>Incluye el ID en el header de respuesta para que el frontend pueda usarlo</li>
+ *   <li>Limpia el MDC después de procesar la petición (previene memory leaks)</li>
+ * </ul>
+ * 
+ * <p><strong>Orden de ejecución:</strong> Orden 1 (se ejecuta antes que otros filtros)</p>
+ * 
+ * <p><strong>Header HTTP:</strong> X-Correlation-ID</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see RequestResponseLoggingInterceptor
+ * @see AuditLogger
  */
 @Component
 @Order(1)

@@ -14,9 +14,39 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Inicializador de datos de prueba
- * Se ejecuta al iniciar la aplicación y crea datos de ejemplo
- * No se ejecuta en el perfil de test
+ * Inicializador de datos de prueba para desarrollo y demostración.
+ * 
+ * <p>Este componente se ejecuta automáticamente al iniciar la aplicación (si no está
+ * en perfil de test) y crea datos de ejemplo para facilitar el desarrollo y las pruebas
+ * manuales. Incluye usuarios con diferentes roles, propietarios, pacientes, citas y consultas.</p>
+ * 
+ * <p><strong>Datos creados:</strong></p>
+ * <ul>
+ *   <li><b>Usuarios:</b> ADMIN, VET, RECEPCION con credenciales de prueba</li>
+ *   <li><b>Propietarios:</b> Clientes de ejemplo con información de contacto</li>
+ *   <li><b>Pacientes:</b> Mascotas asociadas a propietarios</li>
+ *   <li><b>Citas:</b> Citas médicas programadas</li>
+ *   <li><b>Consultas:</b> Registros de atención médica</li>
+ * </ul>
+ * 
+ * <p><strong>Credenciales de prueba:</strong></p>
+ * <ul>
+ *   <li>ADMIN: admin@clinica.com / admin123</li>
+ *   <li>VET: maria@clinica.com / vet123</li>
+ *   <li>RECEPCION: ana@clinica.com / recep123</li>
+ * </ul>
+ * 
+ * <p><strong>Comportamiento:</strong></p>
+ * <ul>
+ *   <li>Solo se ejecuta si la base de datos está vacía</li>
+ *   <li>No se ejecuta en perfil de test (para evitar interferir con tests)</li>
+ *   <li>Las contraseñas se hashean con BCrypt antes de almacenar</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see CommandLineRunner
  */
 @Configuration
 @Profile("!test")

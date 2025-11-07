@@ -15,7 +15,50 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad Paciente - Representa a las mascotas/pacientes de la clínica
+ * Entidad JPA que representa a los pacientes veterinarios (mascotas) atendidos en la clínica.
+ * 
+ * <p>Esta entidad modela toda la información de identificación y características de las
+ * mascotas, incluyendo datos demográficos, físicos y relación con su propietario. Forma
+ * el núcleo del sistema ya que todas las citas y consultas están asociadas a un paciente.</p>
+ * 
+ * <p><strong>Información gestionada:</strong></p>
+ * <ul>
+ *   <li><b>Identificación:</b> Nombre, microchip (opcional, para identificación única)</li>
+ *   <li><b>Características:</b> Especie, raza, sexo (M/F), edad en meses</li>
+ *   <li><b>Estado físico:</b> Peso actual en kilogramos</li>
+ *   <li><b>Notas:</b> Información adicional, alergias, condiciones especiales</li>
+ *   <li><b>Estado:</b> Activo/Inactivo (soft delete para preservar historial)</li>
+ * </ul>
+ * 
+ * <p><strong>Relaciones:</strong></p>
+ * <ul>
+ *   <li><b>Propietario:</b> Muchos a uno - Cada paciente pertenece a un propietario</li>
+ *   <li><b>Citas:</b> Uno a muchos - Historial de citas programadas</li>
+ *   <li><b>Consultas:</b> Uno a muchos - Historia clínica completa</li>
+ * </ul>
+ * 
+ * <p><strong>Índices de base de datos:</strong></p>
+ * <ul>
+ *   <li>Nombre - Para búsquedas por nombre</li>
+ *   <li>Especie - Para filtros y estadísticas</li>
+ *   <li>Propietario ID - Para listar mascotas de un cliente</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Nombre: Requerido, máximo 100 caracteres</li>
+ *   <li>Especie: Requerida, máximo 50 caracteres</li>
+ *   <li>Edad: Si se proporciona, debe ser positiva</li>
+ *   <li>Peso: Si se proporciona, debe ser positivo</li>
+ *   <li>Propietario: Requerido</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Propietario
+ * @see Cita
+ * @see Consulta
  */
 @Entity
 @Table(name = "pacientes", indexes = {

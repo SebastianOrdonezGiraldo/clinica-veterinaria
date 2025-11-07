@@ -13,7 +13,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad Propietario - Representa a los dueños de las mascotas
+ * Entidad JPA que representa a los propietarios de mascotas (clientes de la clínica).
+ * 
+ * <p>Esta entidad modela la información de contacto y datos personales de los dueños
+ * de las mascotas. Un propietario puede tener múltiples mascotas asociadas.</p>
+ * 
+ * <p><strong>Información gestionada:</strong></p>
+ * <ul>
+ *   <li><b>Datos personales:</b> Nombre completo</li>
+ *   <li><b>Identificación:</b> Documento de identidad (cédula, pasaporte) - único</li>
+ *   <li><b>Contacto:</b> Email, teléfono, dirección</li>
+ *   <li><b>Estado:</b> Activo/Inactivo (soft delete)</li>
+ * </ul>
+ * 
+ * <p><strong>Relaciones:</strong></p>
+ * <ul>
+ *   <li><b>Pacientes:</b> Uno a muchos - Un propietario puede tener múltiples mascotas</li>
+ * </ul>
+ * 
+ * <p><strong>Índices de base de datos:</strong></p>
+ * <ul>
+ *   <li>Documento - Para búsquedas y validación de unicidad</li>
+ *   <li>Email - Para búsquedas y comunicación</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Nombre: Requerido, máximo 100 caracteres</li>
+ *   <li>Documento: Opcional, máximo 20 caracteres, único si se proporciona</li>
+ *   <li>Email: Si se proporciona, debe ser válido, máximo 100 caracteres</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Paciente
  */
 @Entity
 @Table(name = "propietarios", indexes = {

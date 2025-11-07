@@ -15,7 +15,39 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Configuración de OpenAPI/Swagger para documentación de la API
+ * Configuración de OpenAPI 3.0 (Swagger) para documentación interactiva de la API.
+ * 
+ * <p>Esta clase configura la documentación automática de la API REST usando OpenAPI 3.0.
+ * Proporciona una interfaz web interactiva (Swagger UI) donde los desarrolladores pueden
+ * explorar y probar todos los endpoints disponibles.</p>
+ * 
+ * <p><strong>Características:</strong></p>
+ * <ul>
+ *   <li>Documentación automática de todos los endpoints</li>
+ *   <li>Interfaz web interactiva para probar endpoints</li>
+ *   <li>Soporte para autenticación JWT (botón "Authorize")</li>
+ *   <li>Descripción detallada de la API y sus características</li>
+ *   <li>Información de contacto y licencia</li>
+ * </ul>
+ * 
+ * <p><strong>Acceso:</strong></p>
+ * <ul>
+ *   <li>Swagger UI: http://localhost:8080/swagger-ui.html</li>
+ *   <li>OpenAPI JSON: http://localhost:8080/v3/api-docs</li>
+ * </ul>
+ * 
+ * <p><strong>Autenticación en Swagger:</strong></p>
+ * <ol>
+ *   <li>Usar /api/auth/login para obtener token JWT</li>
+ *   <li>Click en "Authorize" (🔒) en Swagger UI</li>
+ *   <li>Ingresar: Bearer {token_jwt}</li>
+ *   <li>Ahora se pueden probar endpoints protegidos</li>
+ * </ol>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see OpenAPI
  */
 @Configuration
 public class OpenApiConfig {

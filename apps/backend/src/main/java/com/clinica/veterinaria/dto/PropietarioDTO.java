@@ -14,7 +14,31 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * DTO para la entidad Propietario
+ * Data Transfer Object (DTO) para la entidad {@link Propietario}.
+ * 
+ * <p>Este DTO se utiliza para transferir datos de propietarios (clientes) entre el cliente
+ * y el servidor. Incluye información de contacto y datos personales.</p>
+ * 
+ * <p><strong>Campos principales:</strong></p>
+ * <ul>
+ *   <li><b>Datos personales:</b> Nombre, documento de identidad</li>
+ *   <li><b>Contacto:</b> Email, teléfono, dirección</li>
+ *   <li><b>Estado:</b> activo (true/false)</li>
+ *   <li><b>Relación (opcional):</b> Lista de IDs de pacientes asociados</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Nombre: Requerido, máximo 100 caracteres</li>
+ *   <li>Email: Si se proporciona, debe ser válido, máximo 100 caracteres</li>
+ *   <li>Documento: Opcional, máximo 20 caracteres (debe ser único si se proporciona)</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Propietario
+ * @see PropietarioService
  */
 @Data
 @Builder
@@ -51,14 +75,28 @@ public class PropietarioDTO {
     private List<Long> pacientesIds;
 
     /**
-     * Constructor desde entidad (sin pacientes)
+     * Convierte una entidad {@link Propietario} a su DTO equivalente.
+     * 
+     * <p>Versión simplificada que no incluye IDs de pacientes asociados.</p>
+     * 
+     * @param propietario Entidad Propietario a convertir. No puede ser null.
+     * @return DTO con los datos del propietario.
+     * @see #fromEntity(Propietario, boolean)
      */
     public static PropietarioDTO fromEntity(Propietario propietario) {
         return fromEntity(propietario, false);
     }
 
     /**
-     * Constructor desde entidad (con opción de incluir IDs de pacientes)
+     * Convierte una entidad {@link Propietario} a su DTO equivalente con opción de incluir
+     * los IDs de los pacientes asociados.
+     * 
+     * <p>Cuando {@code includePacientes} es true, se incluye la lista de IDs de todas las
+     * mascotas del propietario.</p>
+     * 
+     * @param propietario Entidad Propietario a convertir. No puede ser null.
+     * @param includePacientes Si es true, incluye la lista de IDs de pacientes.
+     * @return DTO con los datos del propietario.
      */
     public static PropietarioDTO fromEntity(Propietario propietario, boolean includePacientes) {
         PropietarioDTOBuilder builder = PropietarioDTO.builder()

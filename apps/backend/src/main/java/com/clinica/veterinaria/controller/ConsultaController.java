@@ -15,7 +15,46 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de consultas médicas (historia clínica)
+ * Controlador REST para gestión de consultas médicas (historia clínica).
+ * 
+ * <p>Este controlador expone endpoints HTTP para la gestión completa de las consultas
+ * médicas veterinarias, que representan el registro detallado de cada atención médica.
+ * Incluye signos vitales, examen físico, diagnóstico y tratamiento.</p>
+ * 
+ * <p><strong>Endpoints principales:</strong></p>
+ * <ul>
+ *   <li><b>GET /api/consultas:</b> Lista todas las consultas (ADMIN, VET)</li>
+ *   <li><b>GET /api/consultas/{id}:</b> Obtiene una consulta específica</li>
+ *   <li><b>GET /api/consultas/paciente/{id}:</b> Historia clínica completa de un paciente</li>
+ *   <li><b>GET /api/consultas/profesional/{id}:</b> Consultas de un veterinario (ADMIN, VET)</li>
+ *   <li><b>GET /api/consultas/rango:</b> Consultas por rango de fechas (ADMIN, VET)</li>
+ *   <li><b>POST /api/consultas:</b> Registra una nueva consulta (ADMIN, VET)</li>
+ *   <li><b>PUT /api/consultas/{id}:</b> Actualiza una consulta (ADMIN, VET)</li>
+ *   <li><b>DELETE /api/consultas/{id}:</b> Elimina una consulta (Solo ADMIN)</li>
+ * </ul>
+ * 
+ * <p><strong>Control de acceso:</strong></p>
+ * <ul>
+ *   <li><b>Historia clínica por paciente:</b> Acceso general (para propietarios ver su mascota)</li>
+ *   <li><b>Listados y búsquedas:</b> ADMIN, VET</li>
+ *   <li><b>Creación/Actualización:</b> ADMIN, VET</li>
+ *   <li><b>Eliminación:</b> Solo ADMIN (protección de historial médico)</li>
+ * </ul>
+ * 
+ * <p><strong>Datos registrados en cada consulta:</b></p>
+ * <ul>
+ *   <li>Signos vitales (frecuencia cardíaca, respiratoria, temperatura, peso)</li>
+ *   <li>Examen físico detallado</li>
+ *   <li>Diagnóstico médico</li>
+ *   <li>Tratamiento prescrito</li>
+ *   <li>Observaciones y seguimiento</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see ConsultaService
+ * @see ConsultaDTO
  */
 @RestController
 @RequestMapping("/api/consultas")

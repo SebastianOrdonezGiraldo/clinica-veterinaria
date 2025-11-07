@@ -11,8 +11,42 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO para crear un nuevo usuario
- * Incluye la contraseña para el registro
+ * Data Transfer Object (DTO) para crear o actualizar usuarios del sistema.
+ * 
+ * <p>Este DTO se utiliza exclusivamente para operaciones de creación y actualización
+ * de usuarios, ya que incluye el campo de contraseña que no está presente en {@link UsuarioDTO}.</p>
+ * 
+ * <p><strong>Diferencia con UsuarioDTO:</strong></p>
+ * <ul>
+ *   <li><b>UsuarioCreateDTO:</b> Incluye password (para crear/actualizar)</li>
+ *   <li><b>UsuarioDTO:</b> NO incluye password (para respuestas seguras)</li>
+ * </ul>
+ * 
+ * <p><strong>Campos principales:</strong></p>
+ * <ul>
+ *   <li><b>Datos personales:</b> Nombre, email</li>
+ *   <li><b>Autenticación:</b> Password (en texto plano, será hasheado antes de almacenar)</li>
+ *   <li><b>Autorización:</b> Rol (ADMIN, VET, RECEPCION, ESTUDIANTE)</li>
+ *   <li><b>Estado:</b> activo (opcional, por defecto true)</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Nombre: Requerido, máximo 100 caracteres</li>
+ *   <li>Email: Requerido, formato válido, máximo 100 caracteres, único</li>
+ *   <li>Password: Requerido al crear, opcional al actualizar, mínimo 6 caracteres</li>
+ *   <li>Rol: Requerido</li>
+ * </ul>
+ * 
+ * <p><strong>Nota de seguridad:</strong> La contraseña se recibe en texto plano pero se
+ * hashea automáticamente con BCrypt antes de almacenarse en la base de datos.</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Usuario
+ * @see UsuarioDTO
+ * @see UsuarioService
  */
 @Data
 @Builder

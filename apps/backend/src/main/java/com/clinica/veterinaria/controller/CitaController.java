@@ -16,7 +16,41 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de citas médicas
+ * Controlador REST para gestión de citas médicas veterinarias.
+ * 
+ * <p>Este controlador expone endpoints HTTP para la gestión completa del ciclo de vida
+ * de las citas médicas, incluyendo creación, consulta, actualización, cambio de estado
+ * y eliminación. Implementa control de acceso basado en roles.</p>
+ * 
+ * <p><strong>Endpoints principales:</strong></p>
+ * <ul>
+ *   <li><b>GET /api/citas:</b> Lista todas las citas</li>
+ *   <li><b>GET /api/citas/{id}:</b> Obtiene una cita específica</li>
+ *   <li><b>GET /api/citas/paciente/{id}:</b> Citas de un paciente</li>
+ *   <li><b>GET /api/citas/profesional/{id}:</b> Citas de un veterinario</li>
+ *   <li><b>GET /api/citas/estado/{estado}:</b> Filtra por estado</li>
+ *   <li><b>GET /api/citas/rango:</b> Filtra por rango de fechas</li>
+ *   <li><b>POST /api/citas:</b> Crea una nueva cita</li>
+ *   <li><b>PUT /api/citas/{id}:</b> Actualiza una cita</li>
+ *   <li><b>PATCH /api/citas/{id}/estado:</b> Cambia el estado de una cita</li>
+ *   <li><b>DELETE /api/citas/{id}:</b> Elimina una cita</li>
+ * </ul>
+ * 
+ * <p><strong>Control de acceso:</strong></p>
+ * <ul>
+ *   <li><b>Lectura:</b> Todos los usuarios autenticados</li>
+ *   <li><b>Creación/Actualización:</b> ADMIN, RECEPCION, VET</li>
+ *   <li><b>Eliminación:</b> Solo ADMIN y RECEPCION</li>
+ * </ul>
+ * 
+ * <p><strong>Estados de cita:</b> PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see CitaService
+ * @see CitaDTO
+ * @see Cita
  */
 @RestController
 @RequestMapping("/api/citas")

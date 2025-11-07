@@ -10,8 +10,31 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para la entidad Usuario
- * Proporciona métodos de acceso a datos para usuarios del sistema
+ * Repositorio JPA para la entidad {@link Usuario}.
+ * 
+ * <p>Proporciona métodos de acceso a datos para usuarios del sistema, incluyendo
+ * búsquedas por email, rol, nombre y estado. Incluye métodos especializados para
+ * autenticación y consultas de veterinarios activos.</p>
+ * 
+ * <p><strong>Funcionalidades principales:</strong></p>
+ * <ul>
+ *   <li>Búsqueda por email (único) - usado en autenticación</li>
+ *   <li>Verificación de existencia por email</li>
+ *   <li>Filtros por rol y estado activo</li>
+ *   <li>Búsqueda por nombre (case-insensitive, parcial)</li>
+ *   <li>Query personalizada para veterinarios activos</li>
+ *   <li>Métodos de conteo por rol</li>
+ * </ul>
+ * 
+ * <p><strong>Nota de seguridad:</strong> El email es único en el sistema y se usa
+ * como identificador de autenticación.</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Usuario
+ * @see UsuarioService
+ * @see AuthService
  */
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {

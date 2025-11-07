@@ -14,8 +14,42 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servicio para gestionar usuarios del sistema
- * Implementa patrón Service con lógica de negocio
+ * Servicio para gestionar usuarios del sistema.
+ * 
+ * <p>Este servicio maneja todas las operaciones relacionadas con los usuarios del sistema,
+ * que son los profesionales veterinarios, administradores y personal de la clínica.
+ * Incluye gestión segura de contraseñas mediante bcrypt hashing.</p>
+ * 
+ * <p><strong>Roles disponibles:</strong></p>
+ * <ul>
+ *   <li><b>ADMIN:</b> Administrador del sistema - Acceso total</li>
+ *   <li><b>VET:</b> Veterinario - Gestión de citas, consultas, historial clínico</li>
+ *   <li><b>RECEP:</b> Recepcionista - Gestión de citas y propietarios</li>
+ * </ul>
+ * 
+ * <p><strong>Seguridad implementada:</strong></p>
+ * <ul>
+ *   <li><b>Hashing de contraseñas:</b> BCrypt con salt automático</li>
+ *   <li><b>Email único:</b> Validación de unicidad en create/update</li>
+ *   <li><b>Soft delete:</b> Usuarios se desactivan, no se eliminan</li>
+ *   <li><b>DTO sin contraseña:</b> Las contraseñas nunca se exponen en respuestas</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones de negocio:</strong></p>
+ * <ul>
+ *   <li>El email debe ser único en el sistema</li>
+ *   <li>La contraseña es requerida al crear, opcional al actualizar</li>
+ *   <li>El rol es requerido y debe ser válido</li>
+ *   <li>Los usuarios inactivos no pueden autenticarse</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see UsuarioDTO
+ * @see UsuarioCreateDTO
+ * @see Usuario
+ * @see PasswordEncoder
  */
 @Service
 @RequiredArgsConstructor
@@ -27,7 +61,11 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Obtiene todos los usuarios
+     * Obtiene todos los usuarios del sistema.
+     * 
+     * <p>Las contraseñas NO se incluyen en los DTOs retornados por seguridad.</p>
+     * 
+     * @return Lista completa de usuarios. Nunca es null, puede ser vacía.
      */
     @Transactional(readOnly = true)
     public List<UsuarioDTO> findAll() {
@@ -38,7 +76,11 @@ public class UsuarioService {
     }
 
     /**
-     * Obtiene un usuario por ID
+     * Busca un usuario por su identificador.
+     * 
+     * @param id ID del usuario. No puede ser null.
+     * @return DTO del usuario sin la contraseña.
+     * @throws RuntimeException si el usuario no existe.
      */
     @Transactional(readOnly = true)
     public UsuarioDTO findById(Long id) {
@@ -49,7 +91,11 @@ public class UsuarioService {
     }
 
     /**
-     * Obtiene un usuario por email
+     * Busca un usuario por su email (usado para autenticación).
+     * 
+     * @param email Email del usuario. No puede ser null.
+     * @return DTO del usuario sin la contraseña.
+     * @throws RuntimeException si el usuario no existe.
      */
     @Transactional(readOnly = true)
     public UsuarioDTO findByEmail(String email) {
@@ -60,7 +106,21 @@ public class UsuarioService {
     }
 
     /**
-     * Crea un nuevo usuario
+     * Crea un nuevo usuario en el sistema.
+     * 
+     * <p>La contraseña se encripta automáticamente con BCrypt antes de almacenarla.
+     * El usuario se crea activo por defecto.</p>
+     * 
+     * <p><strong>Ejemplo de contraseña hasheada:</strong></p>
+     * <pre>
+     * Password plano: "miPassword123"
+     * Hash BCrypt: "$2a$10$N9qo8uLO..."
+     * </pre>
+     * 
+     * @param dto Datos del nuevo usuario. No puede ser null. Debe incluir email único
+     *            y contraseña en texto plano (será encriptada).
+     * @return DTO del usuario creado sin la contraseña, incluyendo ID asignado.
+     * @throws RuntimeException si el email ya está registrado.
      */
     public UsuarioDTO create(UsuarioCreateDTO dto) {
         log.info("Creando nuevo usuario: {}", dto.getEmail());
@@ -86,7 +146,18 @@ public class UsuarioService {
     }
 
     /**
-     * Actualiza un usuario existente
+     * Actualiza la información de un usuario existente.
+     * 
+     * <p>Permite actualizar todos los campos incluyendo el rol. Si se proporciona
+     * una nueva contraseña, será hasheada antes de almacenarse. Si no se proporciona
+     * contraseña, la anterior se mantiene sin cambios.</p>
+     * 
+     * <p><strong>Actualización de contraseña:</strong> Solo si dto.getPassword() no es null ni vacío.</p>
+     * 
+     * @param id ID del usuario a actualizar. No puede ser null.
+     * @param dto Nuevos datos del usuario. No puede ser null.
+     * @return DTO del usuario actualizado sin la contraseña.
+     * @throws RuntimeException si el usuario no existe o el email ya está registrado.
      */
     public UsuarioDTO update(Long id, UsuarioCreateDTO dto) {
         log.info("Actualizando usuario con ID: {}", id);
@@ -120,7 +191,13 @@ public class UsuarioService {
     }
 
     /**
-     * Elimina un usuario (soft delete)
+     * Desactiva un usuario del sistema (Soft Delete).
+     * 
+     * <p>Los usuarios no se eliminan físicamente para mantener trazabilidad en
+     * consultas, citas y auditoría. Un usuario inactivo no puede iniciar sesión.</p>
+     * 
+     * @param id ID del usuario a desactivar. No puede ser null.
+     * @throws RuntimeException si el usuario no existe.
      */
     public void delete(Long id) {
         log.info("Eliminando usuario con ID: {}", id);
@@ -135,7 +212,12 @@ public class UsuarioService {
     }
 
     /**
-     * Obtiene veterinarios activos
+     * Obtiene la lista de veterinarios activos.
+     * 
+     * <p>Útil para listados al asignar citas o consultas. Solo retorna usuarios
+     * con rol VET y estado activo.</p>
+     * 
+     * @return Lista de veterinarios activos. Puede estar vacía.
      */
     @Transactional(readOnly = true)
     public List<UsuarioDTO> findVeterinariosActivos() {
@@ -146,11 +228,15 @@ public class UsuarioService {
     }
 
     /**
-     * Cuenta usuarios por rol
+     * Cuenta usuarios por rol.
+     * 
+     * <p>Útil para estadísticas administrativas sobre la distribución de roles.</p>
+     * 
+     * @param rol Rol a contar. No puede ser null.
+     * @return Número de usuarios con el rol especificado.
      */
     @Transactional(readOnly = true)
     public long countByRol(Usuario.Rol rol) {
         return usuarioRepository.countByRol(rol);
     }
 }
-

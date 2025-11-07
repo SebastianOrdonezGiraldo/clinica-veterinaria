@@ -14,8 +14,35 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de usuarios
- * Requiere autenticación para todos los endpoints
+ * Controlador REST para gestión de usuarios del sistema.
+ * 
+ * <p>Expone endpoints HTTP para la gestión completa de usuarios (veterinarios,
+ * administradores, recepcionistas). Incluye operaciones CRUD y consultas especializadas.</p>
+ * 
+ * <p><strong>Endpoints principales:</strong></p>
+ * <ul>
+ *   <li><b>GET /api/usuarios:</b> Lista todos los usuarios (Solo ADMIN)</li>
+ *   <li><b>GET /api/usuarios/{id}:</b> Obtiene un usuario específico</li>
+ *   <li><b>GET /api/usuarios/email/{email}:</b> Busca por email</li>
+ *   <li><b>GET /api/usuarios/veterinarios:</b> Lista veterinarios activos</li>
+ *   <li><b>POST /api/usuarios:</b> Crea un nuevo usuario (Solo ADMIN)</li>
+ *   <li><b>PUT /api/usuarios/{id}:</b> Actualiza un usuario (Solo ADMIN)</li>
+ *   <li><b>DELETE /api/usuarios/{id}:</b> Desactiva un usuario (Solo ADMIN)</li>
+ * </ul>
+ * 
+ * <p><strong>Seguridad:</strong></p>
+ * <ul>
+ *   <li>Todos los endpoints requieren autenticación</li>
+ *   <li>Operaciones de escritura (POST, PUT, DELETE) requieren rol ADMIN</li>
+ *   <li>Las contraseñas nunca se exponen en las respuestas</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see UsuarioService
+ * @see UsuarioDTO
+ * @see UsuarioCreateDTO
  */
 @RestController
 @RequestMapping("/api/usuarios")

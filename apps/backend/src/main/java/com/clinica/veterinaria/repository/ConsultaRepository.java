@@ -12,8 +12,26 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Repositorio para la entidad Consulta
- * Proporciona métodos de acceso a datos para consultas médicas (historia clínica)
+ * Repositorio JPA para la entidad {@link Consulta}.
+ * 
+ * <p>Proporciona métodos de acceso a datos para consultas médicas (historia clínica),
+ * incluyendo búsquedas por paciente, profesional, rango de fechas y consultas con
+ * prescripciones cargadas. Incluye métodos para estadísticas y reportes.</p>
+ * 
+ * <p><strong>Funcionalidades principales:</strong></p>
+ * <ul>
+ *   <li>Búsquedas por paciente ordenadas por fecha (más recientes primero)</li>
+ *   <li>Filtros por profesional y rango de fechas</li>
+ *   <li>Consultas con prescripciones cargadas (JOIN FETCH)</li>
+ *   <li>Métodos de conteo para estadísticas</li>
+ *   <li>Soporte de paginación para historiales largos</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Consulta
+ * @see ConsultaService
  */
 @Repository
 public interface ConsultaRepository extends JpaRepository<Consulta, Long> {

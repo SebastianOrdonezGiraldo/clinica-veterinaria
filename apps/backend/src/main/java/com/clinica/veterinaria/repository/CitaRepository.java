@@ -13,8 +13,25 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Repositorio para la entidad Cita
- * Proporciona métodos de acceso a datos para citas médicas
+ * Repositorio JPA para la entidad {@link Cita}.
+ * 
+ * <p>Proporciona métodos de acceso a datos para citas médicas, incluyendo búsquedas
+ * por paciente, propietario, profesional, estado y rango de fechas. Incluye métodos
+ * personalizados con queries JPQL para consultas más complejas.</p>
+ * 
+ * <p><strong>Funcionalidades principales:</strong></p>
+ * <ul>
+ *   <li>Búsquedas por relaciones (paciente, propietario, profesional)</li>
+ *   <li>Filtros por estado y rango de fechas</li>
+ *   <li>Consultas personalizadas para estadísticas y reportes</li>
+ *   <li>Soporte de paginación para listados grandes</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Cita
+ * @see CitaService
  */
 @Repository
 public interface CitaRepository extends JpaRepository<Cita, Long> {

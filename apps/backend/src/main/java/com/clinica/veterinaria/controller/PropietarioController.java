@@ -15,7 +15,31 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de propietarios
+ * Controlador REST para gestión de propietarios de mascotas (clientes).
+ * 
+ * <p>Expone endpoints HTTP para la gestión completa de propietarios, incluyendo
+ * operaciones CRUD, búsquedas por nombre, y soporte de paginación.</p>
+ * 
+ * <p><strong>Endpoints principales:</strong></p>
+ * <ul>
+ *   <li><b>GET /api/propietarios:</b> Lista todos los propietarios (con paginación opcional)</li>
+ *   <li><b>GET /api/propietarios/{id}:</b> Obtiene un propietario específico</li>
+ *   <li><b>GET /api/propietarios/buscar:</b> Búsqueda por nombre</li>
+ *   <li><b>POST /api/propietarios:</b> Registra un nuevo propietario</li>
+ *   <li><b>PUT /api/propietarios/{id}:</b> Actualiza un propietario</li>
+ *   <li><b>DELETE /api/propietarios/{id}:</b> Desactiva un propietario (soft delete)</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong> El documento de identidad debe ser único en el sistema.</p>
+ * 
+ * <p><strong>Control de acceso:</strong> Todos los endpoints requieren autenticación.
+ * Creación/Actualización/Eliminación requieren roles ADMIN, RECEPCION o VET.</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see PropietarioService
+ * @see PropietarioDTO
  */
 @RestController
 @RequestMapping("/api/propietarios")

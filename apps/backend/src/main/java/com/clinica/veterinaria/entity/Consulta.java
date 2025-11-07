@@ -12,7 +12,50 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad Consulta - Representa una consulta médica (historia clínica)
+ * Entidad JPA que representa una consulta médica veterinaria (registro de atención).
+ * 
+ * <p>Esta entidad modela el registro completo de cada atención médica realizada a un paciente,
+ * incluyendo signos vitales, examen físico, diagnóstico y tratamiento prescrito. Forma parte
+ * de la historia clínica del paciente.</p>
+ * 
+ * <p><strong>Datos registrados:</strong></p>
+ * <ul>
+ *   <li><b>Signos Vitales:</b> Frecuencia cardíaca (lpm), frecuencia respiratoria (rpm),
+ *       temperatura (°C), peso (kg)</li>
+ *   <li><b>Examen Físico:</b> Observaciones detalladas del estado del paciente</li>
+ *   <li><b>Diagnóstico:</b> Conclusión médica basada en la evaluación</li>
+ *   <li><b>Tratamiento:</b> Plan terapéutico prescrito (medicamentos, cuidados, seguimiento)</li>
+ *   <li><b>Observaciones:</b> Notas adicionales y recomendaciones</li>
+ * </ul>
+ * 
+ * <p><strong>Características principales:</strong></p>
+ * <ul>
+ *   <li><b>Relaciones:</b> Conecta con paciente y profesional veterinario</li>
+ *   <li><b>Índices:</b> Optimizado para búsquedas por fecha, paciente y profesional</li>
+ *   <li><b>Historial:</b> Forma parte del historial médico permanente del paciente</li>
+ *   <li><b>Prescripciones:</b> Puede tener múltiples prescripciones asociadas</li>
+ * </ul>
+ * 
+ * <p><strong>Índices de base de datos:</strong></p>
+ * <ul>
+ *   <li>Fecha - Para búsquedas cronológicas</li>
+ *   <li>Paciente ID - Para historia clínica completa</li>
+ *   <li>Profesional ID - Para consultas por veterinario</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Fecha: Requerida</li>
+ *   <li>Paciente: Requerido</li>
+ *   <li>Profesional: Requerido</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Paciente
+ * @see Usuario
+ * @see Prescripcion
  */
 @Entity
 @Table(name = "consultas", indexes = {

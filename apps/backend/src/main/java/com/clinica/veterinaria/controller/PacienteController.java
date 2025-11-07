@@ -15,7 +15,31 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para gestión de pacientes (mascotas)
+ * Controlador REST para gestión de pacientes veterinarios (mascotas).
+ * 
+ * <p>Expone endpoints HTTP para la gestión completa de pacientes, incluyendo
+ * operaciones CRUD, búsquedas por nombre/especie/propietario, y soporte de paginación.</p>
+ * 
+ * <p><strong>Endpoints principales:</strong></p>
+ * <ul>
+ *   <li><b>GET /api/pacientes:</b> Lista todos los pacientes (con paginación opcional)</li>
+ *   <li><b>GET /api/pacientes/{id}:</b> Obtiene un paciente específico</li>
+ *   <li><b>GET /api/pacientes/propietario/{id}:</b> Mascotas de un propietario</li>
+ *   <li><b>GET /api/pacientes/buscar:</b> Búsqueda por nombre</li>
+ *   <li><b>GET /api/pacientes/especie/{especie}:</b> Filtra por especie</li>
+ *   <li><b>POST /api/pacientes:</b> Registra un nuevo paciente</li>
+ *   <li><b>PUT /api/pacientes/{id}:</b> Actualiza un paciente</li>
+ *   <li><b>DELETE /api/pacientes/{id}:</b> Desactiva un paciente (soft delete)</li>
+ * </ul>
+ * 
+ * <p><strong>Control de acceso:</strong> Todos los endpoints requieren autenticación.
+ * Creación/Actualización/Eliminación requieren roles ADMIN, RECEPCION o VET.</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see PacienteService
+ * @see PacienteDTO
  */
 @RestController
 @RequestMapping("/api/pacientes")

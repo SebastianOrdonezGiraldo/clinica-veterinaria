@@ -11,10 +11,35 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
- * Controlador para recibir logs del frontend
+ * Controlador REST para recepción y gestión de logs del frontend.
  * 
- * Permite al frontend enviar logs importantes (errores, warnings)
- * al backend para centralizar el logging y facilitar el debugging.
+ * <p>Este controlador permite al frontend enviar logs importantes (errores, warnings)
+ * al backend para centralizar el logging y facilitar el debugging en producción.
+ * Los logs se integran con el sistema de logging del backend usando SLF4J.</p>
+ * 
+ * <p><strong>Endpoints disponibles:</strong></p>
+ * <ul>
+ *   <li><b>POST /api/logs/frontend:</b> Recibe logs del frontend y los registra</li>
+ *   <li><b>GET /api/logs/health:</b> Health check del servicio de logging</li>
+ * </ul>
+ * 
+ * <p><strong>Niveles de log soportados:</b> ERROR, WARN, INFO, DEBUG</p>
+ * 
+ * <p><strong>Información capturada:</b></p>
+ * <ul>
+ *   <li>Nivel de log y mensaje</li>
+ *   <li>URL donde ocurrió el evento</li>
+ *   <li>Usuario autenticado (si aplica)</li>
+ *   <li>Correlation ID para trazabilidad</li>
+ *   <li>Contexto adicional y detalles de errores</li>
+ * </ul>
+ * 
+ * <p><strong>Nota:</strong> Este endpoint es público (no requiere autenticación) para
+ * permitir que el frontend reporte errores incluso cuando hay problemas de autenticación.</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
  */
 @RestController
 @RequestMapping("/api/logs")
@@ -44,7 +69,6 @@ public class LogController {
             // Extraer datos del log
             String level = (String) logData.get("level");
             String message = (String) logData.get("message");
-            String timestamp = (String) logData.get("timestamp");
             String url = (String) logData.get("url");
             String userId = (String) logData.get("userId");
             String correlationId = (String) logData.get("correlationId");

@@ -12,8 +12,27 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para la entidad Paciente
- * Proporciona métodos de acceso a datos para pacientes (mascotas)
+ * Repositorio JPA para la entidad {@link Paciente}.
+ * 
+ * <p>Proporciona métodos de acceso a datos para pacientes (mascotas), incluyendo
+ * búsquedas por propietario, nombre, especie, microchip y estado. Incluye métodos
+ * personalizados con queries JPQL para optimizar consultas con relaciones.</p>
+ * 
+ * <p><strong>Funcionalidades principales:</strong></p>
+ * <ul>
+ *   <li>Búsquedas por propietario (todas las mascotas de un cliente)</li>
+ *   <li>Búsqueda por nombre (case-insensitive, parcial)</li>
+ *   <li>Filtros por especie y estado activo</li>
+ *   <li>Búsqueda por microchip (identificación única)</li>
+ *   <li>Consultas con propietario cargado (JOIN FETCH)</li>
+ *   <li>Soporte de paginación y filtros múltiples</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Paciente
+ * @see PacienteService
  */
 @Repository
 public interface PacienteRepository extends JpaRepository<Paciente, Long> {

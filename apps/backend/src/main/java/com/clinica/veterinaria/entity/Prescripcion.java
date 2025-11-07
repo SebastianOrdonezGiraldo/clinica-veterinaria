@@ -11,7 +11,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad Prescripcion - Representa una receta médica
+ * Entidad JPA que representa una prescripción médica (receta médica veterinaria).
+ * 
+ * <p>Esta entidad modela las recetas médicas emitidas durante una consulta, incluyendo
+ * indicaciones generales y una lista de medicamentos prescritos (items de prescripción).</p>
+ * 
+ * <p><strong>Características principales:</strong></p>
+ * <ul>
+ *   <li><b>Asociación con consulta:</b> Cada prescripción está vinculada a una consulta médica específica</li>
+ *   <li><b>Items de medicamentos:</b> Contiene múltiples medicamentos con dosis, frecuencia y duración</li>
+ *   <li><b>Indicaciones generales:</b> Instrucciones adicionales para el propietario</li>
+ *   <li><b>Fecha de emisión:</b> Registro de cuándo fue emitida la receta</li>
+ * </ul>
+ * 
+ * <p><strong>Relaciones:</strong></p>
+ * <ul>
+ *   <li><b>Consulta:</b> Muchos a uno - Una prescripción pertenece a una consulta</li>
+ *   <li><b>Items:</b> Uno a muchos - Una prescripción contiene múltiples medicamentos</li>
+ * </ul>
+ * 
+ * <p><strong>Índices de base de datos:</strong></p>
+ * <ul>
+ *   <li>Consulta ID - Para búsquedas de prescripciones por consulta</li>
+ *   <li>Fecha de emisión - Para búsquedas cronológicas</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Fecha de emisión: Requerida (se asigna automáticamente si no se proporciona)</li>
+ *   <li>Consulta: Requerida</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Consulta
+ * @see ItemPrescripcion
  */
 @Entity
 @Table(name = "prescripciones", indexes = {

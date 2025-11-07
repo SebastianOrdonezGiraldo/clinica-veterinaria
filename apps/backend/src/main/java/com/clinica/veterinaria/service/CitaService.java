@@ -19,7 +19,36 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servicio para gestionar citas médicas
+ * Servicio para gestionar citas médicas de la clínica veterinaria.
+ * 
+ * <p>Este servicio proporciona operaciones CRUD completas para la gestión de citas,
+ * incluyendo creación, actualización, consulta y eliminación. Coordina la validación
+ * de entidades relacionadas (paciente, propietario, profesional) y gestiona los
+ * diferentes estados del ciclo de vida de una cita.</p>
+ * 
+ * <p>Estados posibles de una cita:</p>
+ * <ul>
+ *   <li>PENDIENTE - Cita programada, esperando confirmación</li>
+ *   <li>CONFIRMADA - Cita confirmada por el propietario</li>
+ *   <li>EN_PROCESO - Atención médica en curso</li>
+ *   <li>COMPLETADA - Atención finalizada exitosamente</li>
+ *   <li>CANCELADA - Cita cancelada por cualquier motivo</li>
+ * </ul>
+ * 
+ * <p><strong>Reglas de negocio implementadas:</strong></p>
+ * <ul>
+ *   <li>Validación de existencia de paciente, propietario y profesional</li>
+ *   <li>Estado inicial por defecto: PENDIENTE</li>
+ *   <li>Registro de auditoría en cada operación</li>
+ *   <li>Transacciones automáticas para garantizar consistencia</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see CitaDTO
+ * @see Cita
+ * @see CitaRepository
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +62,14 @@ public class CitaService {
     private final UsuarioRepository usuarioRepository;
 
     /**
-     * Obtiene todas las citas
+     * Obtiene todas las citas registradas en el sistema.
+     * 
+     * <p>Este método recupera todas las citas sin aplicar ningún filtro,
+     * incluyendo información completa de las entidades relacionadas
+     * (paciente, propietario, profesional).</p>
+     * 
+     * @return Lista de todas las citas como DTOs. Nunca es null, puede ser vacía.
+     * @see CitaDTO#fromEntity(Cita, boolean)
      */
     @Transactional(readOnly = true)
     public List<CitaDTO> findAll() {
@@ -44,7 +80,13 @@ public class CitaService {
     }
 
     /**
-     * Obtiene una cita por ID
+     * Busca y retorna una cita específica por su identificador único.
+     * 
+     * <p>Incluye información completa de las entidades relacionadas en el DTO retornado.</p>
+     * 
+     * @param id Identificador único de la cita. No puede ser null.
+     * @return DTO con la información completa de la cita.
+     * @throws RuntimeException si no existe una cita con el ID especificado.
      */
     @Transactional(readOnly = true)
     public CitaDTO findById(Long id) {
@@ -55,7 +97,13 @@ public class CitaService {
     }
 
     /**
-     * Obtiene citas por paciente
+     * Obtiene todas las citas asociadas a un paciente específico.
+     * 
+     * <p>Útil para consultar el historial de citas de una mascota particular.
+     * Incluye citas de todos los estados (pendientes, completadas, canceladas, etc.).</p>
+     * 
+     * @param pacienteId ID del paciente (mascota). No puede ser null.
+     * @return Lista de citas del paciente. Puede estar vacía si no tiene citas.
      */
     @Transactional(readOnly = true)
     public List<CitaDTO> findByPaciente(Long pacienteId) {
@@ -66,7 +114,13 @@ public class CitaService {
     }
 
     /**
-     * Obtiene citas por profesional
+     * Obtiene todas las citas asignadas a un veterinario específico.
+     * 
+     * <p>Este método es útil para ver la agenda de un profesional.
+     * Incluye citas de todos los estados.</p>
+     * 
+     * @param profesionalId ID del usuario veterinario. No puede ser null.
+     * @return Lista de citas del profesional. Puede estar vacía.
      */
     @Transactional(readOnly = true)
     public List<CitaDTO> findByProfesional(Long profesionalId) {
@@ -77,7 +131,19 @@ public class CitaService {
     }
 
     /**
-     * Obtiene citas por estado
+     * Filtra citas por su estado actual.
+     * 
+     * <p>Estados disponibles:</p>
+     * <ul>
+     *   <li>PENDIENTE - Citas esperando confirmación</li>
+     *   <li>CONFIRMADA - Citas confirmadas</li>
+     *   <li>EN_PROCESO - Atenciones en curso</li>
+     *   <li>COMPLETADA - Citas finalizadas</li>
+     *   <li>CANCELADA - Citas canceladas</li>
+     * </ul>
+     * 
+     * @param estado Estado por el cual filtrar. No puede ser null.
+     * @return Lista de citas en el estado especificado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
     public List<CitaDTO> findByEstado(Cita.EstadoCita estado) {
@@ -88,7 +154,21 @@ public class CitaService {
     }
 
     /**
-     * Obtiene citas por rango de fechas
+     * Busca citas programadas dentro de un rango de fechas.
+     * 
+     * <p>Útil para generar reportes, consultar agendas por período,
+     * o buscar disponibilidad. Los límites de fecha son inclusivos.</p>
+     * 
+     * <p><strong>Ejemplo de uso:</strong></p>
+     * <pre>
+     * LocalDateTime inicio = LocalDateTime.of(2024, 1, 1, 0, 0);
+     * LocalDateTime fin = LocalDateTime.of(2024, 1, 31, 23, 59);
+     * List&lt;CitaDTO&gt; citasEnero = citaService.findByFechaRange(inicio, fin);
+     * </pre>
+     * 
+     * @param inicio Fecha y hora de inicio del rango (inclusivo). No puede ser null.
+     * @param fin Fecha y hora de fin del rango (inclusivo). No puede ser null.
+     * @return Lista de citas en el rango especificado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
     public List<CitaDTO> findByFechaRange(LocalDateTime inicio, LocalDateTime fin) {
@@ -99,7 +179,30 @@ public class CitaService {
     }
 
     /**
-     * Crea una nueva cita
+     * Crea y registra una nueva cita en el sistema.
+     * 
+     * <p>Este método realiza las siguientes operaciones:</p>
+     * <ol>
+     *   <li>Valida la existencia del paciente, propietario y profesional</li>
+     *   <li>Asigna estado inicial PENDIENTE si no se especifica otro</li>
+     *   <li>Persiste la cita en la base de datos</li>
+     *   <li>Registra la operación en el log de auditoría</li>
+     * </ol>
+     * 
+     * <p><strong>Validaciones realizadas:</strong></p>
+     * <ul>
+     *   <li>El paciente debe existir en el sistema</li>
+     *   <li>El propietario debe existir en el sistema</li>
+     *   <li>El profesional (veterinario) debe existir y estar activo</li>
+     *   <li>La fecha de la cita es requerida</li>
+     *   <li>El motivo de consulta es requerido</li>
+     * </ul>
+     * 
+     * @param dto Datos de la nueva cita. No puede ser null. Debe incluir IDs válidos
+     *            de paciente, propietario y profesional, además de fecha y motivo.
+     * @return DTO con los datos de la cita creada, incluyendo el ID asignado.
+     * @throws RuntimeException si alguna entidad relacionada no existe.
+     * @see CitaDTO
      */
     public CitaDTO create(CitaDTO dto) {
         log.info("Creando nueva cita para paciente ID: {}", dto.getPacienteId());
@@ -131,7 +234,27 @@ public class CitaService {
     }
 
     /**
-     * Actualiza una cita existente
+     * Actualiza la información de una cita existente.
+     * 
+     * <p>Permite modificar todos los campos de una cita, incluyendo las relaciones
+     * con paciente, propietario y profesional. Solo actualiza las relaciones si
+     * los IDs han cambiado, validando la existencia de las nuevas entidades.</p>
+     * 
+     * <p><strong>Campos actualizables:</strong></p>
+     * <ul>
+     *   <li>Fecha y hora de la cita</li>
+     *   <li>Motivo de consulta</li>
+     *   <li>Estado de la cita</li>
+     *   <li>Observaciones</li>
+     *   <li>Paciente asignado</li>
+     *   <li>Propietario</li>
+     *   <li>Profesional responsable</li>
+     * </ul>
+     * 
+     * @param id ID de la cita a actualizar. No puede ser null.
+     * @param dto Nuevos datos para la cita. No puede ser null.
+     * @return DTO con los datos actualizados de la cita.
+     * @throws RuntimeException si la cita no existe o alguna entidad relacionada no existe.
      */
     public CitaDTO update(Long id, CitaDTO dto) {
         log.info("Actualizando cita con ID: {}", id);
@@ -171,7 +294,25 @@ public class CitaService {
     }
 
     /**
-     * Cambia el estado de una cita
+     * Cambia el estado de una cita existente.
+     * 
+     * <p>Este método es útil para transicionar una cita a través de su ciclo de vida
+     * sin necesidad de enviar toda la información de actualización. Registra el cambio
+     * en el log de auditoría.</p>
+     * 
+     * <p><strong>Transiciones comunes:</strong></p>
+     * <ul>
+     *   <li>PENDIENTE → CONFIRMADA (cuando el propietario confirma)</li>
+     *   <li>CONFIRMADA → EN_PROCESO (cuando comienza la atención)</li>
+     *   <li>EN_PROCESO → COMPLETADA (cuando finaliza la atención)</li>
+     *   <li>Cualquier estado → CANCELADA (si se cancela)</li>
+     * </ul>
+     * 
+     * @param id ID de la cita a modificar. No puede ser null.
+     * @param nuevoEstado Nuevo estado a asignar. No puede ser null.
+     * @return DTO con los datos actualizados de la cita.
+     * @throws RuntimeException si la cita no existe.
+     * @see Cita.EstadoCita
      */
     public CitaDTO cambiarEstado(Long id, Cita.EstadoCita nuevoEstado) {
         log.info("Cambiando estado de cita ID: {} a {}", id, nuevoEstado);
@@ -186,7 +327,16 @@ public class CitaService {
     }
 
     /**
-     * Elimina una cita
+     * Elimina permanentemente una cita del sistema.
+     * 
+     * <p><strong>ADVERTENCIA:</strong> Esta operación es irreversible. La cita
+     * será eliminada completamente de la base de datos. Se recomienda usar el
+     * estado CANCELADA en lugar de eliminar cuando se desee mantener el historial.</p>
+     * 
+     * <p>Registra la operación en el log de auditoría para trazabilidad.</p>
+     * 
+     * @param id ID de la cita a eliminar. No puede ser null.
+     * @throws RuntimeException si la cita no existe.
      */
     public void delete(Long id) {
         log.info("Eliminando cita con ID: {}", id);

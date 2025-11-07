@@ -13,13 +13,35 @@ import java.time.format.DateTimeFormatter;
 /**
  * Servicio de auditoría para registrar eventos importantes del negocio.
  * 
- * Eventos auditados:
- * - Operaciones CRUD en entidades críticas
- * - Accesos y cambios de permisos
- * - Login/Logout de usuarios
- * - Cambios de estado importantes
- * - Eliminaciones de datos
- * - Exportaciones de información sensible
+ * <p>Este servicio proporciona métodos especializados para registrar eventos de auditoría
+ * que son críticos para la trazabilidad, seguridad y cumplimiento normativo. Utiliza un
+ * logger dedicado separado del logging general de la aplicación.</p>
+ * 
+ * <p><strong>Eventos auditados:</strong></p>
+ * <ul>
+ *   <li>Operaciones CRUD en entidades críticas (CREATE, UPDATE, DELETE)</li>
+ *   <li>Accesos a información sensible</li>
+ *   <li>Autenticación (login exitoso/fallido, logout)</li>
+ *   <li>Cambios de permisos y roles</li>
+ *   <li>Cambios de estado importantes</li>
+ *   <li>Exportaciones de datos</li>
+ *   <li>Eventos de seguridad</li>
+ * </ul>
+ * 
+ * <p><strong>Características:</strong></p>
+ * <ul>
+ *   <li>Uso de MDC (Mapped Diagnostic Context) para contexto adicional</li>
+ *   <li>Sanitización automática de datos sensibles (passwords, tokens)</li>
+ *   <li>Inclusión automática de usuario actual y correlation ID</li>
+ *   <li>Logger separado para facilitar filtrado y análisis</li>
+ * </ul>
+ * 
+ * <p><strong>Logger:</strong> com.clinica.veterinaria.audit</p>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see CorrelationIdFilter
  */
 @Service
 public class AuditLogger {

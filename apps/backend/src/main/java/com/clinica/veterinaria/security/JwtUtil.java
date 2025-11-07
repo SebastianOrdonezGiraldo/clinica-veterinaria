@@ -15,8 +15,39 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Utilidad para gestionar tokens JWT
- * Genera, valida y extrae información de tokens
+ * Utilidad para la gestión completa de tokens JWT (JSON Web Tokens).
+ * 
+ * <p>Este componente proporciona funcionalidades para generar, validar y extraer información
+ * de tokens JWT utilizados para autenticación stateless en la aplicación. Utiliza el algoritmo
+ * HS256 (HMAC SHA-256) para firmar los tokens.</p>
+ * 
+ * <p><strong>Funcionalidades principales:</strong></p>
+ * <ul>
+ *   <li><b>Generación de tokens:</b> Crea tokens JWT firmados con información del usuario</li>
+ *   <li><b>Validación:</b> Verifica la validez y expiración de tokens</li>
+ *   <li><b>Extracción de información:</b> Obtiene email, claims y fecha de expiración</li>
+ * </ul>
+ * 
+ * <p><strong>Configuración:</strong></p>
+ * <ul>
+ *   <li><b>Secret:</b> Clave secreta configurada en application.properties (jwt.secret)</li>
+ *   <li><b>Validez:</b> 10 horas (36000000 milisegundos)</li>
+ *   <li><b>Algoritmo:</b> HS256 (HMAC SHA-256)</li>
+ * </ul>
+ * 
+ * <p><strong>Seguridad:</strong></p>
+ * <ul>
+ *   <li>Los tokens están firmados con una clave secreta</li>
+ *   <li>La validez se verifica en cada petición</li>
+ *   <li>Los tokens expirados son rechazados automáticamente</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see SecurityConfig
+ * @see JwtAuthenticationFilter
+ * @see AuthService
  */
 @Component
 public class JwtUtil {

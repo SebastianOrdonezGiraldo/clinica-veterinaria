@@ -23,8 +23,50 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Configuración de Spring Security
- * Define las reglas de seguridad, autenticación y autorización
+ * Configuración principal de Spring Security para la aplicación.
+ * 
+ * <p>Esta clase define toda la configuración de seguridad, incluyendo:</p>
+ * <ul>
+ *   <li><b>Autenticación:</b> Configuración de proveedores de autenticación y password encoder</li>
+ *   <li><b>Autorización:</b> Reglas de acceso a endpoints (públicos vs protegidos)</li>
+ *   <li><b>Filtros:</b> Configuración de filtros JWT y CORS</li>
+ *   <li><b>Sesiones:</b> Configuración stateless (sin sesiones, solo JWT)</li>
+ * </ul>
+ * 
+ * <p><strong>Endpoints públicos (sin autenticación):</strong></p>
+ * <ul>
+ *   <li>/api/auth/** - Endpoints de autenticación (login, validación)</li>
+ *   <li>/api/public/** - Endpoints públicos</li>
+ *   <li>/swagger-ui/**, /v3/api-docs/** - Documentación de API</li>
+ * </ul>
+ * 
+ * <p><strong>Endpoints protegidos:</strong></p>
+ * <ul>
+ *   <li>Todos los demás endpoints requieren autenticación mediante JWT</li>
+ *   <li>El control de acceso por roles se realiza mediante @PreAuthorize en los controllers</li>
+ * </ul>
+ * 
+ * <p><strong>Configuración CORS:</strong></p>
+ * <ul>
+ *   <li>Orígenes permitidos: localhost:5173 (Vite), localhost:3000 (React)</li>
+ *   <li>Métodos permitidos: GET, POST, PUT, DELETE, OPTIONS</li>
+ *   <li>Headers permitidos: Authorization, Content-Type</li>
+ *   <li>Credenciales: Habilitadas</li>
+ * </ul>
+ * 
+ * <p><strong>Seguridad:</strong></p>
+ * <ul>
+ *   <li>CSRF deshabilitado (no necesario con JWT stateless)</li>
+ *   <li>Sesiones stateless (sin almacenamiento de sesión en servidor)</li>
+ *   <li>Password encoder: BCrypt (hashing seguro de contraseñas)</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see CustomUserDetailsService
+ * @see JwtAuthenticationFilter
+ * @see JwtUtil
  */
 @Configuration
 @EnableWebSecurity

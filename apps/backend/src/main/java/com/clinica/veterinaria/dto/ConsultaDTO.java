@@ -13,7 +13,49 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * DTO para la entidad Consulta
+ * Data Transfer Object (DTO) para la entidad {@link Consulta}.
+ * 
+ * <p>Este DTO se utiliza para transferir datos de consultas médicas (historia clínica)
+ * entre el cliente y el servidor. Incluye signos vitales, examen físico, diagnóstico
+ * y tratamiento, además de información de relaciones.</p>
+ * 
+ * <p><strong>Campos principales:</strong></p>
+ * <ul>
+ *   <li><b>Signos Vitales:</b> Frecuencia cardíaca (lpm), frecuencia respiratoria (rpm),
+ *       temperatura (°C), peso (kg)</li>
+ *   <li><b>Datos Clínicos:</b> Examen físico, diagnóstico, tratamiento, observaciones</li>
+ *   <li><b>Relaciones (IDs):</b> pacienteId, profesionalId</li>
+ *   <li><b>Información adicional (opcional):</b> Nombres de paciente y profesional,
+ *       IDs de prescripciones asociadas</li>
+ *   <li><b>Auditoría:</b> createdAt, updatedAt</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Fecha: Requerida</li>
+ *   <li>Paciente: ID requerido</li>
+ *   <li>Profesional: ID requerido</li>
+ * </ul>
+ * 
+ * <p><strong>Uso típico:</strong></p>
+ * <pre>
+ * // Crear nueva consulta
+ * ConsultaDTO dto = ConsultaDTO.builder()
+ *     .fecha(LocalDateTime.now())
+ *     .frecuenciaCardiaca(120)
+ *     .temperatura(new BigDecimal("38.5"))
+ *     .pesoKg(new BigDecimal("15.5"))
+ *     .diagnostico("Resfriado común")
+ *     .pacienteId(123L)
+ *     .profesionalId(789L)
+ *     .build();
+ * </pre>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Consulta
+ * @see ConsultaService
  */
 @Data
 @Builder
@@ -56,14 +98,34 @@ public class ConsultaDTO {
     private LocalDateTime updatedAt;
 
     /**
-     * Constructor desde entidad (sin datos relacionados)
+     * Convierte una entidad {@link Consulta} a su DTO equivalente.
+     * 
+     * <p>Versión simplificada que no incluye nombres de entidades relacionadas ni
+     * IDs de prescripciones. Útil cuando solo se necesitan los datos básicos.</p>
+     * 
+     * @param consulta Entidad Consulta a convertir. No puede ser null.
+     * @return DTO con los datos de la consulta.
+     * @see #fromEntity(Consulta, boolean)
      */
     public static ConsultaDTO fromEntity(Consulta consulta) {
         return fromEntity(consulta, false);
     }
 
     /**
-     * Constructor desde entidad (con opción de cargar datos relacionados)
+     * Convierte una entidad {@link Consulta} a su DTO equivalente con opción de incluir
+     * información adicional de entidades relacionadas.
+     * 
+     * <p>Cuando {@code includeRelated} es true, se incluyen:</p>
+     * <ul>
+     *   <li>Nombres de paciente y profesional</li>
+     *   <li>Lista de IDs de prescripciones asociadas</li>
+     * </ul>
+     * 
+     * <p>Útil para mostrar información completa en el frontend sin consultas adicionales.</p>
+     * 
+     * @param consulta Entidad Consulta a convertir. No puede ser null.
+     * @param includeRelated Si es true, incluye nombres relacionados y prescripciones.
+     * @return DTO con los datos de la consulta.
      */
     public static ConsultaDTO fromEntity(Consulta consulta, boolean includeRelated) {
         ConsultaDTOBuilder builder = ConsultaDTO.builder()

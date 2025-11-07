@@ -14,7 +14,36 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * DTO para la entidad Paciente
+ * Data Transfer Object (DTO) para la entidad {@link Paciente}.
+ * 
+ * <p>Este DTO se utiliza para transferir datos de pacientes (mascotas) entre el cliente
+ * y el servidor. Incluye información de identificación, características físicas y relación
+ * con el propietario.</p>
+ * 
+ * <p><strong>Campos principales:</strong></p>
+ * <ul>
+ *   <li><b>Identificación:</b> Nombre, microchip (opcional)</li>
+ *   <li><b>Características:</b> Especie, raza, sexo (M/F), edad en meses</li>
+ *   <li><b>Estado físico:</b> Peso actual (kg)</li>
+ *   <li><b>Notas:</b> Información adicional, alergias, condiciones especiales</li>
+ *   <li><b>Relación:</b> propietarioId (requerido), propietarioNombre (opcional)</li>
+ *   <li><b>Estado:</b> activo (true/false)</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones:</strong></p>
+ * <ul>
+ *   <li>Nombre: Requerido, máximo 100 caracteres</li>
+ *   <li>Especie: Requerida, máximo 50 caracteres</li>
+ *   <li>Edad: Si se proporciona, debe ser positiva</li>
+ *   <li>Peso: Si se proporciona, debe ser positivo</li>
+ *   <li>Propietario: ID requerido</li>
+ * </ul>
+ * 
+ * @author Sebastian Ordoñez
+ * @version 1.0.0
+ * @since 2025-11-06
+ * @see Paciente
+ * @see PacienteService
  */
 @Data
 @Builder
@@ -61,14 +90,29 @@ public class PacienteDTO {
     private LocalDateTime updatedAt;
 
     /**
-     * Constructor desde entidad (sin propietario cargado)
+     * Convierte una entidad {@link Paciente} a su DTO equivalente.
+     * 
+     * <p>Versión simplificada que no incluye el nombre del propietario.
+     * Útil cuando solo se necesita el ID del propietario.</p>
+     * 
+     * @param paciente Entidad Paciente a convertir. No puede ser null.
+     * @return DTO con los datos del paciente.
+     * @see #fromEntity(Paciente, boolean)
      */
     public static PacienteDTO fromEntity(Paciente paciente) {
         return fromEntity(paciente, false);
     }
 
     /**
-     * Constructor desde entidad (con opción de cargar propietario)
+     * Convierte una entidad {@link Paciente} a su DTO equivalente con opción de incluir
+     * el nombre del propietario.
+     * 
+     * <p>Cuando {@code includePropietario} es true, se incluye el nombre del propietario
+     * para facilitar la visualización en el frontend sin necesidad de hacer consultas adicionales.</p>
+     * 
+     * @param paciente Entidad Paciente a convertir. No puede ser null.
+     * @param includePropietario Si es true, incluye el nombre del propietario.
+     * @return DTO con los datos del paciente.
      */
     public static PacienteDTO fromEntity(Paciente paciente, boolean includePropietario) {
         PacienteDTOBuilder builder = PacienteDTO.builder()
