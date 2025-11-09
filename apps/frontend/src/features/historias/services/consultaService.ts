@@ -2,17 +2,17 @@ import axios from '@core/api/axios';
 import { Consulta } from '@core/types';
 
 export interface ConsultaDTO {
-  citaId: string;
-  motivoConsulta: string;
-  anamnesis?: string;
+  fecha?: string;
+  pacienteId: string;
+  profesionalId: string;
+  frecuenciaCardiaca?: number;
+  frecuenciaRespiratoria?: number;
+  temperatura?: number;
+  pesoKg?: number;
   examenFisico?: string;
   diagnostico?: string;
   tratamiento?: string;
   observaciones?: string;
-  peso?: number;
-  temperatura?: number;
-  frecuenciaCardiaca?: number;
-  frecuenciaRespiratoria?: number;
 }
 
 export const consultaService = {
@@ -26,24 +26,8 @@ export const consultaService = {
     return response.data;
   },
 
-  async getByCita(citaId: string): Promise<Consulta | null> {
-    try {
-      const response = await axios.get<Consulta>('/consultas/cita', {
-        params: { citaId },
-      });
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  },
-
   async getByPaciente(pacienteId: string): Promise<Consulta[]> {
-    const response = await axios.get<Consulta[]>('/consultas/paciente', {
-      params: { pacienteId },
-    });
+    const response = await axios.get<Consulta[]>(`/consultas/paciente/${pacienteId}`);
     return response.data;
   },
 

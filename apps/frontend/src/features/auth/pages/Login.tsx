@@ -24,7 +24,7 @@ export default function Login() {
       toast.success('Sesión iniciada correctamente');
       navigate('/');
     } catch (error) {
-      toast.error('Credenciales inválidas. Usa: demo123');
+      toast.error('Credenciales inválidas. Revisa los usuarios de prueba.');
     } finally {
       setIsLoading(false);
     }
@@ -72,11 +72,11 @@ export default function Login() {
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-sm font-medium mb-2">Usuarios de prueba:</p>
             <div className="text-xs space-y-1 text-muted-foreground">
-              <p>• admin@clinica.com (Admin)</p>
-              <p>• maria@clinica.com (Veterinario)</p>
-              <p>• ana@clinica.com (Recepción)</p>
-              <p>• juan@clinica.com (Estudiante)</p>
-              <p className="mt-2 font-medium">Contraseña: demo123</p>
+              <p>• admin@clinica.com (Admin) - Contraseña: <span className="font-medium">admin123</span></p>
+              <p>• maria@clinica.com (Veterinario) - Contraseña: <span className="font-medium">vet123</span></p>
+              <p>• carlos@clinica.com (Veterinario) - Contraseña: <span className="font-medium">vet123</span></p>
+              <p>• ana@clinica.com (Recepción) - Contraseña: <span className="font-medium">recep123</span></p>
+              <p>• juan@clinica.com (Estudiante) - Contraseña: <span className="font-medium">est123</span></p>
             </div>
           </div>
         </CardContent>

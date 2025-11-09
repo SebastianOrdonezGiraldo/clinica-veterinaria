@@ -5,11 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shar
 import { Badge } from '@shared/components/ui/badge';
 import { useAuth } from '@core/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { citaService } from '@features/agenda/services/citaService';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
-import { propietarioService } from '@features/propietarios/services/propietarioService';
-import { consultaService } from '@features/historias/services/consultaService';
-import { Cita, Paciente, Propietario } from '@core/types';
+import { dashboardService, DashboardStats } from '@features/dashboard/services/dashboardService';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed',
@@ -18,23 +14,10 @@ const statusColors = {
   ATENDIDA: 'bg-status-completed/10 text-status-completed',
 };
 
-// Datos para gráficos (estos serían calculados con datos reales)
-const consultasPorDia = [
-  { dia: 'Lun', consultas: 15 },
-  { dia: 'Mar', consultas: 22 },
-  { dia: 'Mié', consultas: 18 },
-  { dia: 'Jue', consultas: 25 },
-  { dia: 'Vie', consultas: 20 },
-  { dia: 'Sáb', consultas: 12 },
-  { dia: 'Dom', consultas: 8 },
-];
-
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,73 +27,38 @@ export default function Dashboard() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [citasData, pacientesData, propietariosData] = await Promise.all([
-        citaService.getAll(),
-        pacienteService.getAll(),
-        propietarioService.getAll(),
-      ]);
-      setCitas(citasData);
-      setPacientes(pacientesData);
-      setPropietarios(propietariosData);
+      const data = await dashboardService.getStats();
+      setStats(data);
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      console.error('Error al cargar estadísticas:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Calcular estadísticas
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const citasHoy = citas.filter(cita => {
-    const citaDate = new Date(cita.fecha);
-    citaDate.setHours(0, 0, 0, 0);
-    return citaDate.getTime() === today.getTime();
-  });
+  if (isLoading || !stats) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Cargando estadísticas...</p>
+      </div>
+    );
+  }
 
-  const consultasPendientes = citas.filter(c => c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA');
-
-  const stats = [
-    { title: 'Citas Hoy', value: citasHoy.length.toString(), icon: Calendar, color: 'text-primary', link: '/agenda' },
-    { title: 'Pacientes Activos', value: pacientes.length.toString(), icon: Dog, color: 'text-secondary', link: '/pacientes' },
-    { title: 'Consultas Pendientes', value: consultasPendientes.length.toString(), icon: Activity, color: 'text-warning', link: '/historias' },
-    { title: 'Propietarios', value: propietarios.length.toString(), icon: Users, color: 'text-info', link: '/propietarios' },
+  const statsCards = [
+    { title: 'Citas Hoy', value: stats.citasHoy.toString(), icon: Calendar, color: 'text-primary', link: '/agenda' },
+    { title: 'Pacientes Activos', value: stats.pacientesActivos.toString(), icon: Dog, color: 'text-secondary', link: '/pacientes' },
+    { title: 'Consultas Pendientes', value: stats.consultasPendientes.toString(), icon: Activity, color: 'text-warning', link: '/historias' },
+    { title: 'Propietarios', value: stats.totalPropietarios.toString(), icon: Users, color: 'text-info', link: '/propietarios' },
   ];
 
-  // Próximas citas de hoy ordenadas por hora
-  const upcomingAppointments = citasHoy
-    .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
-    .slice(0, 4)
-    .map(cita => {
-      const paciente = pacientes.find(p => p.id === cita.pacienteId);
-      const propietario = propietarios.find(p => p.id === paciente?.propietarioId);
-      return {
-        id: cita.id,
-        time: new Date(cita.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        patient: paciente?.nombre || 'N/A',
-        owner: propietario?.nombre || 'N/A',
-        status: cita.estado,
-      };
-    });
-
-  // Distribución por especies
-  const especiesDistribucion = [
-    { 
-      nombre: 'Caninos', 
-      valor: pacientes.filter(p => p.especie.toLowerCase().includes('canino')).length, 
-      color: 'hsl(var(--primary))' 
-    },
-    { 
-      nombre: 'Felinos', 
-      valor: pacientes.filter(p => p.especie.toLowerCase().includes('felino')).length, 
-      color: 'hsl(var(--secondary))' 
-    },
-    { 
-      nombre: 'Otros', 
-      valor: pacientes.filter(p => !p.especie.toLowerCase().includes('canino') && !p.especie.toLowerCase().includes('felino')).length, 
-      color: 'hsl(var(--info))' 
-    },
-  ];
+  // Mapear próximas citas al formato esperado
+  const upcomingAppointments = stats.proximasCitas.map(cita => ({
+    id: cita.id,
+    time: cita.hora,
+    patient: cita.pacienteNombre,
+    owner: cita.propietarioNombre,
+    status: cita.estado,
+  }));
 
   return (
     <div className="space-y-6">
@@ -120,7 +68,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {statsCards.map((stat) => (
           <Card 
             key={stat.title}
             className="cursor-pointer hover:shadow-lg transition-shadow"
@@ -236,7 +184,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={consultasPorDia}>
+              <BarChart data={stats.consultasPorDia}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="dia" className="text-xs" />
                 <YAxis className="text-xs" />
@@ -265,7 +213,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={especiesDistribucion}
+                  data={stats.distribucionEspecies}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -274,7 +222,7 @@ export default function Dashboard() {
                   fill="#8884d8"
                   dataKey="valor"
                 >
-                  {especiesDistribucion.map((entry, index) => (
+                  {stats.distribucionEspecies.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>

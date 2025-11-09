@@ -15,6 +15,10 @@ export interface Propietario {
   email?: string;
   telefono?: string;
   direccion?: string;
+  activo?: boolean;
+  pacientesIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Paciente {
@@ -22,23 +26,33 @@ export interface Paciente {
   nombre: string;
   especie: string;
   raza?: string;
-  sexo?: 'M' | 'F';
+  sexo?: string;
   edadMeses?: number;
   pesoKg?: number;
   propietarioId: string;
   microchip?: string;
-  observaciones?: string;
+  notas?: string;
+  activo?: boolean;
+  propietarioNombre?: string;
+  createdAt?: string;
+  updatedAt?: string;
   propietario?: Propietario;
 }
 
 export interface Cita {
   id: string;
   pacienteId: string;
+  propietarioId: string;
   profesionalId: string;
   fecha: string;
   estado: 'PENDIENTE' | 'CONFIRMADA' | 'ATENDIDA' | 'CANCELADA';
   motivo: string;
   observaciones?: string;
+  pacienteNombre?: string;
+  propietarioNombre?: string;
+  profesionalNombre?: string;
+  createdAt?: string;
+  updatedAt?: string;
   paciente?: Paciente;
   profesional?: Usuario;
 }
@@ -55,10 +69,19 @@ export interface Consulta {
   pacienteId: string;
   profesionalId: string;
   fecha: string;
-  signosVitales?: SignosVitales;
-  examen?: string;
-  diagnosticos?: string[];
-  procedimientos?: string[];
+  frecuenciaCardiaca?: number;
+  frecuenciaRespiratoria?: number;
+  temperatura?: number;
+  pesoKg?: number;
+  examenFisico?: string;
+  diagnostico?: string;
+  tratamiento?: string;
+  observaciones?: string;
+  pacienteNombre?: string;
+  profesionalNombre?: string;
+  prescripcionesIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
   paciente?: Paciente;
   profesional?: Usuario;
 }

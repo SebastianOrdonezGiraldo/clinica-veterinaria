@@ -22,9 +22,7 @@ export const usuarioService = {
 
   async search(email: string): Promise<Usuario | null> {
     try {
-      const response = await axios.get<Usuario>('/usuarios/buscar', {
-        params: { email },
-      });
+      const response = await axios.get<Usuario>(`/usuarios/email/${email}`);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 404) {

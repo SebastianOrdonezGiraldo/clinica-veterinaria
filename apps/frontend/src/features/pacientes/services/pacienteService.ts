@@ -4,13 +4,13 @@ import { Paciente } from '@core/types';
 export interface PacienteDTO {
   nombre: string;
   especie: string;
-  raza: string;
-  sexo: string;
-  edadMeses: number;
-  pesoKg: number;
+  raza?: string;
+  sexo?: string;
+  edadMeses?: number;
+  pesoKg?: number;
   propietarioId: string;
   microchip?: string;
-  observaciones?: string;
+  notas?: string;
 }
 
 export const pacienteService = {
@@ -32,9 +32,7 @@ export const pacienteService = {
   },
 
   async getByPropietario(propietarioId: string): Promise<Paciente[]> {
-    const response = await axios.get<Paciente[]>('/pacientes/propietario', {
-      params: { propietarioId },
-    });
+    const response = await axios.get<Paciente[]>(`/pacientes/propietario/${propietarioId}`);
     return response.data;
   },
 

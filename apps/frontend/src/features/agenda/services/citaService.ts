@@ -8,6 +8,7 @@ export interface CitaDTO {
   motivo: string;
   observaciones?: string;
   pacienteId: string;
+  propietarioId: string;
   profesionalId: string;
   estado?: EstadoCita;
 }
@@ -24,16 +25,12 @@ export const citaService = {
   },
 
   async getByPaciente(pacienteId: string): Promise<Cita[]> {
-    const response = await axios.get<Cita[]>('/citas/paciente', {
-      params: { pacienteId },
-    });
+    const response = await axios.get<Cita[]>(`/citas/paciente/${pacienteId}`);
     return response.data;
   },
 
   async getByProfesional(profesionalId: string): Promise<Cita[]> {
-    const response = await axios.get<Cita[]>('/citas/profesional', {
-      params: { profesionalId },
-    });
+    const response = await axios.get<Cita[]>(`/citas/profesional/${profesionalId}`);
     return response.data;
   },
 
@@ -53,9 +50,7 @@ export const citaService = {
   },
 
   async updateEstado(id: string, estado: EstadoCita): Promise<Cita> {
-    const response = await axios.patch<Cita>(`/citas/${id}/estado`, null, {
-      params: { estado },
-    });
+    const response = await axios.patch<Cita>(`/citas/${id}/estado?estado=${estado}`);
     return response.data;
   },
 

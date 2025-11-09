@@ -76,6 +76,17 @@ public class UsuarioController {
     }
 
     /**
+     * Buscar un usuario por email
+     * Solo ADMIN
+     */
+    @GetMapping("/email/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioDTO> getByEmail(@PathVariable String email) {
+        log.info("GET /api/usuarios/email/{}", email);
+        return ResponseEntity.ok(usuarioService.findByEmail(email));
+    }
+
+    /**
      * Crear un nuevo usuario
      * Solo ADMIN
      */

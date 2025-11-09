@@ -65,6 +65,13 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     List<Cita> findByEstado(EstadoCita estado);
 
     /**
+     * Busca citas por múltiples estados
+     * @param estados Lista de estados
+     * @return Lista de citas con esos estados
+     */
+    List<Cita> findByEstadoIn(List<EstadoCita> estados);
+
+    /**
      * Busca citas entre fechas
      * @param fechaInicio Fecha de inicio
      * @param fechaFin Fecha de fin
