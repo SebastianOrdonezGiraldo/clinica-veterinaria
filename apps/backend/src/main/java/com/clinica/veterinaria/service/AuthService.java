@@ -4,7 +4,7 @@ import com.clinica.veterinaria.dto.LoginRequestDTO;
 import com.clinica.veterinaria.dto.LoginResponseDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
 import com.clinica.veterinaria.entity.Usuario;
-import com.clinica.veterinaria.logging.AuditLogger;
+import com.clinica.veterinaria.logging.IAuditLogger;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import com.clinica.veterinaria.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -87,7 +87,7 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
     private final UsuarioRepository usuarioRepository;
-    private final AuditLogger auditLogger;
+    private final IAuditLogger auditLogger;
 
     /**
      * Autentica un usuario y genera un token JWT para acceso stateless.

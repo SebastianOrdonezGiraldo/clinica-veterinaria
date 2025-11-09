@@ -44,7 +44,7 @@ import java.time.format.DateTimeFormatter;
  * @see CorrelationIdFilter
  */
 @Service
-public class AuditLogger {
+public class AuditLogger implements IAuditLogger {
     
     private static final Logger auditLogger = LoggerFactory.getLogger("com.clinica.veterinaria.audit");
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

@@ -3,7 +3,7 @@ package com.clinica.veterinaria.service;
 import com.clinica.veterinaria.dto.PacienteDTO;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
-import com.clinica.veterinaria.logging.AuditLogger;
+import com.clinica.veterinaria.logging.IAuditLogger;
 import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +66,7 @@ public class PacienteService {
 
     private final PacienteRepository pacienteRepository;
     private final PropietarioRepository propietarioRepository;
-    private final AuditLogger auditLogger;
+    private final IAuditLogger auditLogger;
 
     /**
      * Obtiene todos los pacientes registrados en el sistema.

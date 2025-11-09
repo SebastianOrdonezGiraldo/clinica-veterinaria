@@ -33,6 +33,9 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
     
     private static final String START_TIME_ATTRIBUTE = "startTime";
     private static final long SLOW_REQUEST_THRESHOLD_MS = 1000; // 1 segundo
+    private static final String MDC_USERNAME_KEY = "username";
+    private static final String RESPONSE_LOG_FORMAT = "← Response {} {} | Status: {} | Duration: {}ms";
+    private static final String RESPONSE_ERROR_LOG_FORMAT = "← Response {} {} | Status: 500 | Duration: {}ms | Error: {}";
     
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -50,7 +53,7 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
         if (authentication != null && authentication.isAuthenticated() && 
             !"anonymousUser".equals(authentication.getPrincipal())) {
             String username = authentication.getName();
-            MDC.put("username", username);
+            MDC.put(MDC_USERNAME_KEY, username);
             MDC.put("userId", username); // Puedes mejorar esto obteniendo el ID real del usuario
         }
         
@@ -59,7 +62,7 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
                 request.getMethod(),
                 request.getRequestURI(),
                 getClientIp(request),
-                MDC.get("username") != null ? MDC.get("username") : "anonymous",
+                MDC.get(MDC_USERNAME_KEY) != null ? MDC.get(MDC_USERNAME_KEY) : "anonymous",
                 MDC.get("correlationId"));
         
         // Log de query parameters si existen
@@ -100,7 +103,7 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
         // Log del response
         if (ex != null) {
             // Si hubo una excepción
-            logger.error("← Response {} {} | Status: 500 | Duration: {}ms | Error: {}", 
+            logger.error(RESPONSE_ERROR_LOG_FORMAT, 
                     request.getMethod(),
                     request.getRequestURI(),
                     duration,
@@ -111,19 +114,19 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
             String logLevel = getLogLevelForStatus(status);
             
             if ("ERROR".equals(logLevel)) {
-                logger.error("← Response {} {} | Status: {} | Duration: {}ms", 
+                logger.error(RESPONSE_LOG_FORMAT, 
                         request.getMethod(),
                         request.getRequestURI(),
                         status,
                         duration);
             } else if ("WARN".equals(logLevel)) {
-                logger.warn("← Response {} {} | Status: {} | Duration: {}ms", 
+                logger.warn(RESPONSE_LOG_FORMAT, 
                         request.getMethod(),
                         request.getRequestURI(),
                         status,
                         duration);
             } else {
-                logger.info("← Response {} {} | Status: {} | Duration: {}ms", 
+                logger.info(RESPONSE_LOG_FORMAT, 
                         request.getMethod(),
                         request.getRequestURI(),
                         status,
@@ -138,7 +141,7 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
                     request.getRequestURI(),
                     duration,
                     SLOW_REQUEST_THRESHOLD_MS,
-                    MDC.get("username") != null ? MDC.get("username") : "anonymous",
+                    MDC.get(MDC_USERNAME_KEY) != null ? MDC.get(MDC_USERNAME_KEY) : "anonymous",
                     MDC.get("correlationId"));
         }
         

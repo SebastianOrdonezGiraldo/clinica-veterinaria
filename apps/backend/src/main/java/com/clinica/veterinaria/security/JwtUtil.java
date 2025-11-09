@@ -2,7 +2,6 @@ package com.clinica.veterinaria.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -55,7 +54,7 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    private static final long JWT_TOKEN_VALIDITY = 10 * 60 * 60 * 1000; // 10 horas
+    private static final long JWT_TOKEN_VALIDITY = 10L * 60L * 60L * 1000L; // 10 horas
 
     /**
      * Obtiene la clave de firma
@@ -121,15 +120,30 @@ public class JwtUtil {
     }
 
     /**
-     * Crea el token JWT
+     * Crea el token JWT usando la API moderna de JJWT.
+     * 
+     * <p>Utiliza los métodos no deprecados de la librería JJWT 0.12.x:
+     * - claims() en lugar de setClaims()
+     * - subject() en lugar de setSubject()
+     * - issuedAt() en lugar de setIssuedAt()
+     * - expiration() en lugar de setExpiration()
+     * - signWith(SecretKey) sin especificar algoritmo (se infiere automáticamente)
+     * </p>
+     * 
+     * @param claims Claims adicionales a incluir en el token
+     * @param subject Subject del token (normalmente el email del usuario)
+     * @return Token JWT firmado como string
      */
     private String createToken(Map<String, Object> claims, String subject) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + JWT_TOKEN_VALIDITY);
+        
         return Jwts.builder()
-            .setClaims(claims)
-            .setSubject(subject)
-            .setIssuedAt(new Date(System.currentTimeMillis()))
-            .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY))
-            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+            .claims(claims)
+            .subject(subject)
+            .issuedAt(now)
+            .expiration(expiration)
+            .signWith(getSigningKey())
             .compact();
     }
 

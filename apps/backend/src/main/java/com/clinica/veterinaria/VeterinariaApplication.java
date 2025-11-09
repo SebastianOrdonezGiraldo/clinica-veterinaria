@@ -1,5 +1,7 @@
 package com.clinica.veterinaria;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -13,15 +15,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class VeterinariaApplication {
 
+    private static final Logger logger = LoggerFactory.getLogger(VeterinariaApplication.class);
+
     public static void main(String[] args) {
         SpringApplication.run(VeterinariaApplication.class, args);
-        System.out.println("\n========================================");
-        System.out.println("🐾 Clínica Veterinaria API Iniciada");
-        System.out.println("========================================");
-        System.out.println("📍 Puerto: http://localhost:8081");
-        System.out.println("📚 Swagger UI: http://localhost:8081/swagger-ui.html");
-        System.out.println("💾 H2 Console: http://localhost:8081/h2-console");
-        System.out.println("========================================\n");
+        logger.info("\n========================================");
+        logger.info("🐾 Clínica Veterinaria API Iniciada");
+        logger.info("========================================");
+        logger.info("📍 Puerto: http://localhost:8081");
+        logger.info("📚 Swagger UI: http://localhost:8081/swagger-ui.html");
+        logger.info("💾 H2 Console: http://localhost:8081/h2-console");
+        logger.info("========================================\n");
     }
 }
 

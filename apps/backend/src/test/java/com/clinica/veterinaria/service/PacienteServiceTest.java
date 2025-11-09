@@ -1,8 +1,10 @@
+
 package com.clinica.veterinaria.service;
 
 import com.clinica.veterinaria.dto.PacienteDTO;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
+import com.clinica.veterinaria.logging.IAuditLogger;
 import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,11 +31,19 @@ import static org.mockito.Mockito.*;
 @DisplayName("Tests Unitarios de PacienteService")
 class PacienteServiceTest {
 
+    // Constantes para evitar duplicación de literales
+    private static final String ESPECIE_PERRO = "Perro";
+    private static final String RAZA_LABRADOR = "Labrador";
+    private static final String NOMBRE_ROCKY = "Rocky";
+
     @Mock
     private PacienteRepository pacienteRepository;
 
     @Mock
     private PropietarioRepository propietarioRepository;
+
+    @Mock
+    private IAuditLogger auditLogger;
 
     @InjectMocks
     private PacienteService pacienteService;
@@ -54,8 +64,8 @@ class PacienteServiceTest {
         paciente1 = Paciente.builder()
             .id(1L)
             .nombre("Max")
-            .especie("Perro")
-            .raza("Labrador")
+            .especie(ESPECIE_PERRO)
+            .raza(RAZA_LABRADOR)
             .sexo("M")
             .edadMeses(36)
             .pesoKg(new BigDecimal("30.5"))
@@ -106,15 +116,15 @@ class PacienteServiceTest {
         // Assert
         assertNotNull(resultado);
         assertEquals("Max", resultado.getNombre());
-        assertEquals("Perro", resultado.getEspecie());
-        assertEquals("Labrador", resultado.getRaza());
+        assertEquals(ESPECIE_PERRO, resultado.getEspecie());
+        assertEquals(RAZA_LABRADOR, resultado.getRaza());
         assertEquals(new BigDecimal("30.5"), resultado.getPesoKg());
         verify(pacienteRepository, times(1)).findById(1L);
     }
 
     @Test
     @DisplayName("Debe lanzar excepción cuando paciente no existe")
-    void testFindById_NoExiste() {
+    void testFindByIdNoExiste() {
         // Arrange
         when(pacienteRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -127,8 +137,8 @@ class PacienteServiceTest {
     void testCreate() {
         // Arrange
         PacienteDTO pacienteDTO = PacienteDTO.builder()
-            .nombre("Rocky")
-            .especie("Perro")
+            .nombre(NOMBRE_ROCKY)
+            .especie(ESPECIE_PERRO)
             .raza("Bulldog")
             .sexo("M")
             .edadMeses(18)
@@ -142,14 +152,17 @@ class PacienteServiceTest {
             pac.setId(3L);
             return pac;
         });
+        
+        // Configurar mock de AuditLogger para que no haga nada
+        doNothing().when(auditLogger).logCreate(anyString(), any(), any());
 
         // Act
         PacienteDTO resultado = pacienteService.create(pacienteDTO);
 
         // Assert
         assertNotNull(resultado);
-        assertEquals("Rocky", resultado.getNombre());
-        assertEquals("Perro", resultado.getEspecie());
+        assertEquals(NOMBRE_ROCKY, resultado.getNombre());
+        assertEquals(ESPECIE_PERRO, resultado.getEspecie());
         assertEquals(1L, resultado.getPropietarioId());
         verify(propietarioRepository, times(1)).findById(1L);
         verify(pacienteRepository, times(1)).save(any(Paciente.class));
@@ -157,11 +170,11 @@ class PacienteServiceTest {
 
     @Test
     @DisplayName("Debe lanzar excepción al crear paciente con propietario inexistente")
-    void testCreate_PropietarioNoExiste() {
+    void testCreatePropietarioNoExiste() {
         // Arrange
         PacienteDTO pacienteDTO = PacienteDTO.builder()
-            .nombre("Rocky")
-            .especie("Perro")
+            .nombre(NOMBRE_ROCKY)
+            .especie(ESPECIE_PERRO)
             .propietarioId(999L)
             .build();
 
@@ -178,8 +191,8 @@ class PacienteServiceTest {
         // Arrange
         PacienteDTO actualizacionDTO = PacienteDTO.builder()
             .nombre("Max Actualizado")
-            .especie("Perro")
-            .raza("Labrador")
+            .especie(ESPECIE_PERRO)
+            .raza(RAZA_LABRADOR)
             .sexo("M")
             .edadMeses(40)
             .pesoKg(new BigDecimal("32.0"))
@@ -189,6 +202,9 @@ class PacienteServiceTest {
 
         when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente1));
         when(pacienteRepository.save(any(Paciente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Configurar mock de AuditLogger para que no haga nada
+        doNothing().when(auditLogger).logUpdate(anyString(), any(), any(), any());
 
         // Act
         PacienteDTO resultado = pacienteService.update(1L, actualizacionDTO);
@@ -207,6 +223,9 @@ class PacienteServiceTest {
     void testDelete() {
         // Arrange
         when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente1));
+        
+        // Configurar mock de AuditLogger para que no haga nada
+        doNothing().when(auditLogger).logDelete(anyString(), any());
 
         // Act
         pacienteService.delete(1L);
