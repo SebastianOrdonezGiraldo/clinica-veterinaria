@@ -72,10 +72,10 @@ export default function Login() {
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-sm font-medium mb-2">Usuarios de prueba:</p>
             <div className="text-xs space-y-1 text-muted-foreground">
-              <p>• admin@vetclinic.com (Admin)</p>
-              <p>• maria@vetclinic.com (Veterinario)</p>
-              <p>• recepcion@vetclinic.com (Recepción)</p>
-              <p>• estudiante@vetclinic.com (Estudiante)</p>
+              <p>• admin@clinica.com (Admin)</p>
+              <p>• maria@clinica.com (Veterinario)</p>
+              <p>• ana@clinica.com (Recepción)</p>
+              <p>• juan@clinica.com (Estudiante)</p>
               <p className="mt-2 font-medium">Contraseña: demo123</p>
             </div>
           </div>
