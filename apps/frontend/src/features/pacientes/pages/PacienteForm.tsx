@@ -10,8 +10,10 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Textarea } from '@shared/components/ui/textarea';
-import { useToast } from '@shared/hooks/use-toast';
-import { mockPropietarios, getPacienteById } from '@shared/utils/mockData';
+import { toast } from 'sonner';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { Propietario } from '@core/types';
 
 const pacienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -30,20 +32,32 @@ type PacienteFormData = z.infer<typeof pacienteSchema>;
 export default function PacienteForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const isEdit = !!id;
 
-  const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<PacienteFormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(isEdit);
 
-  // Pre-llenar el formulario en modo edición
+  const propietarioId = watch('propietarioId');
+
+  // Cargar propietarios y datos del paciente si es edición
   useEffect(() => {
-    if (isEdit && id) {
-      const paciente = getPacienteById(id);
-      if (paciente) {
+    loadInitialData();
+  }, [id]);
+
+  const loadInitialData = async () => {
+    try {
+      setIsLoadingData(true);
+      const propietariosData = await propietarioService.getAll();
+      setPropietarios(propietariosData);
+
+      if (isEdit && id) {
+        const paciente = await pacienteService.getById(id);
         reset({
           nombre: paciente.nombre,
           especie: paciente.especie as any,
@@ -51,13 +65,18 @@ export default function PacienteForm() {
           sexo: paciente.sexo || undefined,
           edadMeses: paciente.edadMeses || undefined,
           pesoKg: paciente.pesoKg || undefined,
-          propietarioId: paciente.propietarioId,
+          propietarioId: String(paciente.propietarioId),
           microchip: paciente.microchip || '',
-          notas: '',
+          notas: paciente.notas || '',
         });
       }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los datos');
+    } finally {
+      setIsLoadingData(false);
     }
-  }, [isEdit, id, reset]);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,13 +102,30 @@ export default function PacienteForm() {
     setImagePreview(null);
   };
 
-  const onSubmit = (data: PacienteFormData) => {
-    console.log('Guardar paciente:', data);
-    toast({
-      title: isEdit ? 'Paciente actualizado' : 'Paciente registrado',
-      description: `${data.nombre} ha sido ${isEdit ? 'actualizado' : 'registrado'} exitosamente.`,
-    });
-    navigate('/pacientes');
+  const onSubmit = async (data: PacienteFormData) => {
+    try {
+      setIsLoading(true);
+      
+      const pacienteData = {
+        ...data,
+        propietarioId: data.propietarioId, // Ya es string
+      };
+
+      if (isEdit && id) {
+        await pacienteService.update(id, pacienteData);
+        toast.success('Paciente actualizado exitosamente');
+      } else {
+        await pacienteService.create(pacienteData);
+        toast.success('Paciente registrado exitosamente');
+      }
+      
+      navigate('/pacientes');
+    } catch (error: any) {
+      console.error('Error al guardar paciente:', error);
+      toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el paciente`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -172,8 +208,8 @@ export default function PacienteForm() {
                     <SelectValue placeholder="Seleccione propietario" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockPropietarios.map((prop) => (
-                      <SelectItem key={prop.id} value={prop.id}>
+                    {propietarios.map((prop) => (
+                      <SelectItem key={prop.id} value={String(prop.id)}>
                         {prop.nombre}
                       </SelectItem>
                     ))}
@@ -268,9 +304,9 @@ export default function PacienteForm() {
               <Button type="button" variant="outline" onClick={() => navigate('/pacientes')}>
                 Cancelar
               </Button>
-              <Button type="submit" className="gap-2">
+              <Button type="submit" className="gap-2" disabled={isLoading || isLoadingData}>
                 <Save className="h-4 w-4" />
-                {isEdit ? 'Actualizar' : 'Guardar'}
+                {isLoading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Guardar'}
               </Button>
             </div>
           </CardContent>

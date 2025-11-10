@@ -48,11 +48,28 @@ export default function Pacientes() {
     }
   };
 
+  // Función helper para normalizar especies (maneja variantes como "Perro"/"Canino", "Gato"/"Felino")
+  const normalizeEspecie = (especie: string): string => {
+    const especieLower = especie.toLowerCase();
+    if (especieLower.includes('canino') || especieLower.includes('perro') || especieLower.includes('can')) {
+      return 'Canino';
+    }
+    if (especieLower.includes('felino') || especieLower.includes('gato') || especieLower.includes('fel')) {
+      return 'Felino';
+    }
+    // Si no es Canino ni Felino, se considera "Otro"
+    return 'Otro';
+  };
+
   let filteredPacientes = pacientes.filter(p => {
     const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.especie.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.raza?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchEspecie = especieFiltro === 'todos' || p.especie === especieFiltro;
+    
+    // Normalizar la especie del paciente y comparar con el filtro
+    const especieNormalizada = normalizeEspecie(p.especie);
+    const matchEspecie = especieFiltro === 'todos' || especieNormalizada === especieFiltro;
+    
     return matchSearch && matchEspecie;
   });
 

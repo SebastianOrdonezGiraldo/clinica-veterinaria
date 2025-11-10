@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Textarea } from '@shared/components/ui/textarea';
-import { useToast } from '@shared/hooks/use-toast';
-import { getPropietarioById } from '@shared/utils/mockData';
+import { toast } from 'sonner';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
 
 const propietarioSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -25,7 +25,6 @@ type PropietarioFormData = z.infer<typeof propietarioSchema>;
 export default function PropietarioForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const isEdit = !!id;
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<PropietarioFormData>({
@@ -33,32 +32,42 @@ export default function PropietarioForm() {
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(isEdit);
 
   // Pre-llenar el formulario en modo edición
   useEffect(() => {
     if (isEdit && id) {
-      const propietario = getPropietarioById(id);
-      if (propietario) {
-        reset({
-          nombre: propietario.nombre,
-          documento: propietario.documento || '',
-          email: propietario.email || '',
-          telefono: propietario.telefono || '',
-          direccion: propietario.direccion || '',
-        });
-      }
+      loadPropietario();
     }
-  }, [isEdit, id, reset]);
+  }, [isEdit, id]);
+
+  const loadPropietario = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoadingData(true);
+      const propietario = await propietarioService.getById(id);
+      reset({
+        nombre: propietario.nombre,
+        documento: propietario.documento || '',
+        email: propietario.email || '',
+        telefono: propietario.telefono || '',
+        direccion: propietario.direccion || '',
+      });
+    } catch (error) {
+      console.error('Error al cargar propietario:', error);
+      toast.error('Error al cargar los datos del propietario');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: 'Error',
-          description: 'La imagen no debe superar los 5MB',
-          variant: 'destructive',
-        });
+        toast.error('La imagen no debe superar los 5MB');
         return;
       }
 
@@ -74,13 +83,34 @@ export default function PropietarioForm() {
     setImagePreview(null);
   };
 
-  const onSubmit = (data: PropietarioFormData) => {
-    console.log('Guardar propietario:', data);
-    toast({
-      title: isEdit ? 'Propietario actualizado' : 'Propietario registrado',
-      description: `${data.nombre} ha sido ${isEdit ? 'actualizado' : 'registrado'} exitosamente.`,
-    });
-    navigate('/propietarios');
+  const onSubmit = async (data: PropietarioFormData) => {
+    try {
+      setIsLoading(true);
+      
+      // Preparar datos para enviar (convertir strings vacíos a undefined para campos opcionales)
+      const propietarioData = {
+        nombre: data.nombre,
+        documento: data.documento || undefined,
+        email: data.email || undefined,
+        telefono: data.telefono || undefined,
+        direccion: data.direccion || undefined,
+      };
+
+      if (isEdit && id) {
+        await propietarioService.update(id, propietarioData);
+        toast.success('Propietario actualizado exitosamente');
+      } else {
+        await propietarioService.create(propietarioData);
+        toast.success('Propietario registrado exitosamente');
+      }
+      
+      navigate('/propietarios');
+    } catch (error: any) {
+      console.error('Error al guardar propietario:', error);
+      toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el propietario`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -205,9 +235,9 @@ export default function PropietarioForm() {
               <Button type="button" variant="outline" onClick={() => navigate('/propietarios')}>
                 Cancelar
               </Button>
-              <Button type="submit" className="gap-2">
+              <Button type="submit" className="gap-2" disabled={isLoading || isLoadingData}>
                 <Save className="h-4 w-4" />
-                {isEdit ? 'Actualizar' : 'Guardar'}
+                {isLoading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Guardar'}
               </Button>
             </div>
           </CardContent>

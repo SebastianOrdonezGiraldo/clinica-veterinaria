@@ -13,37 +13,44 @@ export interface PacienteDTO {
   notas?: string;
 }
 
+// Función helper para normalizar IDs (convertir números a strings)
+const normalizePaciente = (paciente: any): Paciente => ({
+  ...paciente,
+  id: String(paciente.id),
+  propietarioId: String(paciente.propietarioId),
+});
+
 export const pacienteService = {
   async getAll(): Promise<Paciente[]> {
-    const response = await axios.get<Paciente[]>('/pacientes');
-    return response.data;
+    const response = await axios.get<any[]>('/pacientes');
+    return response.data.map(normalizePaciente);
   },
 
   async getById(id: string): Promise<Paciente> {
-    const response = await axios.get<Paciente>(`/pacientes/${id}`);
-    return response.data;
+    const response = await axios.get<any>(`/pacientes/${id}`);
+    return normalizePaciente(response.data);
   },
 
   async search(nombre: string): Promise<Paciente[]> {
-    const response = await axios.get<Paciente[]>('/pacientes/buscar', {
+    const response = await axios.get<any[]>('/pacientes/buscar', {
       params: { nombre },
     });
-    return response.data;
+    return response.data.map(normalizePaciente);
   },
 
   async getByPropietario(propietarioId: string): Promise<Paciente[]> {
-    const response = await axios.get<Paciente[]>(`/pacientes/propietario/${propietarioId}`);
-    return response.data;
+    const response = await axios.get<any[]>(`/pacientes/propietario/${propietarioId}`);
+    return response.data.map(normalizePaciente);
   },
 
   async create(data: PacienteDTO): Promise<Paciente> {
-    const response = await axios.post<Paciente>('/pacientes', data);
-    return response.data;
+    const response = await axios.post<any>('/pacientes', data);
+    return normalizePaciente(response.data);
   },
 
   async update(id: string, data: PacienteDTO): Promise<Paciente> {
-    const response = await axios.put<Paciente>(`/pacientes/${id}`, data);
-    return response.data;
+    const response = await axios.put<any>(`/pacientes/${id}`, data);
+    return normalizePaciente(response.data);
   },
 
   async delete(id: string): Promise<void> {

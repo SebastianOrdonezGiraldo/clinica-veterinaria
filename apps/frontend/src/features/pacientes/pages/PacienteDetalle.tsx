@@ -1,26 +1,83 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, FileText, Calendar, User, Activity, ClipboardList } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
-import { getPacienteById, getConsultasByPaciente } from '@shared/utils/mockData';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { Paciente, Consulta, Propietario } from '@core/types';
+import { toast } from 'sonner';
 
 export default function PacienteDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('general');
-  const paciente = id ? getPacienteById(id) : undefined;
-  const consultas = id ? getConsultasByPaciente(id) : [];
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [propietario, setPropietario] = useState<Propietario | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      const [pacienteData, consultasData] = await Promise.all([
+        pacienteService.getById(id),
+        consultaService.getByPaciente(id),
+      ]);
+      
+      setPaciente(pacienteData);
+      setConsultas(consultasData);
+      
+      // Cargar propietario si no viene en el paciente
+      if (pacienteData.propietarioId && !pacienteData.propietario) {
+        try {
+          const propietarioData = await propietarioService.getById(pacienteData.propietarioId);
+          setPropietario(propietarioData);
+        } catch (error) {
+          console.error('Error al cargar propietario:', error);
+        }
+      } else if (pacienteData.propietario) {
+        setPropietario(pacienteData.propietario);
+      }
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los datos del paciente');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Cargando información del paciente...</p>
+      </div>
+    );
+  }
 
   if (!paciente) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold">Paciente no encontrado</h2>
+        <Button onClick={() => navigate('/pacientes')} className="mt-4">
+          Volver a Pacientes
+        </Button>
       </div>
     );
   }
+
+  const propietarioData = propietario || paciente.propietario;
 
   return (
     <div className="space-y-6">
@@ -100,33 +157,39 @@ export default function PacienteDetalle() {
               <CardTitle>Información del Propietario</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground">Nombre</p>
-                <p className="font-medium text-lg">{paciente.propietario?.nombre}</p>
-              </div>
-              {paciente.propietario?.documento && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Documento</p>
-                  <p className="font-medium">{paciente.propietario.documento}</p>
-                </div>
+              {propietarioData ? (
+                <>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Nombre</p>
+                    <p className="font-medium text-lg">{propietarioData.nombre}</p>
+                  </div>
+                  {propietarioData.documento && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Documento</p>
+                      <p className="font-medium">{propietarioData.documento}</p>
+                    </div>
+                  )}
+                  {propietarioData.email && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{propietarioData.email}</p>
+                    </div>
+                  )}
+                  {propietarioData.telefono && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Teléfono</p>
+                      <p className="font-medium">{propietarioData.telefono}</p>
+                    </div>
+                  )}
+                  <div className="pt-3">
+                    <Button onClick={() => navigate(`/propietarios/${paciente.propietarioId}`)}>
+                      Ver Perfil Completo
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground">No se pudo cargar la información del propietario</p>
               )}
-              {paciente.propietario?.email && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{paciente.propietario.email}</p>
-                </div>
-              )}
-              {paciente.propietario?.telefono && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Teléfono</p>
-                  <p className="font-medium">{paciente.propietario.telefono}</p>
-                </div>
-              )}
-              <div className="pt-3">
-                <Button onClick={() => navigate(`/propietarios/${paciente.propietarioId}`)}>
-                  Ver Perfil Completo
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -159,16 +222,16 @@ export default function PacienteDetalle() {
                               })}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            Atendido por {consulta.profesional?.nombre}
-                          </p>
-                          {consulta.diagnosticos && consulta.diagnosticos.length > 0 && (
+                          {consulta.profesionalNombre && (
+                            <p className="text-sm text-muted-foreground">
+                              Atendido por {consulta.profesionalNombre}
+                            </p>
+                          )}
+                          {consulta.diagnostico && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {consulta.diagnosticos.map((diag, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
-                                  {diag}
-                                </Badge>
-                              ))}
+                              <Badge variant="outline" className="text-xs">
+                                {consulta.diagnostico}
+                              </Badge>
                             </div>
                           )}
                         </div>

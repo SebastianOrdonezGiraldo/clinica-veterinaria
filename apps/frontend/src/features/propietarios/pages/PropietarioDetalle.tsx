@@ -1,24 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog, User, ClipboardList } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
-import { mockPropietarios, mockPacientes } from '@shared/utils/mockData';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { Propietario, Paciente } from '@core/types';
+import { toast } from 'sonner';
 
 export default function PropietarioDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('informacion');
-  
-  const propietario = mockPropietarios.find(p => p.id === id);
-  const mascotas = mockPacientes.filter(p => p.propietarioId === id);
+  const [propietario, setPropietario] = useState<Propietario | null>(null);
+  const [mascotas, setMascotas] = useState<Paciente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      const [propietarioData, mascotasData] = await Promise.all([
+        propietarioService.getById(id),
+        pacienteService.getByPropietario(id),
+      ]);
+      
+      setPropietario(propietarioData);
+      setMascotas(mascotasData);
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los datos del propietario');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Cargando información del propietario...</p>
+      </div>
+    );
+  }
 
   if (!propietario) {
     return (
       <div className="text-center py-12">
         <h3 className="text-lg font-medium">Propietario no encontrado</h3>
+        <Button onClick={() => navigate('/propietarios')} className="mt-4">
+          Volver a Propietarios
+        </Button>
       </div>
     );
   }
