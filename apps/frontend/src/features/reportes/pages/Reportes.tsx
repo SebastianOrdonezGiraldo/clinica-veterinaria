@@ -1,62 +1,137 @@
-import { useState } from 'react';
-import { BarChart3, Download, Calendar, TrendingUp, Users, Dog } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart3, Download, Calendar, TrendingUp, Users, Dog, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
-import { mockCitas, mockPacientes, mockConsultas, mockUsuarios } from '@shared/utils/mockData';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { reporteService, PeriodoReporte, ReporteDTO } from '@features/reportes/services/reporteService';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--info))', 'hsl(var(--warning))'];
 
 export default function Reportes() {
-  const [periodo, setPeriodo] = useState('mes');
+  const [periodo, setPeriodo] = useState<PeriodoReporte>('mes');
+  const [reporte, setReporte] = useState<ReporteDTO | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Estadísticas
-  const citasPorEstado = {
-    Confirmada: mockCitas.filter(c => c.estado === 'Confirmada').length,
-    Pendiente: mockCitas.filter(c => c.estado === 'Pendiente').length,
-    Atendida: mockCitas.filter(c => c.estado === 'Atendida').length,
-    Cancelada: mockCitas.filter(c => c.estado === 'Cancelada').length,
+  useEffect(() => {
+    loadReporte();
+  }, [periodo]);
+
+  const loadReporte = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await reporteService.generarReporte(periodo);
+      setReporte(data);
+    } catch (error: any) {
+      console.error('Error al cargar reporte:', error);
+      const errorMessage = error?.response?.data?.message || 'Error al cargar el reporte';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const dataEstados = Object.entries(citasPorEstado).map(([name, value]) => ({
-    name,
-    value
-  }));
-
-  const atencionesVet = mockUsuarios
-    .filter(u => u.rol === 'VET')
-    .map(vet => ({
-      nombre: vet.nombre.split(' ')[0],
-      consultas: mockConsultas.filter(c => c.profesionalId === vet.id).length,
-    }));
-
-  const pacientesPorEspecie = {
-    Canino: mockPacientes.filter(p => p.especie === 'Canino').length,
-    Felino: mockPacientes.filter(p => p.especie === 'Felino').length,
-    Otro: mockPacientes.filter(p => p.especie === 'Otro').length,
-  };
-
-  const dataEspecies = Object.entries(pacientesPorEspecie).map(([name, value]) => ({
-    name,
-    value
-  }));
-
-  // Datos de tendencia (simulados)
-  const tendenciaCitas = [
-    { mes: 'Ene', citas: 45 },
-    { mes: 'Feb', citas: 52 },
-    { mes: 'Mar', citas: 48 },
-    { mes: 'Abr', citas: 61 },
-    { mes: 'May', citas: 55 },
-    { mes: 'Jun', citas: 67 },
-  ];
 
   const handleExport = () => {
-    toast.success('Reporte exportado a CSV (simulado)');
+    if (!reporte) return;
+    
+    // Generar CSV simple
+    const csv = [
+      ['Reporte Operativo', `Periodo: ${periodo}`],
+      [''],
+      ['Estadísticas Generales'],
+      ['Total Citas', reporte.totalCitas],
+      ['Total Consultas', reporte.totalConsultas],
+      ['Total Pacientes', reporte.totalPacientes],
+      ['Total Veterinarios', reporte.totalVeterinarios],
+      [''],
+      ['Citas por Estado'],
+      ...reporte.citasPorEstado.map(c => [c.estado, c.cantidad]),
+      [''],
+      ['Tendencia de Citas'],
+      ...reporte.tendenciaCitas.map(t => [t.mes, t.citas]),
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reporte_${periodo}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Reporte exportado exitosamente');
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={`skeleton-${i}`}>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !reporte) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Reportes Operativos</h1>
+            <p className="text-muted-foreground mt-1">Análisis y estadísticas de la clínica</p>
+          </div>
+        </div>
+        <Card className="border-destructive">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-destructive/10 p-4 mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar reporte</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+              {error || 'No se pudo cargar el reporte. Por favor, intenta nuevamente.'}
+            </p>
+            <Button onClick={loadReporte} variant="outline">
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Preparar datos para gráficos
+  const dataEstados = reporte.citasPorEstado.map(c => ({
+    name: c.estado === 'PENDIENTE' ? 'Pendiente' :
+          c.estado === 'CONFIRMADA' ? 'Confirmada' :
+          c.estado === 'ATENDIDA' ? 'Atendida' :
+          c.estado === 'CANCELADA' ? 'Cancelada' : c.estado,
+    value: c.cantidad
+  }));
+
+  const dataEspecies = reporte.pacientesPorEspecie.map(p => ({
+    name: p.especie,
+    value: p.cantidad
+  }));
+
+  const atencionesVet = reporte.atencionesPorVeterinario;
 
   return (
     <div className="space-y-6">
@@ -66,7 +141,7 @@ export default function Reportes() {
           <p className="text-muted-foreground mt-1">Análisis y estadísticas de la clínica</p>
         </div>
         <div className="flex gap-3">
-          <Select value={periodo} onValueChange={setPeriodo}>
+          <Select value={periodo} onValueChange={(value) => setPeriodo(value as PeriodoReporte)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
@@ -93,8 +168,8 @@ export default function Reportes() {
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCitas.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">+12% vs mes anterior</p>
+            <div className="text-2xl font-bold">{reporte.totalCitas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total de citas registradas</p>
           </CardContent>
         </Card>
 
@@ -106,8 +181,8 @@ export default function Reportes() {
             <TrendingUp className="h-4 w-4 text-secondary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockConsultas.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">+8% vs mes anterior</p>
+            <div className="text-2xl font-bold">{reporte.totalConsultas}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total de consultas realizadas</p>
           </CardContent>
         </Card>
 
@@ -119,8 +194,8 @@ export default function Reportes() {
             <Dog className="h-4 w-4 text-info" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockPacientes.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">+5% vs mes anterior</p>
+            <div className="text-2xl font-bold">{reporte.totalPacientes}</div>
+            <p className="text-xs text-muted-foreground mt-1">Pacientes activos</p>
           </CardContent>
         </Card>
 
@@ -132,10 +207,8 @@ export default function Reportes() {
             <Users className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {mockUsuarios.filter(u => u.rol === 'VET').length}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Activos en el sistema</p>
+            <div className="text-2xl font-bold">{reporte.totalVeterinarios}</div>
+            <p className="text-xs text-muted-foreground mt-1">Veterinarios activos</p>
           </CardContent>
         </Card>
       </div>
@@ -170,7 +243,7 @@ export default function Reportes() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={tendenciaCitas}>
+              <LineChart data={reporte.tendenciaCitas}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="mes" className="text-xs" />
                 <YAxis className="text-xs" />
@@ -201,8 +274,8 @@ export default function Reportes() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {dataEspecies.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {dataEspecies.map((entry, index) => (
+                    <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -237,24 +310,23 @@ export default function Reportes() {
           <CardTitle>Top Motivos de Consulta</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-              <span className="text-sm font-medium">Vacunación</span>
-              <Badge>35%</Badge>
+          {reporte.topMotivosConsulta.length > 0 ? (
+            <div className="space-y-3">
+              {reporte.topMotivosConsulta.map((motivo) => (
+                <div key={motivo.motivo} className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
+                  <span className="text-sm font-medium">{motivo.motivo}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge>{motivo.cantidad}</Badge>
+                    <Badge variant="outline">{motivo.porcentaje.toFixed(1)}%</Badge>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-              <span className="text-sm font-medium">Consulta General</span>
-              <Badge>28%</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-              <span className="text-sm font-medium">Control</span>
-              <Badge>20%</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-              <span className="text-sm font-medium">Desparasitación</span>
-              <Badge>17%</Badge>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No hay datos de motivos de consulta para el periodo seleccionado
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

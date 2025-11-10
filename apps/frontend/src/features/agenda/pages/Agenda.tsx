@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, Plus, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter, AlertCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
@@ -33,6 +33,7 @@ export default function Agenda() {
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -41,19 +42,56 @@ export default function Agenda() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [citasData, pacientesData, propietariosData, usuariosData] = await Promise.all([
+      setError(null);
+      
+      // Cargar datos en paralelo, pero manejar errores individualmente
+      const results = await Promise.allSettled([
         citaService.getAll(),
         pacienteService.getAll(),
         propietarioService.getAll(),
         usuarioService.getAll(),
       ]);
-      setCitas(citasData);
-      setPacientes(pacientesData);
-      setPropietarios(propietariosData);
-      setVeterinarios(usuariosData.filter(u => u.rol === 'VET'));
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-      toast.error('Error al cargar las citas');
+
+      // Procesar resultados
+      if (results[0].status === 'fulfilled') {
+        setCitas(results[0].value);
+      } else {
+        console.error('Error al cargar citas:', results[0].reason);
+        const errorMessage = results[0].reason?.response?.data?.message || 'Error al cargar citas';
+        toast.error(errorMessage);
+      }
+
+      if (results[1].status === 'fulfilled') {
+        setPacientes(results[1].value);
+      } else {
+        console.error('Error al cargar pacientes:', results[1].reason);
+        // No mostrar toast, solo log
+      }
+
+      if (results[2].status === 'fulfilled') {
+        setPropietarios(results[2].value);
+      } else {
+        console.error('Error al cargar propietarios:', results[2].reason);
+        // No mostrar toast, solo log
+      }
+
+      if (results[3].status === 'fulfilled') {
+        setVeterinarios(results[3].value.filter(u => u.rol === 'VET'));
+      } else {
+        console.error('Error al cargar usuarios:', results[3].reason);
+        // No mostrar toast, solo log
+      }
+
+      // Si todos fallaron, mostrar error general
+      if (results.every(r => r.status === 'rejected')) {
+        setError('No se pudieron cargar los datos. Por favor, intenta recargar la página.');
+        toast.error('Error al cargar los datos de la agenda');
+      }
+    } catch (error: any) {
+      console.error('Error inesperado al cargar datos:', error);
+      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar la agenda';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -184,6 +222,15 @@ export default function Agenda() {
             {isLoading ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">Cargando citas...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">Error al cargar datos</h3>
+                <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                <Button onClick={loadData} variant="outline">
+                  Reintentar
+                </Button>
               </div>
             ) : citasFiltradas.length > 0 ? (
               <div className="space-y-3">

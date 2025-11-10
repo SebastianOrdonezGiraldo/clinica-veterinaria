@@ -1,17 +1,81 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pill, FileText, Calendar, User } from 'lucide-react';
+import { Pill, FileText, Calendar, User, Plus, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
-import { mockPrescripciones, mockConsultas, getPacienteById, mockUsuarios } from '@shared/utils/mockData';
+import { Skeleton } from '@shared/components/ui/skeleton';
+import { toast } from 'sonner';
+import { prescripcionService } from '@features/prescripciones/services/prescripcionService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { usuarioService } from '@features/usuarios/services/usuarioService';
+import { Prescripcion, Consulta, Paciente, Usuario } from '@core/types';
 
 export default function Prescripciones() {
   const navigate = useNavigate();
+  const [prescripciones, setPrescripciones] = useState<Prescripcion[]>([]);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const prescripcionesConDetalles = mockPrescripciones.map(presc => {
-    const consulta = mockConsultas.find(c => c.id === presc.consultaId);
-    const paciente = consulta ? getPacienteById(consulta.pacienteId) : undefined;
-    const profesional = consulta ? mockUsuarios.find(u => u.id === consulta.profesionalId) : undefined;
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Cargar datos en paralelo
+      const results = await Promise.allSettled([
+        prescripcionService.getAll(),
+        consultaService.getAll(),
+        pacienteService.getAll(),
+        usuarioService.getAll(),
+      ]);
+
+      if (results[0].status === 'fulfilled') {
+        setPrescripciones(results[0].value);
+      } else {
+        console.error('Error al cargar prescripciones:', results[0].reason);
+        const errorMessage = results[0].reason?.response?.data?.message || 'Error al cargar prescripciones';
+        toast.error(errorMessage);
+        setError(errorMessage);
+      }
+
+      if (results[1].status === 'fulfilled') {
+        setConsultas(results[1].value);
+      }
+
+      if (results[2].status === 'fulfilled') {
+        setPacientes(results[2].value);
+      }
+
+      if (results[3].status === 'fulfilled') {
+        setUsuarios(results[3].value);
+      }
+
+      if (results.every(r => r.status === 'rejected')) {
+        setError('No se pudieron cargar los datos. Por favor, intenta recargar la página.');
+      }
+    } catch (error: any) {
+      console.error('Error inesperado al cargar datos:', error);
+      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar las prescripciones';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const prescripcionesConDetalles = prescripciones.map(presc => {
+    const consulta = consultas.find(c => c.id === presc.consultaId);
+    const paciente = consulta ? pacientes.find(p => p.id === consulta.pacienteId) : undefined;
+    const profesional = consulta ? usuarios.find(u => u.id === consulta.profesionalId) : undefined;
     
     return {
       ...presc,
@@ -28,10 +92,42 @@ export default function Prescripciones() {
           <h1 className="text-3xl font-bold text-foreground">Prescripciones y Recetas</h1>
           <p className="text-muted-foreground mt-1">Gestión de prescripciones médicas</p>
         </div>
+        <Button className="gap-2" onClick={() => navigate('/prescripciones/nuevo')}>
+          <Plus className="h-4 w-4" />
+          Nueva Prescripción
+        </Button>
       </div>
 
-      <div className="grid gap-4">
-        {prescripcionesConDetalles.map((prescripcion) => (
+      {isLoading ? (
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : error ? (
+        <Card className="border-destructive">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-destructive/10 p-4 mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar datos</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">{error}</p>
+            <Button onClick={loadData} variant="outline">
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {prescripcionesConDetalles.map((prescripcion) => (
           <Card key={prescripcion.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -113,10 +209,11 @@ export default function Prescripciones() {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {prescripcionesConDetalles.length === 0 && (
+      {!isLoading && !error && prescripcionesConDetalles.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
             <Pill className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

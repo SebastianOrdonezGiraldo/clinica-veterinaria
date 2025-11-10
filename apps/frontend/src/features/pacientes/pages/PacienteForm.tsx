@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,6 +32,7 @@ type PacienteFormData = z.infer<typeof pacienteSchema>;
 export default function PacienteForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEdit = !!id;
 
   const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<PacienteFormData>({
@@ -111,15 +112,24 @@ export default function PacienteForm() {
         propietarioId: data.propietarioId, // Ya es string
       };
 
+      let pacienteId: string;
       if (isEdit && id) {
         await pacienteService.update(id, pacienteData);
         toast.success('Paciente actualizado exitosamente');
+        pacienteId = id;
       } else {
-        await pacienteService.create(pacienteData);
+        const nuevoPaciente = await pacienteService.create(pacienteData);
         toast.success('Paciente registrado exitosamente');
+        pacienteId = nuevoPaciente.id;
       }
       
-      navigate('/pacientes');
+      // Si hay un returnTo en el state, regresar allí con el pacienteId
+      const state = location.state as { returnTo?: string } | null;
+      if (state?.returnTo) {
+        navigate(state.returnTo, { state: { pacienteId } });
+      } else {
+        navigate('/pacientes');
+      }
     } catch (error: any) {
       console.error('Error al guardar paciente:', error);
       toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el paciente`);

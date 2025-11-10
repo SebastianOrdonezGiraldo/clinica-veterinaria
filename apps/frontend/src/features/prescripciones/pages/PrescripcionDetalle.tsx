@@ -1,24 +1,142 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Printer, Pill } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Pill, AlertCircle } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Separator } from '@shared/components/ui/separator';
-import { mockPrescripciones, mockConsultas, getPacienteById, mockUsuarios } from '@shared/utils/mockData';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import { toast } from 'sonner';
+import { prescripcionService } from '@features/prescripciones/services/prescripcionService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { usuarioService } from '@features/usuarios/services/usuarioService';
+import { Prescripcion, Consulta, Paciente, Usuario, Propietario } from '@core/types';
 
 export default function PrescripcionDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const prescripcion = mockPrescripciones.find(p => p.id === id);
-  const consulta = prescripcion ? mockConsultas.find(c => c.id === prescripcion.consultaId) : undefined;
-  const paciente = consulta ? getPacienteById(consulta.pacienteId) : undefined;
-  const profesional = consulta ? mockUsuarios.find(u => u.id === consulta.profesionalId) : undefined;
+  const [prescripcion, setPrescripcion] = useState<Prescripcion | null>(null);
+  const [consulta, setConsulta] = useState<Consulta | null>(null);
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [propietario, setPropietario] = useState<Propietario | null>(null);
+  const [profesional, setProfesional] = useState<Usuario | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!prescripcion || !consulta || !paciente) {
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const prescripcionData = await prescripcionService.getById(id);
+      setPrescripcion(prescripcionData);
+
+      // Cargar consulta
+      const consultaData = await consultaService.getById(prescripcionData.consultaId);
+      setConsulta(consultaData);
+
+      // Cargar paciente
+      const pacienteData = await pacienteService.getById(consultaData.pacienteId);
+      setPaciente(pacienteData);
+
+      // Cargar propietario
+      if (pacienteData.propietarioId) {
+        try {
+          const propietarioData = await propietarioService.getById(pacienteData.propietarioId);
+          setPropietario(propietarioData);
+        } catch (error) {
+          console.error('Error al cargar propietario:', error);
+          // No es crítico, continuar sin propietario
+        }
+      }
+
+      // Cargar profesional
+      if (consultaData.profesionalId) {
+        try {
+          const profesionalData = await usuarioService.getById(consultaData.profesionalId);
+          setProfesional(profesionalData);
+        } catch (error) {
+          console.error('Error al cargar profesional:', error);
+          // No es crítico, continuar sin profesional
+        }
+      }
+    } catch (error: any) {
+      console.error('Error al cargar prescripción:', error);
+      const statusCode = error?.response?.status;
+      const errorMessage = error?.response?.data?.message;
+      
+      if (statusCode === 404) {
+        setError('Prescripción no encontrada');
+      } else if (statusCode === 403) {
+        setError('No tienes permisos para ver esta prescripción');
+      } else {
+        setError(errorMessage || 'Error al cargar la prescripción');
+      }
+      toast.error(errorMessage || 'Error al cargar la prescripción');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold">Prescripción no encontrada</h2>
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !prescripcion || !consulta || !paciente) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/prescripciones')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-foreground">Prescripción no encontrada</h1>
+          </div>
+        </div>
+        <Card className="border-destructive">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-destructive/10 p-4 mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Prescripción no encontrada</h2>
+            <p className="text-muted-foreground mb-4">
+              {error || 'La prescripción que buscas no existe o no tienes permisos para verla.'}
+            </p>
+            <div className="flex gap-3">
+              <Button onClick={() => navigate('/prescripciones')} variant="outline">
+                Volver a Prescripciones
+              </Button>
+              {error && (
+                <Button onClick={loadData}>
+                  Reintentar
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -73,21 +191,38 @@ export default function PrescripcionDetalle() {
                 <p className="font-medium text-lg">{paciente.nombre}</p>
                 <p className="text-sm">Especie: {paciente.especie}</p>
                 <p className="text-sm">Raza: {paciente.raza || 'N/A'}</p>
-                <p className="text-sm">Propietario: {paciente.propietario?.nombre}</p>
+                <p className="text-sm">Propietario: {propietario?.nombre || 'N/A'}</p>
               </div>
             </div>
             <div>
               <h3 className="font-semibold text-sm text-muted-foreground mb-2">Información de la Consulta</h3>
               <div className="space-y-1">
-                <p className="text-sm">Fecha: {new Date(consulta.fecha).toLocaleDateString('es-ES', { 
+                <p className="text-sm">Fecha de Consulta: {new Date(consulta.fecha).toLocaleDateString('es-ES', { 
                   day: '2-digit', 
                   month: 'long', 
                   year: 'numeric' 
                 })}</p>
-                <p className="text-sm">Profesional: {profesional?.nombre}</p>
+                {prescripcion.fechaEmision && (
+                  <p className="text-sm">Fecha de Emisión: {new Date(prescripcion.fechaEmision).toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}</p>
+                )}
+                <p className="text-sm">Profesional: {profesional?.nombre || 'N/A'}</p>
               </div>
             </div>
           </div>
+
+          {prescripcion.indicacionesGenerales && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm text-muted-foreground mb-2">Indicaciones Generales</h3>
+                <p className="text-sm whitespace-pre-wrap">{prescripcion.indicacionesGenerales}</p>
+              </div>
+            </>
+          )}
 
           <Separator />
 
@@ -121,6 +256,20 @@ export default function PrescripcionDetalle() {
                       <span className="text-sm font-medium text-muted-foreground">Frecuencia:</span>
                       <span className="font-medium">{item.frecuencia}</span>
                     </div>
+                    {item.viaAdministracion && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">Vía:</span>
+                        <span className="font-medium">
+                          {item.viaAdministracion === 'ORAL' ? 'Oral' :
+                           item.viaAdministracion === 'INYECTABLE' ? 'Inyectable' :
+                           item.viaAdministracion === 'TOPICA' ? 'Tópica' :
+                           item.viaAdministracion === 'OFTALMICA' ? 'Oftálmica' :
+                           item.viaAdministracion === 'OTICA' ? 'Ótica' :
+                           item.viaAdministracion === 'OTRA' ? 'Otra' :
+                           item.viaAdministracion}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {item.indicaciones && (
@@ -145,3 +294,4 @@ export default function PrescripcionDetalle() {
     </div>
   );
 }
+

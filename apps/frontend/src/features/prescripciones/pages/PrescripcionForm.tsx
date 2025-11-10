@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
@@ -7,39 +7,81 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Textarea } from '@shared/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import { Breadcrumbs } from '@shared/components/common/Breadcrumbs';
-import { mockConsultas, mockPacientes, mockPropietarios } from '@shared/utils/mockData';
 import { toast } from 'sonner';
+import { prescripcionService, ItemPrescripcionDTO } from '@features/prescripciones/services/prescripcionService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { Consulta, Paciente, Propietario } from '@core/types';
 
 interface Medicamento {
   id: string;
-  nombre: string;
+  medicamento: string;
+  presentacion?: string;
   dosis: string;
   frecuencia: string;
-  duracion: string;
-  via: string;
+  duracionDias: number;
+  viaAdministracion: 'ORAL' | 'INYECTABLE' | 'TOPICA' | 'OFTALMICA' | 'OTICA' | 'OTRA';
+  indicaciones?: string;
 }
 
 export default function PrescripcionForm() {
   const navigate = useNavigate();
   const [consultaId, setConsultaId] = useState('');
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([
-    { id: '1', nombre: '', dosis: '', frecuencia: '', duracion: '', via: 'Oral' }
+    { 
+      id: '1', 
+      medicamento: '', 
+      dosis: '', 
+      frecuencia: '', 
+      duracionDias: 0, 
+      viaAdministracion: 'ORAL' 
+    }
   ]);
   const [indicaciones, setIndicaciones] = useState('');
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const consultaSeleccionada = mockConsultas.find(c => c.id === consultaId);
-  const paciente = consultaSeleccionada ? mockPacientes.find(p => p.id === consultaSeleccionada.pacienteId) : undefined;
-  const propietario = paciente ? mockPropietarios.find(p => p.id === paciente.propietarioId) : undefined;
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setIsLoadingData(true);
+      const [consultasData, pacientesData, propietariosData] = await Promise.all([
+        consultaService.getAll(),
+        pacienteService.getAll(),
+        propietarioService.getAll(),
+      ]);
+      setConsultas(consultasData);
+      setPacientes(pacientesData);
+      setPropietarios(propietariosData);
+    } catch (error: any) {
+      console.error('Error al cargar datos:', error);
+      toast.error('Error al cargar los datos');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const consultaSeleccionada = consultas.find(c => c.id === consultaId);
+  const paciente = consultaSeleccionada ? pacientes.find(p => p.id === consultaSeleccionada.pacienteId) : undefined;
+  const propietario = paciente ? propietarios.find(p => p.id === paciente.propietarioId) : undefined;
 
   const agregarMedicamento = () => {
     setMedicamentos([...medicamentos, {
       id: Date.now().toString(),
-      nombre: '',
+      medicamento: '',
       dosis: '',
       frecuencia: '',
-      duracion: '',
-      via: 'Oral'
+      duracionDias: 0,
+      viaAdministracion: 'ORAL'
     }]);
   };
 
@@ -49,20 +91,70 @@ export default function PrescripcionForm() {
     }
   };
 
-  const actualizarMedicamento = (id: string, campo: keyof Medicamento, valor: string) => {
+  const actualizarMedicamento = (id: string, campo: keyof Medicamento, valor: string | number) => {
     setMedicamentos(medicamentos.map(m =>
       m.id === id ? { ...m, [campo]: valor } : m
     ));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!consultaId) {
       toast.error('Debe seleccionar una consulta');
       return;
     }
-    toast.success('Prescripción creada exitosamente');
-    navigate('/prescripciones');
+
+    // Validar que al menos hay un medicamento con datos
+    const medicamentosValidos = medicamentos.filter(m => 
+      m.medicamento.trim() && m.dosis.trim() && m.frecuencia.trim() && m.duracionDias > 0
+    );
+
+    if (medicamentosValidos.length === 0) {
+      toast.error('Debe agregar al menos un medicamento con todos los datos completos');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const items: ItemPrescripcionDTO[] = medicamentosValidos.map(m => ({
+        medicamento: m.medicamento.trim(),
+        presentacion: m.presentacion?.trim() || undefined,
+        dosis: m.dosis.trim(),
+        frecuencia: m.frecuencia.trim(),
+        duracionDias: m.duracionDias,
+        viaAdministracion: m.viaAdministracion,
+        indicaciones: m.indicaciones?.trim() || undefined,
+      }));
+
+      await prescripcionService.create({
+        consultaId,
+        indicacionesGenerales: indicaciones.trim() || undefined,
+        items,
+      });
+
+      toast.success('Prescripción creada exitosamente');
+      navigate('/prescripciones');
+    } catch (error: any) {
+      console.error('Error al crear prescripción:', error);
+      const statusCode = error?.response?.status;
+      const errorMessage = error?.response?.data?.message;
+      
+      if (statusCode === 400) {
+        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
+      } else if (statusCode === 403) {
+        toast.error('No tienes permisos para crear prescripciones');
+      } else if (statusCode === 404) {
+        toast.error('La consulta no existe');
+      } else if (statusCode === 500) {
+        toast.error('Error del servidor. Por favor, intenta nuevamente');
+      } else {
+        toast.error(errorMessage || 'Error al crear la prescripción. Por favor, intenta nuevamente');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,21 +182,25 @@ export default function PrescripcionForm() {
           <CardContent className="space-y-4">
             <div>
               <Label>Consulta *</Label>
-              <Select value={consultaId} onValueChange={setConsultaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar consulta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockConsultas.map((consulta) => {
-                    const pac = mockPacientes.find(p => p.id === consulta.pacienteId);
-                    return (
-                      <SelectItem key={consulta.id} value={consulta.id}>
-                        {new Date(consulta.fecha).toLocaleDateString()} - {pac?.nombre}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              {isLoadingData ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select value={consultaId} onValueChange={setConsultaId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar consulta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {consultas.map((consulta) => {
+                      const pac = pacientes.find(p => p.id === consulta.pacienteId);
+                      return (
+                        <SelectItem key={consulta.id} value={consulta.id}>
+                          {new Date(consulta.fecha).toLocaleDateString('es-ES')} - {pac?.nombre || 'N/A'}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {paciente && (
@@ -163,27 +259,36 @@ export default function PrescripcionForm() {
                   <div>
                     <Label>Nombre del Medicamento *</Label>
                     <Input
-                      value={med.nombre}
-                      onChange={(e) => actualizarMedicamento(med.id, 'nombre', e.target.value)}
+                      value={med.medicamento}
+                      onChange={(e) => actualizarMedicamento(med.id, 'medicamento', e.target.value)}
                       placeholder="Ej: Amoxicilina"
                       required
                     />
                   </div>
                   <div>
+                    <Label>Presentación</Label>
+                    <Input
+                      value={med.presentacion || ''}
+                      onChange={(e) => actualizarMedicamento(med.id, 'presentacion', e.target.value)}
+                      placeholder="Ej: Tabletas 250mg"
+                    />
+                  </div>
+                  <div>
                     <Label>Vía de Administración *</Label>
                     <Select
-                      value={med.via}
-                      onValueChange={(value) => actualizarMedicamento(med.id, 'via', value)}
+                      value={med.viaAdministracion}
+                      onValueChange={(value) => actualizarMedicamento(med.id, 'viaAdministracion', value as any)}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Oral">Oral</SelectItem>
-                        <SelectItem value="Inyectable">Inyectable</SelectItem>
-                        <SelectItem value="Tópica">Tópica</SelectItem>
-                        <SelectItem value="Oftálmica">Oftálmica</SelectItem>
-                        <SelectItem value="Ótica">Ótica</SelectItem>
+                        <SelectItem value="ORAL">Oral</SelectItem>
+                        <SelectItem value="INYECTABLE">Inyectable</SelectItem>
+                        <SelectItem value="TOPICA">Tópica</SelectItem>
+                        <SelectItem value="OFTALMICA">Oftálmica</SelectItem>
+                        <SelectItem value="OTICA">Ótica</SelectItem>
+                        <SelectItem value="OTRA">Otra</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -206,12 +311,23 @@ export default function PrescripcionForm() {
                     />
                   </div>
                   <div>
-                    <Label>Duración *</Label>
+                    <Label>Duración (días) *</Label>
                     <Input
-                      value={med.duracion}
-                      onChange={(e) => actualizarMedicamento(med.id, 'duracion', e.target.value)}
-                      placeholder="Ej: 7 días"
+                      type="number"
+                      min="1"
+                      value={med.duracionDias || ''}
+                      onChange={(e) => actualizarMedicamento(med.id, 'duracionDias', e.target.value ? parseInt(e.target.value, 10) : 0)}
+                      placeholder="Ej: 7"
                       required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Indicaciones</Label>
+                    <Textarea
+                      value={med.indicaciones || ''}
+                      onChange={(e) => actualizarMedicamento(med.id, 'indicaciones', e.target.value)}
+                      placeholder="Indicaciones específicas para este medicamento"
+                      rows={2}
                     />
                   </div>
                 </div>
@@ -235,11 +351,11 @@ export default function PrescripcionForm() {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate('/prescripciones')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/prescripciones')} disabled={isLoading}>
             Cancelar
           </Button>
-          <Button type="submit">
-            Crear Prescripción
+          <Button type="submit" disabled={isLoading || isLoadingData}>
+            {isLoading ? 'Creando...' : 'Crear Prescripción'}
           </Button>
         </div>
       </form>

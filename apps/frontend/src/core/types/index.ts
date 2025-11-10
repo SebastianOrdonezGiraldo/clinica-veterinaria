@@ -92,12 +92,17 @@ export interface PrescripcionItem {
   dosis: string;
   frecuencia: string;
   duracionDias: number;
+  viaAdministracion?: 'ORAL' | 'INYECTABLE' | 'TOPICA' | 'OFTALMICA' | 'OTICA' | 'OTRA';
   indicaciones?: string;
 }
 
 export interface Prescripcion {
   id: string;
   consultaId: string;
+  fechaEmision?: string;
+  indicacionesGenerales?: string;
   items: PrescripcionItem[];
   consulta?: Consulta;
+  createdAt?: string;
+  updatedAt?: string;
 }
