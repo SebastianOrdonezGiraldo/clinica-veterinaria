@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog, User, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, FileText, Dog, User } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { Propietario, Paciente } from '@core/types';
@@ -46,8 +47,30 @@ export default function PropietarioDetalle() {
 
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Cargando información del propietario...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-md" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -112,9 +135,14 @@ export default function PropietarioDetalle() {
               {propietario.email && (
                 <div className="flex items-start gap-3">
                   <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{propietario.email}</p>
+                    <a
+                      href={`mailto:${propietario.email}`}
+                      className="font-medium text-primary hover:underline flex items-center gap-2"
+                    >
+                      {propietario.email}
+                    </a>
                   </div>
                 </div>
               )}
@@ -122,9 +150,14 @@ export default function PropietarioDetalle() {
               {propietario.telefono && (
                 <div className="flex items-start gap-3">
                   <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Teléfono</p>
-                    <p className="font-medium">{propietario.telefono}</p>
+                    <a
+                      href={`tel:${propietario.telefono}`}
+                      className="font-medium text-primary hover:underline flex items-center gap-2"
+                    >
+                      {propietario.telefono}
+                    </a>
                   </div>
                 </div>
               )}

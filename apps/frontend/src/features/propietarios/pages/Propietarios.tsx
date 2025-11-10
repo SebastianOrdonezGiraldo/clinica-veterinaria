@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, User, Mail, Phone, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, User, Mail, Phone, MoreVertical, Edit, Trash2, Eye, Inbox } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
@@ -19,15 +19,27 @@ export default function Propietarios() {
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [orderBy, setOrderBy] = useState<'nombre' | 'documento' | 'mascotas'>('nombre');
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Resetear a la primera página al buscar
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const loadData = async () => {
     try {
@@ -46,41 +58,53 @@ export default function Propietarios() {
     }
   };
 
-  let filteredPropietarios = propietarios.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.documento?.includes(searchTerm)
-  );
+  // Filtrar con el término de búsqueda con debounce
+  const filteredPropietarios = useMemo(() => {
+    return propietarios.filter(p =>
+      p.nombre.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      p.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      p.documento?.includes(debouncedSearchTerm)
+    );
+  }, [propietarios, debouncedSearchTerm]);
 
   const getPacientesCount = (propietarioId: string) => 
     pacientes.filter(p => p.propietarioId === propietarioId).length;
 
-  // Ordenar
-  filteredPropietarios.sort((a, b) => {
-    if (orderBy === 'nombre') return a.nombre.localeCompare(b.nombre);
-    if (orderBy === 'documento') return (a.documento || '').localeCompare(b.documento || '');
-    if (orderBy === 'mascotas') return getPacientesCount(b.id) - getPacientesCount(a.id);
-    return 0;
-  });
+  // Ordenar y paginar
+  const sortedAndPaginatedPropietarios = useMemo(() => {
+    const sorted = [...filteredPropietarios].sort((a, b) => {
+      if (orderBy === 'nombre') return a.nombre.localeCompare(b.nombre);
+      if (orderBy === 'documento') return (a.documento || '').localeCompare(b.documento || '');
+      if (orderBy === 'mascotas') return getPacientesCount(b.id) - getPacientesCount(a.id);
+      return 0;
+    });
 
-  // Paginación
+    return sorted.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredPropietarios, orderBy, currentPage, pacientes]);
+
   const totalPages = Math.ceil(filteredPropietarios.length / itemsPerPage);
-  const paginatedPropietarios = filteredPropietarios.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handleDelete = async () => {
     if (!deleteId) return;
 
     try {
+      setIsDeleting(true);
+      // Optimistic update: remover de la lista inmediatamente
+      setPropietarios(prev => prev.filter(p => p.id !== deleteId));
+      setDeleteId(null);
+
       await propietarioService.delete(deleteId);
       toast.success('Propietario eliminado exitosamente');
-      setDeleteId(null);
-      await loadData(); // Recargar los datos
     } catch (error: any) {
       console.error('Error al eliminar propietario:', error);
+      // Revertir el cambio optimista en caso de error
+      await loadData();
       toast.error(error.response?.data?.message || 'Error al eliminar el propietario');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -124,7 +148,7 @@ export default function Propietarios() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {paginatedPropietarios.map((propietario) => (
+            {sortedAndPaginatedPropietarios.map((propietario) => (
               <Card key={propietario.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -205,13 +229,31 @@ export default function Propietarios() {
       )}
 
       {!isLoading && filteredPropietarios.length === 0 && (
-        <div className="text-center py-12">
-          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground">No se encontraron propietarios</h3>
-          <p className="text-muted-foreground mt-1">
-            {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando un nuevo propietario'}
-          </p>
-        </div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              {searchTerm ? (
+                <Search className="h-8 w-8 text-muted-foreground" />
+              ) : (
+                <Inbox className="h-8 w-8 text-muted-foreground" />
+              )}
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {searchTerm ? 'No se encontraron resultados' : 'No hay propietarios registrados'}
+            </h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+              {searchTerm 
+                ? `No se encontraron propietarios que coincidan con "${searchTerm}". Intenta con otros términos de búsqueda.`
+                : 'Comienza agregando tu primer propietario para gestionar la información de los dueños de las mascotas.'}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => navigate('/propietarios/nuevo')} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Agregar Primer Propietario
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
@@ -224,8 +266,12 @@ export default function Propietarios() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Eliminar
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

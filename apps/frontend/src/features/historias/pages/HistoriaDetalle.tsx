@@ -1,21 +1,149 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Calendar, User, Activity, FileText, Pill } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Separator } from '@shared/components/ui/separator';
-import { getPacienteById, getConsultasByPaciente, mockPrescripciones } from '@shared/utils/mockData';
+import { Skeleton } from '@shared/components/ui/skeleton';
+import { toast } from 'sonner';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { Paciente, Consulta } from '@core/types';
 
 export default function HistoriaDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const paciente = id ? getPacienteById(id) : undefined;
-  const consultas = id ? getConsultasByPaciente(id) : [];
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!paciente) {
+  useEffect(() => {
+    if (id) {
+      loadData();
+    }
+  }, [id]);
+
+  const loadData = async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Cargar datos en paralelo, pero manejar errores individualmente
+      const results = await Promise.allSettled([
+        pacienteService.getById(id),
+        consultaService.getByPaciente(id),
+      ]);
+
+      // Procesar resultados
+      if (results[0].status === 'fulfilled') {
+        setPaciente(results[0].value);
+      } else {
+        const error = results[0].reason;
+        console.error('Error al cargar paciente:', error);
+        const errorMessage = error?.response?.data?.message || 'Error al cargar el paciente';
+        const statusCode = error?.response?.status;
+        
+        if (statusCode === 404) {
+          setError('Paciente no encontrado');
+        } else if (statusCode === 403) {
+          setError('No tienes permisos para ver este paciente');
+          toast.error('No tienes permisos para ver este paciente');
+        } else {
+          setError(errorMessage);
+          toast.error(errorMessage);
+        }
+        return;
+      }
+
+      if (results[1].status === 'fulfilled') {
+        setConsultas(results[1].value);
+      } else {
+        const error = results[1].reason;
+        console.error('Error al cargar consultas:', error);
+        const errorMessage = error?.response?.data?.message || 'Error al cargar las consultas';
+        const statusCode = error?.response?.status;
+        
+        if (statusCode === 403) {
+          toast.error('No tienes permisos para ver las consultas');
+        } else {
+          toast.error(errorMessage);
+        }
+        // Continuar mostrando el paciente aunque fallen las consultas
+        setConsultas([]);
+      }
+    } catch (error: any) {
+      console.error('Error inesperado al cargar datos:', error);
+      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar la historia clínica';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32 ml-auto" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-48" />
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-64" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !paciente) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold">Paciente no encontrado</h2>
+        <div className="rounded-full bg-destructive/10 p-4 mb-4 inline-block">
+          <FileText className="h-8 w-8 text-destructive" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Paciente no encontrado</h2>
+        <p className="text-muted-foreground mb-4">
+          {error || 'El paciente que buscas no existe o no tienes permisos para verlo.'}
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Button onClick={() => navigate('/historias')} variant="outline">
+            Volver a Historias Clínicas
+          </Button>
+          {error && (
+            <Button onClick={loadData}>
+              Reintentar
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -44,7 +172,7 @@ export default function HistoriaDetalle() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Propietario</p>
-              <p className="font-medium">{paciente.propietario?.nombre}</p>
+              <p className="font-medium">{paciente.propietarioNombre || 'Sin propietario'}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Sexo</p>
@@ -74,8 +202,6 @@ export default function HistoriaDetalle() {
         <h2 className="text-xl font-semibold mb-4">Timeline de Consultas</h2>
         <div className="space-y-4">
           {consultas.map((consulta, index) => {
-            const prescripcion = mockPrescripciones.find(p => p.consultaId === consulta.id);
-            
             return (
               <Card key={consulta.id} className="relative">
                 {index !== consultas.length - 1 && (
@@ -92,16 +218,18 @@ export default function HistoriaDetalle() {
                           Consulta - {new Date(consulta.fecha).toLocaleDateString('es-ES', { 
                             day: '2-digit', 
                             month: 'long', 
-                            year: 'numeric' 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
                         </CardTitle>
                         <div className="flex items-center gap-2 mt-1">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">{consulta.profesional?.nombre}</p>
+                          <p className="text-sm text-muted-foreground">{consulta.profesionalNombre || 'Sin profesional'}</p>
                         </div>
                       </div>
                     </div>
-                    {prescripcion && (
+                    {consulta.prescripcionesIds && consulta.prescripcionesIds.length > 0 && (
                       <Badge className="bg-info/10 text-info border-info/20">
                         <Pill className="h-3 w-3 mr-1" />
                         Con Prescripción
@@ -110,85 +238,79 @@ export default function HistoriaDetalle() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {consulta.signosVitales && (
+                  {(consulta.frecuenciaCardiaca || consulta.frecuenciaRespiratoria || consulta.temperatura || consulta.pesoKg) && (
                     <div>
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                         <Activity className="h-4 w-4 text-primary" />
                         Signos Vitales
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-accent/50 rounded-lg">
-                        {consulta.signosVitales.fc && (
+                        {consulta.frecuenciaCardiaca && (
                           <div>
                             <p className="text-xs text-muted-foreground">FC</p>
-                            <p className="text-sm font-medium">{consulta.signosVitales.fc} lpm</p>
+                            <p className="text-sm font-medium">{consulta.frecuenciaCardiaca} lpm</p>
                           </div>
                         )}
-                        {consulta.signosVitales.fr && (
+                        {consulta.frecuenciaRespiratoria && (
                           <div>
                             <p className="text-xs text-muted-foreground">FR</p>
-                            <p className="text-sm font-medium">{consulta.signosVitales.fr} rpm</p>
+                            <p className="text-sm font-medium">{consulta.frecuenciaRespiratoria} rpm</p>
                           </div>
                         )}
-                        {consulta.signosVitales.temp && (
+                        {consulta.temperatura && (
                           <div>
                             <p className="text-xs text-muted-foreground">Temperatura</p>
-                            <p className="text-sm font-medium">{consulta.signosVitales.temp}°C</p>
+                            <p className="text-sm font-medium">{consulta.temperatura}°C</p>
                           </div>
                         )}
-                        {consulta.signosVitales.peso && (
+                        {consulta.pesoKg && (
                           <div>
                             <p className="text-xs text-muted-foreground">Peso</p>
-                            <p className="text-sm font-medium">{consulta.signosVitales.peso} kg</p>
+                            <p className="text-sm font-medium">{consulta.pesoKg} kg</p>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {consulta.examen && (
+                  {consulta.examenFisico && (
                     <div>
                       <h4 className="font-semibold text-sm mb-2">Examen Físico</h4>
-                      <p className="text-sm text-muted-foreground">{consulta.examen}</p>
+                      <p className="text-sm text-muted-foreground">{consulta.examenFisico}</p>
                     </div>
                   )}
 
-                  {consulta.diagnosticos && consulta.diagnosticos.length > 0 && (
+                  {consulta.diagnostico && (
                     <div>
-                      <h4 className="font-semibold text-sm mb-2">Diagnósticos</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {consulta.diagnosticos.map((diag, i) => (
-                          <Badge key={i} variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
-                            {diag}
-                          </Badge>
-                        ))}
-                      </div>
+                      <h4 className="font-semibold text-sm mb-2">Diagnóstico</h4>
+                      <p className="text-sm text-muted-foreground">{consulta.diagnostico}</p>
                     </div>
                   )}
 
-                  {consulta.procedimientos && consulta.procedimientos.length > 0 && (
+                  {consulta.tratamiento && (
                     <div>
-                      <h4 className="font-semibold text-sm mb-2">Procedimientos</h4>
-                      <ul className="space-y-1">
-                        {consulta.procedimientos.map((proc, i) => (
-                          <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            {proc}
-                          </li>
-                        ))}
-                      </ul>
+                      <h4 className="font-semibold text-sm mb-2">Tratamiento</h4>
+                      <p className="text-sm text-muted-foreground">{consulta.tratamiento}</p>
                     </div>
                   )}
 
-                  {prescripcion && (
+                  {consulta.observaciones && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Observaciones</h4>
+                      <p className="text-sm text-muted-foreground">{consulta.observaciones}</p>
+                    </div>
+                  )}
+
+                  {consulta.prescripcionesIds && consulta.prescripcionesIds.length > 0 && (
                     <div className="pt-3 border-t">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => navigate(`/prescripciones/${prescripcion.id}`)}
+                        onClick={() => navigate(`/prescripciones?consultaId=${consulta.id}`)}
                         className="gap-2"
                       >
                         <FileText className="h-4 w-4" />
-                        Ver Prescripción
+                        Ver Prescripción{consulta.prescripcionesIds.length > 1 ? 'es' : ''}
                       </Button>
                     </div>
                   )}

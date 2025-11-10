@@ -1,23 +1,30 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, FileText } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Textarea } from '@shared/components/ui/textarea';
-import { useToast } from '@shared/hooks/use-toast';
-import { getPacienteById } from '@shared/utils/mockData';
-import { useState } from 'react';
+import { Skeleton } from '@shared/components/ui/skeleton';
+import { toast } from 'sonner';
+import { useAuth } from '@core/auth/AuthContext';
+import { pacienteService } from '@features/pacientes/services/pacienteService';
+import { consultaService } from '@features/historias/services/consultaService';
+import { Paciente } from '@core/types';
 
 const consultaSchema = z.object({
-  fc: z.number().positive().optional(),
-  fr: z.number().positive().optional(),
-  temp: z.number().positive().optional(),
-  peso: z.number().positive().optional(),
-  examen: z.string().max(2000).optional(),
+  frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
+  frecuenciaRespiratoria: z.number().positive().optional().or(z.literal('')),
+  temperatura: z.number().positive().optional().or(z.literal('')),
+  pesoKg: z.number().positive().optional().or(z.literal('')),
+  examenFisico: z.string().max(2000).optional(),
+  diagnostico: z.string().max(500).optional(),
+  tratamiento: z.string().max(1000).optional(),
+  observaciones: z.string().max(1000).optional(),
 });
 
 type ConsultaFormData = z.infer<typeof consultaSchema>;
@@ -25,52 +32,177 @@ type ConsultaFormData = z.infer<typeof consultaSchema>;
 export default function ConsultaForm() {
   const { pacienteId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [diagnosticos, setDiagnosticos] = useState<string[]>([]);
-  const [procedimientos, setProcedimientos] = useState<string[]>([]);
-  const [nuevoDiagnostico, setNuevoDiagnostico] = useState('');
-  const [nuevoProcedimiento, setNuevoProcedimiento] = useState('');
-
-  const paciente = pacienteId ? getPacienteById(pacienteId) : undefined;
+  const { user } = useAuth();
+  const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ConsultaFormData>({
     resolver: zodResolver(consultaSchema),
   });
 
-  const agregarDiagnostico = () => {
-    if (nuevoDiagnostico.trim()) {
-      setDiagnosticos([...diagnosticos, nuevoDiagnostico.trim()]);
-      setNuevoDiagnostico('');
+  useEffect(() => {
+    if (pacienteId) {
+      loadPaciente();
+    }
+  }, [pacienteId]);
+
+  const loadPaciente = async () => {
+    if (!pacienteId) return;
+    
+    try {
+      setIsLoadingData(true);
+      setError(null);
+      const pacienteData = await pacienteService.getById(pacienteId);
+      setPaciente(pacienteData);
+    } catch (error: any) {
+      console.error('Error al cargar paciente:', error);
+      const statusCode = error?.response?.status;
+      const errorMessage = error?.response?.data?.message || 'Error al cargar los datos del paciente';
+      
+      if (statusCode === 404) {
+        setError('Paciente no encontrado');
+      } else if (statusCode === 403) {
+        setError('No tienes permisos para ver este paciente');
+        toast.error('No tienes permisos para ver este paciente');
+      } else {
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
-  const agregarProcedimiento = () => {
-    if (nuevoProcedimiento.trim()) {
-      setProcedimientos([...procedimientos, nuevoProcedimiento.trim()]);
-      setNuevoProcedimiento('');
+  const onSubmit = async (data: ConsultaFormData) => {
+    // Validaciones previas
+    if (!pacienteId) {
+      toast.error('Error: ID de paciente no válido');
+      return;
+    }
+
+    if (!user?.id) {
+      toast.error('Error: Debes estar autenticado para crear una consulta');
+      return;
+    }
+
+    // Validar que el usuario tenga rol adecuado (VET o ADMIN)
+    if (user.rol !== 'VET' && user.rol !== 'ADMIN') {
+      toast.error('Error: Solo los veterinarios pueden crear consultas');
+      return;
+    }
+
+    // Validar que al menos haya algún dato de la consulta
+    const hasData = 
+      data.frecuenciaCardiaca || 
+      data.frecuenciaRespiratoria || 
+      data.temperatura || 
+      data.pesoKg || 
+      data.examenFisico || 
+      data.diagnostico || 
+      data.tratamiento || 
+      data.observaciones;
+
+    if (!hasData) {
+      toast.error('Error: Debes completar al menos un campo de la consulta');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Preparar datos para enviar
+      const consultaData = {
+        pacienteId,
+        profesionalId: user.id,
+        fecha: new Date().toISOString(),
+        frecuenciaCardiaca: data.frecuenciaCardiaca || undefined,
+        frecuenciaRespiratoria: data.frecuenciaRespiratoria || undefined,
+        temperatura: data.temperatura || undefined,
+        pesoKg: data.pesoKg || undefined,
+        examenFisico: data.examenFisico?.trim() || undefined,
+        diagnostico: data.diagnostico?.trim() || undefined,
+        tratamiento: data.tratamiento?.trim() || undefined,
+        observaciones: data.observaciones?.trim() || undefined,
+      };
+
+      await consultaService.create(consultaData);
+      toast.success('Consulta registrada exitosamente');
+      navigate(`/historias/${pacienteId}`);
+    } catch (error: any) {
+      console.error('Error al guardar consulta:', error);
+      const statusCode = error?.response?.status;
+      const errorMessage = error?.response?.data?.message;
+      
+      if (statusCode === 400) {
+        // Error de validación del backend
+        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
+      } else if (statusCode === 403) {
+        toast.error('No tienes permisos para crear consultas');
+      } else if (statusCode === 404) {
+        toast.error('El paciente no existe');
+      } else if (statusCode === 500) {
+        toast.error('Error del servidor. Por favor, intenta nuevamente');
+      } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+        toast.error('La solicitud tardó demasiado. Por favor, intenta nuevamente');
+      } else if (error?.message?.includes('Network Error')) {
+        toast.error('Error de conexión. Verifica tu conexión a internet');
+      } else {
+        toast.error(errorMessage || 'Error al registrar la consulta. Por favor, intenta nuevamente');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const onSubmit = (data: ConsultaFormData) => {
-    const consulta = {
-      ...data,
-      pacienteId,
-      diagnosticos,
-      procedimientos,
-      fecha: new Date().toISOString(),
-    };
-    console.log('Guardar consulta:', consulta);
-    toast({
-      title: 'Consulta registrada',
-      description: 'La consulta ha sido registrada exitosamente.',
-    });
-    navigate(`/historias/${pacienteId}`);
-  };
+  if (isLoadingData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  if (!paciente) {
+  if (!isLoadingData && !paciente) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium">Paciente no encontrado</h3>
+        <div className="rounded-full bg-destructive/10 p-4 mb-4 inline-block">
+          <FileText className="h-8 w-8 text-destructive" />
+        </div>
+        <h3 className="text-lg font-medium mb-2">Paciente no encontrado</h3>
+        <p className="text-muted-foreground mb-4">
+          {error || 'El paciente que buscas no existe o no tienes permisos para verlo.'}
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Button onClick={() => navigate('/historias')} variant="outline">
+            Volver a Historias Clínicas
+          </Button>
+          {error && (
+            <Button onClick={loadPaciente}>
+              Reintentar
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -95,45 +227,61 @@ export default function ConsultaForm() {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="fc">FC (lpm)</Label>
+                <Label htmlFor="frecuenciaCardiaca">FC (lpm)</Label>
                 <Input
-                  id="fc"
+                  id="frecuenciaCardiaca"
                   type="number"
-                  {...register('fc', { valueAsNumber: true })}
+                  min="0"
+                  {...register('frecuenciaCardiaca', { valueAsNumber: true })}
                   placeholder="Frecuencia cardíaca"
                 />
+                {errors.frecuenciaCardiaca && (
+                  <p className="text-sm text-destructive">{errors.frecuenciaCardiaca.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fr">FR (rpm)</Label>
+                <Label htmlFor="frecuenciaRespiratoria">FR (rpm)</Label>
                 <Input
-                  id="fr"
+                  id="frecuenciaRespiratoria"
                   type="number"
-                  {...register('fr', { valueAsNumber: true })}
+                  min="0"
+                  {...register('frecuenciaRespiratoria', { valueAsNumber: true })}
                   placeholder="Frecuencia respiratoria"
                 />
+                {errors.frecuenciaRespiratoria && (
+                  <p className="text-sm text-destructive">{errors.frecuenciaRespiratoria.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="temp">Temperatura (°C)</Label>
+                <Label htmlFor="temperatura">Temperatura (°C)</Label>
                 <Input
-                  id="temp"
+                  id="temperatura"
                   type="number"
                   step="0.1"
-                  {...register('temp', { valueAsNumber: true })}
+                  min="0"
+                  {...register('temperatura', { valueAsNumber: true })}
                   placeholder="Temperatura"
                 />
+                {errors.temperatura && (
+                  <p className="text-sm text-destructive">{errors.temperatura.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="peso">Peso (kg)</Label>
+                <Label htmlFor="pesoKg">Peso (kg)</Label>
                 <Input
-                  id="peso"
+                  id="pesoKg"
                   type="number"
                   step="0.1"
-                  {...register('peso', { valueAsNumber: true })}
+                  min="0"
+                  {...register('pesoKg', { valueAsNumber: true })}
                   placeholder="Peso"
                 />
+                {errors.pesoKg && (
+                  <p className="text-sm text-destructive">{errors.pesoKg.message}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -145,81 +293,60 @@ export default function ConsultaForm() {
           </CardHeader>
           <CardContent>
             <Textarea
-              {...register('examen')}
+              {...register('examenFisico')}
               placeholder="Descripción detallada del examen físico..."
               rows={6}
             />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Diagnósticos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                value={nuevoDiagnostico}
-                onChange={(e) => setNuevoDiagnostico(e.target.value)}
-                placeholder="Agregar diagnóstico..."
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), agregarDiagnostico())}
-              />
-              <Button type="button" onClick={agregarDiagnostico} size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {diagnosticos.length > 0 && (
-              <div className="space-y-2">
-                {diagnosticos.map((diag, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-accent/50 rounded-lg">
-                    <span className="flex-1">{diag}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDiagnosticos(diagnosticos.filter((_, i) => i !== index))}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+            {errors.examenFisico && (
+              <p className="text-sm text-destructive mt-1">{errors.examenFisico.message}</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Procedimientos</CardTitle>
+            <CardTitle>Diagnóstico</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                value={nuevoProcedimiento}
-                onChange={(e) => setNuevoProcedimiento(e.target.value)}
-                placeholder="Agregar procedimiento..."
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), agregarProcedimiento())}
-              />
-              <Button type="button" onClick={agregarProcedimiento} size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {procedimientos.length > 0 && (
-              <div className="space-y-2">
-                {procedimientos.map((proc, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-accent/50 rounded-lg">
-                    <span className="flex-1">{proc}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setProcedimientos(procedimientos.filter((_, i) => i !== index))}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+          <CardContent>
+            <Textarea
+              {...register('diagnostico')}
+              placeholder="Diagnóstico de la consulta..."
+              rows={3}
+            />
+            {errors.diagnostico && (
+              <p className="text-sm text-destructive mt-1">{errors.diagnostico.message}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tratamiento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              {...register('tratamiento')}
+              placeholder="Tratamiento prescrito..."
+              rows={4}
+            />
+            {errors.tratamiento && (
+              <p className="text-sm text-destructive mt-1">{errors.tratamiento.message}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Observaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              {...register('observaciones')}
+              placeholder="Observaciones adicionales..."
+              rows={3}
+            />
+            {errors.observaciones && (
+              <p className="text-sm text-destructive mt-1">{errors.observaciones.message}</p>
             )}
           </CardContent>
         </Card>
@@ -228,9 +355,9 @@ export default function ConsultaForm() {
           <Button type="button" variant="outline" onClick={() => navigate(`/historias/${pacienteId}`)}>
             Cancelar
           </Button>
-          <Button type="submit" className="gap-2">
+          <Button type="submit" className="gap-2" disabled={isLoading || isLoadingData}>
             <Save className="h-4 w-4" />
-            Guardar Consulta
+            {isLoading ? 'Guardando...' : 'Guardar Consulta'}
           </Button>
         </div>
       </form>

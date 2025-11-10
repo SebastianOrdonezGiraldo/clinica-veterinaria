@@ -3,12 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, Save, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Textarea } from '@shared/components/ui/textarea';
+import { Skeleton } from '@shared/components/ui/skeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@shared/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 
@@ -27,13 +29,13 @@ export default function PropietarioForm() {
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<PropietarioFormData>({
+  const { register, handleSubmit, formState: { errors, isDirty }, reset } = useForm<PropietarioFormData>({
     resolver: zodResolver(propietarioSchema),
   });
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(isEdit);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Pre-llenar el formulario en modo edición
   useEffect(() => {
@@ -63,24 +65,17 @@ export default function PropietarioForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('La imagen no debe superar los 5MB');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleCancel = () => {
+    if (isDirty) {
+      setShowCancelDialog(true);
+    } else {
+      navigate('/propietarios');
     }
   };
 
-  const removeImage = () => {
-    setImagePreview(null);
+  const confirmCancel = () => {
+    setShowCancelDialog(false);
+    navigate('/propietarios');
   };
 
   const onSubmit = async (data: PropietarioFormData) => {
@@ -113,6 +108,53 @@ export default function PropietarioForm() {
     }
   };
 
+  if (isLoadingData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-md" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -133,46 +175,6 @@ export default function PropietarioForm() {
             <CardTitle>Información del Propietario</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Upload de imagen */}
-            <div className="space-y-2">
-              <Label>Foto del Propietario</Label>
-              <div className="flex items-start gap-4">
-                {imagePreview ? (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-32 w-32 rounded-lg object-cover border-2 border-border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                      onClick={removeImage}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="h-32 w-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-accent/50">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="flex-1 space-y-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="cursor-pointer"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre Completo *</Label>
@@ -232,7 +234,7 @@ export default function PropietarioForm() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => navigate('/propietarios')}>
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
                 Cancelar
               </Button>
               <Button type="submit" className="gap-2" disabled={isLoading || isLoadingData}>
@@ -243,6 +245,25 @@ export default function PropietarioForm() {
           </CardContent>
         </Card>
       </form>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar cambios?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tienes cambios sin guardar. Si cancelas, se perderán todos los cambios realizados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowCancelDialog(false)}>
+              Continuar editando
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Descartar cambios
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
