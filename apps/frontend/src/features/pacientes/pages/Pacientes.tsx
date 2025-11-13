@@ -13,82 +13,91 @@ import { Pagination } from '@shared/components/common/Pagination';
 import { toast } from 'sonner';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
-import { Paciente, Propietario } from '@core/types';
+import { Paciente, Propietario, PageResponse } from '@core/types';
 
 export default function Pacientes() {
   const navigate = useNavigate();
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [pacientesPage, setPacientesPage] = useState<PageResponse<Paciente> | null>(null);
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [especieFiltro, setEspecieFiltro] = useState('todos');
   const [orderBy, setOrderBy] = useState<'nombre' | 'especie' | 'edad'>('nombre');
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0); // 0-indexed para backend
   const itemsPerPage = 9;
 
+  // Debounce para búsqueda (esperar 500ms después de que el usuario deje de escribir)
   useEffect(() => {
-    loadData();
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(0); // Reset a página 1 cuando cambia la búsqueda
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Cargar propietarios una sola vez
+  useEffect(() => {
+    loadPropietarios();
   }, []);
 
-  const loadData = async () => {
+  // Cargar pacientes cuando cambian los filtros o la página
+  useEffect(() => {
+    loadPacientes();
+  }, [debouncedSearchTerm, especieFiltro, orderBy, currentPage]);
+
+  const loadPropietarios = async () => {
     try {
-      setIsLoading(true);
-      const [pacientesData, propietariosData] = await Promise.all([
-        pacienteService.getAll(),
-        propietarioService.getAll(),
-      ]);
-      setPacientes(pacientesData);
+      const propietariosData = await propietarioService.getAll();
       setPropietarios(propietariosData);
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      console.error('Error al cargar propietarios:', error);
+      toast.error('Error al cargar los propietarios');
+    }
+  };
+
+  const loadPacientes = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Mapear especie normalizada a especie real para el backend
+      let especieParam: string | undefined;
+      if (especieFiltro !== 'todos') {
+        especieParam = especieFiltro;
+      }
+      
+      // Mapear orderBy a formato Spring (campo,dirección)
+      let sortParam = 'nombre,asc';
+      if (orderBy === 'especie') {
+        sortParam = 'especie,asc';
+      } else if (orderBy === 'edad') {
+        sortParam = 'edadMeses,desc';
+      }
+      
+      const response = await pacienteService.searchWithFilters({
+        nombre: debouncedSearchTerm || undefined,
+        especie: especieParam,
+        page: currentPage,
+        size: itemsPerPage,
+        sort: sortParam,
+      });
+      
+      setPacientesPage(response);
+    } catch (error) {
+      console.error('Error al cargar pacientes:', error);
       toast.error('Error al cargar los pacientes');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Función helper para normalizar especies (maneja variantes como "Perro"/"Canino", "Gato"/"Felino")
-  const normalizeEspecie = (especie: string): string => {
-    const especieLower = especie.toLowerCase();
-    if (especieLower.includes('canino') || especieLower.includes('perro') || especieLower.includes('can')) {
-      return 'Canino';
-    }
-    if (especieLower.includes('felino') || especieLower.includes('gato') || especieLower.includes('fel')) {
-      return 'Felino';
-    }
-    // Si no es Canino ni Felino, se considera "Otro"
-    return 'Otro';
-  };
-
-  let filteredPacientes = pacientes.filter(p => {
-    const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.especie.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.raza?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Normalizar la especie del paciente y comparar con el filtro
-    const especieNormalizada = normalizeEspecie(p.especie);
-    const matchEspecie = especieFiltro === 'todos' || especieNormalizada === especieFiltro;
-    
-    return matchSearch && matchEspecie;
-  });
-
-  // Ordenar
-  filteredPacientes.sort((a, b) => {
-    if (orderBy === 'nombre') return a.nombre.localeCompare(b.nombre);
-    if (orderBy === 'especie') return a.especie.localeCompare(b.especie);
-    if (orderBy === 'edad') return (b.edadMeses || 0) - (a.edadMeses || 0);
-    return 0;
-  });
-
-  // Paginación
-  const totalPages = Math.ceil(filteredPacientes.length / itemsPerPage);
-  const paginatedPacientes = filteredPacientes.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   const getPropietario = (id: string) => propietarios.find(p => p.id === id);
+  
+  const pacientes = pacientesPage?.content || [];
+  const totalPages = pacientesPage?.totalPages || 0;
+  const totalElements = pacientesPage?.totalElements || 0;
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -97,10 +106,10 @@ export default function Pacientes() {
       await pacienteService.delete(deleteId);
       toast.success('Paciente eliminado exitosamente');
       setDeleteId(null);
-      await loadData(); // Recargar los datos
+      await loadPacientes(); // Recargar los pacientes
     } catch (error: any) {
       console.error('Error al eliminar paciente:', error);
-      toast.error(error.response?.data?.message || 'Error al eliminar el paciente');
+      toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al eliminar el paciente');
     }
   };
 
@@ -155,7 +164,7 @@ export default function Pacientes() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {paginatedPacientes.map((paciente) => {
+            {pacientes.map((paciente) => {
           const propietario = getPropietario(paciente.propietarioId);
           return (
             <Card key={paciente.id} className="hover:shadow-lg transition-shadow">
@@ -229,17 +238,17 @@ export default function Pacientes() {
 
           {totalPages > 1 && (
             <Pagination
-              currentPage={currentPage}
+              currentPage={currentPage + 1} // Mostrar 1-indexed al usuario
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              onPageChange={(page) => setCurrentPage(page - 1)} // Convertir a 0-indexed para backend
               itemsPerPage={itemsPerPage}
-              totalItems={filteredPacientes.length}
+              totalItems={totalElements}
             />
           )}
         </>
       )}
 
-      {!isLoading && filteredPacientes.length === 0 && (
+      {!isLoading && pacientes.length === 0 && (
         <div className="text-center py-12">
           <Dog className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground">No se encontraron pacientes</h3>

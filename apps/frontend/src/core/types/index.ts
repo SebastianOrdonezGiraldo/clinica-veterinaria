@@ -21,6 +21,38 @@ export interface Propietario {
   updatedAt?: string;
 }
 
+// Interfaz genérica para respuestas paginadas del backend
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+// Parámetros de paginación para requests
+export interface PageParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
 export interface Paciente {
   id: string;
   nombre: string;

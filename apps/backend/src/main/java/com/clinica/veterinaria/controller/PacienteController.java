@@ -60,12 +60,72 @@ public class PacienteController {
     }
 
     /**
-     * Obtener pacientes con paginación
+     * Obtener pacientes con paginación (simple - sin filtros).
+     * 
+     * @deprecated Usar {@link #searchWithFilters} en su lugar para mejor funcionalidad.
      */
     @GetMapping("/page")
     public ResponseEntity<Page<PacienteDTO>> getPage(Pageable pageable) {
         log.info("GET /api/pacientes/page");
         return ResponseEntity.ok(pacienteService.findAll(pageable));
+    }
+    
+    /**
+     * Buscar pacientes con filtros y paginación (recomendado).
+     * 
+     * <p>Este endpoint permite búsquedas combinadas con paginación del lado del servidor.
+     * Es el método recomendado para el frontend ya que optimiza el rendimiento con
+     * datasets grandes.</p>
+     * 
+     * <p><strong>Parámetros de búsqueda:</strong></p>
+     * <ul>
+     *   <li><b>nombre:</b> Busca coincidencias parciales en el nombre (case-insensitive)</li>
+     *   <li><b>especie:</b> Filtra por especie específica (Canino, Felino, etc.)</li>
+     * </ul>
+     * 
+     * <p><strong>Parámetros de paginación:</strong></p>
+     * <ul>
+     *   <li><b>page:</b> Número de página (0-indexed)</li>
+     *   <li><b>size:</b> Tamaño de página (default: 20)</li>
+     *   <li><b>sort:</b> Campo y dirección de ordenamiento (ej: nombre,asc)</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplos de uso:</strong></p>
+     * <pre>
+     * GET /api/pacientes/search?page=0&size=20&sort=nombre,asc
+     * GET /api/pacientes/search?nombre=max&page=0&size=20
+     * GET /api/pacientes/search?especie=Canino&page=0&size=20
+     * GET /api/pacientes/search?nombre=max&especie=Canino&page=0&size=20
+     * </pre>
+     * 
+     * <p><strong>Respuesta:</strong></p>
+     * <pre>{@code
+     * {
+     *   "content": [ ... pacientes ... ],
+     *   "pageable": { ... },
+     *   "totalElements": 150,
+     *   "totalPages": 8,
+     *   "size": 20,
+     *   "number": 0,
+     *   "first": true,
+     *   "last": false,
+     *   "empty": false
+     * }
+     * }</pre>
+     * 
+     * @param nombre Texto a buscar en el nombre (opcional)
+     * @param especie Especie a filtrar (opcional)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de pacientes que cumplen los criterios de búsqueda
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<PacienteDTO>> searchWithFilters(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String especie,
+            Pageable pageable) {
+        log.info("GET /api/pacientes/search - nombre: {}, especie: {}, page: {}, size: {}", 
+            nombre, especie, pageable.getPageNumber(), pageable.getPageSize());
+        return ResponseEntity.ok(pacienteService.searchWithFilters(nombre, especie, pageable));
     }
 
     /**

@@ -87,6 +87,23 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
      * @return Página de pacientes
      */
     Page<Paciente> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+    
+    /**
+     * Busca pacientes por especie con paginación
+     * @param especie Especie a buscar
+     * @param pageable Configuración de paginación
+     * @return Página de pacientes de esa especie
+     */
+    Page<Paciente> findByEspecie(String especie, Pageable pageable);
+    
+    /**
+     * Busca pacientes por nombre y especie con paginación
+     * @param nombre Nombre o parte del nombre
+     * @param especie Especie a buscar
+     * @param pageable Configuración de paginación
+     * @return Página de pacientes que coinciden con ambos criterios
+     */
+    Page<Paciente> findByNombreContainingIgnoreCaseAndEspecie(String nombre, String especie, Pageable pageable);
 
     /**
      * Query personalizada: busca pacientes con propietario cargado

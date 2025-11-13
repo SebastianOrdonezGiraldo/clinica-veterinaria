@@ -480,5 +480,68 @@ public class PacienteService {
     public long countByEspecie(String especie) {
         return pacienteRepository.countByEspecie(especie);
     }
+    
+    /**
+     * Busca pacientes con filtros y paginación.
+     * 
+     * <p>Este método permite búsquedas combinadas con paginación del lado del servidor,
+     * optimizando el rendimiento para datasets grandes. Soporta búsqueda por nombre
+     * (case-insensitive) y filtrado por especie.</p>
+     * 
+     * <p><strong>Casos de uso:</strong></p>
+     * <ul>
+     *   <li>Listar todos los pacientes paginados (sin filtros)</li>
+     *   <li>Buscar por nombre con paginación</li>
+     *   <li>Filtrar por especie con paginación</li>
+     *   <li>Combinar búsqueda y filtro de especie</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplo de uso:</strong></p>
+     * <pre>
+     * // Página 0, 20 items, ordenados por nombre
+     * Pageable pageable = PageRequest.of(0, 20, Sort.by("nombre"));
+     * 
+     * // Buscar "max" en cualquier especie
+     * Page&lt;PacienteDTO&gt; result = pacienteService.searchWithFilters("max", null, pageable);
+     * 
+     * // Buscar "max" solo en caninos
+     * Page&lt;PacienteDTO&gt; result = pacienteService.searchWithFilters("max", "Canino", pageable);
+     * 
+     * // Todos los felinos
+     * Page&lt;PacienteDTO&gt; result = pacienteService.searchWithFilters(null, "Felino", pageable);
+     * </pre>
+     * 
+     * @param nombre Texto a buscar en el nombre (opcional, null = sin filtro de nombre)
+     * @param especie Especie a filtrar (opcional, null = todas las especies)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de pacientes que cumplen los filtros
+     */
+    @Transactional(readOnly = true)
+    public Page<PacienteDTO> searchWithFilters(String nombre, String especie, Pageable pageable) {
+        log.debug("Buscando pacientes con filtros - nombre: {}, especie: {}, page: {}", 
+            nombre, especie, pageable.getPageNumber());
+        
+        Page<Paciente> pacientes;
+        
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            // Búsqueda por nombre (con o sin filtro de especie)
+            if (especie != null && !especie.trim().isEmpty()) {
+                // Búsqueda con ambos filtros
+                pacientes = pacienteRepository.findByNombreContainingIgnoreCaseAndEspecie(
+                    nombre, especie, pageable);
+            } else {
+                // Solo búsqueda por nombre
+                pacientes = pacienteRepository.findByNombreContainingIgnoreCase(nombre, pageable);
+            }
+        } else if (especie != null && !especie.trim().isEmpty()) {
+            // Solo filtro de especie
+            pacientes = pacienteRepository.findByEspecie(especie, pageable);
+        } else {
+            // Sin filtros, solo paginación
+            pacientes = pacienteRepository.findAll(pageable);
+        }
+        
+        return pacientes.map(p -> PacienteDTO.fromEntity(p, true));
+    }
 }
 
