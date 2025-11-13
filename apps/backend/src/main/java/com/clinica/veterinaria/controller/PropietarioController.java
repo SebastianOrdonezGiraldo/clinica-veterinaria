@@ -61,10 +61,13 @@ public class PropietarioController {
 
     /**
      * Obtener propietarios con paginación
+     * 
+     * @deprecated Usar {@link #searchWithFilters} en su lugar para búsquedas paginadas con filtros
      */
+    @Deprecated
     @GetMapping("/page")
     public ResponseEntity<Page<PropietarioDTO>> getPage(Pageable pageable) {
-        log.info("GET /api/propietarios/page");
+        log.info("GET /api/propietarios/page (DEPRECATED)");
         return ResponseEntity.ok(propietarioService.findAll(pageable));
     }
 
@@ -79,11 +82,90 @@ public class PropietarioController {
 
     /**
      * Buscar propietarios por nombre
+     * 
+     * @deprecated Usar {@link #searchWithFilters} en su lugar para búsquedas paginadas
      */
+    @Deprecated
     @GetMapping("/buscar")
     public ResponseEntity<List<PropietarioDTO>> searchByNombre(@RequestParam String nombre) {
-        log.info("GET /api/propietarios/buscar?nombre={}", nombre);
+        log.info("GET /api/propietarios/buscar?nombre={} (DEPRECATED)", nombre);
         return ResponseEntity.ok(propietarioService.findByNombre(nombre));
+    }
+    
+    /**
+     * Endpoint de búsqueda avanzada con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p>Este endpoint implementa <strong>búsqueda multicritero</strong> permitiendo
+     * combinar diferentes filtros. La paginación se realiza en la base de datos para
+     * manejar eficientemente grandes volúmenes de datos.</p>
+     * 
+     * <p><strong>Parámetros de búsqueda (todos opcionales):</strong></p>
+     * <ul>
+     *   <li><b>nombre:</b> Búsqueda parcial en nombre (case-insensitive)</li>
+     *   <li><b>documento:</b> Búsqueda parcial en documento de identidad</li>
+     *   <li><b>telefono:</b> Búsqueda parcial en número de teléfono</li>
+     * </ul>
+     * 
+     * <p><strong>Parámetros de paginación (Spring Data):</strong></p>
+     * <ul>
+     *   <li><b>page:</b> Número de página (0-indexed, default: 0)</li>
+     *   <li><b>size:</b> Elementos por página (default: 20)</li>
+     *   <li><b>sort:</b> Ordenamiento, ej: "nombre,asc" o "id,desc"</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplos de uso:</strong></p>
+     * <pre>
+     * // Caso 1: Buscar por nombre con paginación
+     * GET /api/propietarios/search?nombre=Juan&page=0&size=20&sort=nombre,asc
+     * 
+     * // Caso 2: Buscar por documento
+     * GET /api/propietarios/search?documento=12345&page=0&size=10
+     * 
+     * // Caso 3: Buscar por teléfono
+     * GET /api/propietarios/search?telefono=555&page=0&size=15
+     * 
+     * // Caso 4: Búsqueda combinada (nombre + documento)
+     * GET /api/propietarios/search?nombre=Juan&documento=12345&page=0&size=20
+     * 
+     * // Caso 5: Listar todos con paginación (sin filtros)
+     * GET /api/propietarios/search?page=0&size=20&sort=nombre,asc
+     * </pre>
+     * 
+     * <p><strong>Formato de respuesta:</strong> Objeto Page de Spring con:</p>
+     * <ul>
+     *   <li><b>content:</b> Array de PropietarioDTO</li>
+     *   <li><b>totalElements:</b> Total de registros que cumplen los filtros</li>
+     *   <li><b>totalPages:</b> Total de páginas</li>
+     *   <li><b>size:</b> Tamaño de página solicitado</li>
+     *   <li><b>number:</b> Número de página actual (0-indexed)</li>
+     * </ul>
+     * 
+     * @param nombre Filtro opcional de nombre (búsqueda parcial)
+     * @param documento Filtro opcional de documento (búsqueda parcial)
+     * @param telefono Filtro opcional de teléfono (búsqueda parcial)
+     * @param pageable Parámetros automáticos de paginación y orden de Spring
+     * @return Page con propietarios que cumplen los criterios de búsqueda
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<PropietarioDTO>> searchWithFilters(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String documento,
+            @RequestParam(required = false) String telefono,
+            Pageable pageable) {
+        
+        log.info("GET /api/propietarios/search - nombre: {}, documento: {}, telefono: {}, page: {}, size: {}", 
+            nombre, documento, telefono, pageable.getPageNumber(), pageable.getPageSize());
+        
+        Page<PropietarioDTO> result = propietarioService.searchWithFilters(
+            nombre, documento, telefono, pageable);
+        
+        log.info("✓ Encontrados {} propietarios | Página {}/{} | Total: {}", 
+            result.getNumberOfElements(), 
+            result.getNumber() + 1, 
+            result.getTotalPages(), 
+            result.getTotalElements());
+        
+        return ResponseEntity.ok(result);
     }
 
     /**

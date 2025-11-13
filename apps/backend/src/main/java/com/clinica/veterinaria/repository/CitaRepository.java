@@ -145,5 +145,76 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     @Query("SELECT COUNT(c) FROM Cita c WHERE c.profesional.id = :profesionalId " +
            "AND c.estado = 'PENDIENTE'")
     long countCitasPendientesPorProfesional(@Param("profesionalId") Long profesionalId);
+    
+    /**
+     * Busca citas por estado con paginación.
+     * 
+     * <p>Útil para filtrar citas por su estado actual (PENDIENTE, CONFIRMADA, etc.)
+     * con soporte de paginación para manejar grandes volúmenes de datos.</p>
+     * 
+     * @param estado Estado de la cita a filtrar
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas con el estado especificado
+     */
+    Page<Cita> findByEstado(EstadoCita estado, Pageable pageable);
+    
+    /**
+     * Busca citas por profesional con paginación.
+     * 
+     * <p>Permite ver todas las citas asignadas a un profesional específico,
+     * útil para generar la agenda del veterinario.</p>
+     * 
+     * @param profesionalId ID del profesional (veterinario)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas del profesional
+     */
+    Page<Cita> findByProfesionalId(Long profesionalId, Pageable pageable);
+    
+    /**
+     * Busca citas por paciente con paginación.
+     * 
+     * <p>Útil para ver el historial de citas de una mascota específica.</p>
+     * 
+     * @param pacienteId ID del paciente (mascota)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas del paciente
+     */
+    Page<Cita> findByPacienteId(Long pacienteId, Pageable pageable);
+    
+    /**
+     * Busca citas por estado y rango de fechas con paginación.
+     * 
+     * <p>Combina filtros de estado y fechas para búsquedas más específicas,
+     * por ejemplo: todas las citas completadas en el último mes.</p>
+     * 
+     * @param estado Estado de la cita
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas que cumplen los criterios
+     */
+    Page<Cita> findByEstadoAndFechaBetween(
+        EstadoCita estado, 
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin, 
+        Pageable pageable);
+    
+    /**
+     * Busca citas por profesional y rango de fechas con paginación.
+     * 
+     * <p>Permite generar la agenda de un veterinario en un período específico,
+     * ideal para vistas de calendario o programación.</p>
+     * 
+     * @param profesionalId ID del profesional
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de citas del profesional en ese rango
+     */
+    Page<Cita> findByProfesionalIdAndFechaBetween(
+        Long profesionalId, 
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin, 
+        Pageable pageable);
 }
 

@@ -82,5 +82,55 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
      */
     @Query("SELECT COUNT(p) FROM Propietario p WHERE p.activo = true")
     long countActivos();
+    
+    /**
+     * Busca propietarios por documento con paginación.
+     * 
+     * <p>Busca coincidencias parciales en el documento de identidad.
+     * Útil para búsquedas rápidas cuando se conoce el documento.</p>
+     * 
+     * @param documento Documento o parte del documento a buscar
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de propietarios que coinciden con el documento
+     */
+    Page<Propietario> findByDocumentoContaining(String documento, Pageable pageable);
+    
+    /**
+     * Busca propietarios por teléfono con paginación.
+     * 
+     * <p>Busca coincidencias parciales en el número de teléfono.
+     * Útil para búsquedas cuando el cliente proporciona su teléfono.</p>
+     * 
+     * @param telefono Teléfono o parte del teléfono a buscar
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de propietarios que coinciden con el teléfono
+     */
+    Page<Propietario> findByTelefonoContaining(String telefono, Pageable pageable);
+    
+    /**
+     * Busca propietarios por nombre y documento con paginación.
+     * 
+     * <p>Permite búsqueda combinada por nombre y documento.
+     * Útil para búsquedas más precisas cuando se tienen ambos datos.</p>
+     * 
+     * @param nombre Nombre o parte del nombre a buscar
+     * @param documento Documento o parte del documento a buscar
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de propietarios que coinciden con ambos criterios
+     */
+    Page<Propietario> findByNombreContainingIgnoreCaseAndDocumentoContaining(
+        String nombre, String documento, Pageable pageable);
+    
+    /**
+     * Busca propietarios activos con paginación.
+     * 
+     * <p>Filtra propietarios según su estado activo/inactivo.
+     * Útil para listar solo clientes activos o para auditorías.</p>
+     * 
+     * @param activo Estado de actividad a filtrar (true/false)
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de propietarios con el estado especificado
+     */
+    Page<Propietario> findByActivo(Boolean activo, Pageable pageable);
 }
 

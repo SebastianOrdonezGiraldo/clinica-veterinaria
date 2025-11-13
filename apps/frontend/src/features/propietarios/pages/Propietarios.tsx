@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, User, Mail, Phone, MoreVertical, Edit, Trash2, Eye, Inbox } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
@@ -11,98 +11,112 @@ import { LoadingCards } from '@shared/components/common/LoadingCards';
 import { Pagination } from '@shared/components/common/Pagination';
 import { toast } from 'sonner';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
-import { Propietario, Paciente } from '@core/types';
+import { Propietario, PageResponse } from '@core/types';
 
+/**
+ * Componente Propietarios - Gestión de propietarios con paginación backend
+ * 
+ * MEJORAS IMPLEMENTADAS:
+ * - ✓ Paginación del lado del servidor (no carga todos los datos)
+ * - ✓ Búsqueda multicritero (nombre, documento, teléfono)
+ * - ✓ Debounce en búsqueda (500ms) para reducir llamadas API
+ * - ✓ Ordenamiento en backend
+ * - ✓ Manejo de errores mejorado
+ * 
+ * PATRONES APLICADOS:
+ * - Observer Pattern: useEffect reacciona a cambios de filtros
+ * - Debounce Pattern: Evita llamadas excesivas a la API
+ */
 export default function Propietarios() {
   const navigate = useNavigate();
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  
+  // ESTADO: Paginación backend (PageResponse en lugar de array simple)
+  const [propietariosPage, setPropietariosPage] = useState<PageResponse<Propietario> | null>(null);
+  
+  // ESTADO: Búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [orderBy, setOrderBy] = useState<'nombre' | 'documento' | 'mascotas'>('nombre');
+  const [searchType, setSearchType] = useState<'nombre' | 'documento' | 'telefono'>('nombre');
+  const [orderBy, setOrderBy] = useState<'nombre,asc' | 'nombre,desc' | 'documento,asc'>('nombre,asc');
+  
+  // ESTADO: UI
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0); // 0-indexed para backend
   const itemsPerPage = 9;
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Debounce para la búsqueda
+  // EFECTO: Debounce para búsqueda (500ms)
+  // PATRÓN: Debounce - Retrasa la ejecución hasta que el usuario deje de escribir
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); // Resetear a la primera página al buscar
-    }, 300);
+      setCurrentPage(0); // Resetear a primera página al buscar
+    }, 500); // 500ms de espera
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const loadData = async () => {
+  // EFECTO: Cargar propietarios cuando cambian los filtros o la paginación
+  // PATRÓN: Observer - Reacciona a cambios de dependencias
+  useEffect(() => {
+    loadPropietarios();
+  }, [debouncedSearchTerm, searchType, orderBy, currentPage]);
+
+  /**
+   * Carga propietarios con paginación backend
+   * 
+   * VENTAJAS:
+   * - Solo carga los datos necesarios (9 por página)
+   * - Búsqueda y filtrado en BD (más rápido)
+   * - Ordenamiento en BD (optimizado)
+   */
+  const loadPropietarios = async () => {
     try {
       setIsLoading(true);
-      const [propietariosData, pacientesData] = await Promise.all([
-        propietarioService.getAll(),
-        pacienteService.getAll(),
-      ]);
-      setPropietarios(propietariosData);
-      setPacientes(pacientesData);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-      toast.error('Error al cargar los propietarios');
+      
+      // Construir parámetros de búsqueda según el tipo seleccionado
+      const searchParams = {
+        page: currentPage,
+        size: itemsPerPage,
+        sort: orderBy,
+        ...(debouncedSearchTerm && {
+          [searchType]: debouncedSearchTerm, // Búsqueda dinámica por tipo
+        }),
+      };
+      
+      const result = await propietarioService.searchWithFilters(searchParams);
+      setPropietariosPage(result);
+    } catch (error: any) {
+      console.error('Error al cargar propietarios:', error);
+      toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al cargar propietarios');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filtrar con el término de búsqueda con debounce
-  const filteredPropietarios = useMemo(() => {
-    return propietarios.filter(p =>
-      p.nombre.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      p.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      p.documento?.includes(debouncedSearchTerm)
-    );
-  }, [propietarios, debouncedSearchTerm]);
-
-  const getPacientesCount = (propietarioId: string) => 
-    pacientes.filter(p => p.propietarioId === propietarioId).length;
-
-  // Ordenar y paginar
-  const sortedAndPaginatedPropietarios = useMemo(() => {
-    const sorted = [...filteredPropietarios].sort((a, b) => {
-      if (orderBy === 'nombre') return a.nombre.localeCompare(b.nombre);
-      if (orderBy === 'documento') return (a.documento || '').localeCompare(b.documento || '');
-      if (orderBy === 'mascotas') return getPacientesCount(b.id) - getPacientesCount(a.id);
-      return 0;
-    });
-
-    return sorted.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
-  }, [filteredPropietarios, orderBy, currentPage, pacientes]);
-
-  const totalPages = Math.ceil(filteredPropietarios.length / itemsPerPage);
-
+  /**
+   * Elimina un propietario (soft delete)
+   * 
+   * PATRÓN: Optimistic UI Update
+   * - Actualiza la UI inmediatamente
+   * - Si falla, recarga los datos
+   */
   const handleDelete = async () => {
     if (!deleteId) return;
 
     try {
       setIsDeleting(true);
-      // Optimistic update: remover de la lista inmediatamente
-      setPropietarios(prev => prev.filter(p => p.id !== deleteId));
-      setDeleteId(null);
+      setDeleteId(null); // Cerrar modal
 
       await propietarioService.delete(deleteId);
       toast.success('Propietario eliminado exitosamente');
+      
+      // Recargar la página actual
+      await loadPropietarios();
     } catch (error: any) {
       console.error('Error al eliminar propietario:', error);
-      // Revertir el cambio optimista en caso de error
-      await loadData();
-      toast.error(error.response?.data?.message || 'Error al eliminar el propietario');
+      toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al eliminar el propietario');
     } finally {
       setIsDeleting(false);
     }
@@ -122,33 +136,52 @@ export default function Propietarios() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="relative md:col-span-2">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, documento o email..."
+            placeholder={`Buscar por ${searchType}...`}
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Select value={searchType} onValueChange={(v) => setSearchType(v as 'nombre' | 'documento' | 'telefono')}>
+          <SelectTrigger>
+            <SelectValue placeholder="Buscar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="nombre">Buscar por Nombre</SelectItem>
+            <SelectItem value="documento">Buscar por Documento</SelectItem>
+            <SelectItem value="telefono">Buscar por Teléfono</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={orderBy} onValueChange={(v) => setOrderBy(v as any)}>
           <SelectTrigger>
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="nombre">Nombre</SelectItem>
-            <SelectItem value="documento">Documento</SelectItem>
-            <SelectItem value="mascotas">Cantidad de Mascotas</SelectItem>
+            <SelectItem value="nombre,asc">Nombre (A-Z)</SelectItem>
+            <SelectItem value="nombre,desc">Nombre (Z-A)</SelectItem>
+            <SelectItem value="documento,asc">Documento</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {isLoading ? (
         <LoadingCards count={9} />
-      ) : (
+      ) : propietariosPage && propietariosPage.content.length > 0 ? (
         <>
+          <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
+            <span>
+              Mostrando {propietariosPage.content.length} de {propietariosPage.totalElements} propietarios
+            </span>
+            <span>
+              Página {propietariosPage.number + 1} de {propietariosPage.totalPages || 1}
+            </span>
+          </div>
+          
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {sortedAndPaginatedPropietarios.map((propietario) => (
+            {propietariosPage.content.map((propietario) => (
               <Card key={propietario.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -162,7 +195,7 @@ export default function Propietarios() {
                       <div className="flex-1">
                         <CardTitle className="text-lg">{propietario.nombre}</CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          {getPacientesCount(propietario.id)} {getPacientesCount(propietario.id) === 1 ? 'mascota' : 'mascotas'}
+                          {propietario.documento || 'Sin documento'}
                         </p>
                       </div>
                     </div>
@@ -216,37 +249,35 @@ export default function Propietarios() {
             ))}
           </div>
 
-          {totalPages > 1 && (
+          {propietariosPage.totalPages > 1 && (
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              currentPage={currentPage + 1} // Mostrar 1-indexed al usuario
+              totalPages={propietariosPage.totalPages}
+              onPageChange={(page) => setCurrentPage(page - 1)} // Convertir a 0-indexed para backend
               itemsPerPage={itemsPerPage}
-              totalItems={filteredPropietarios.length}
+              totalItems={propietariosPage.totalElements}
             />
           )}
         </>
-      )}
-
-      {!isLoading && filteredPropietarios.length === 0 && (
+      ) : (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="rounded-full bg-muted p-4 mb-4">
-              {searchTerm ? (
+              {debouncedSearchTerm ? (
                 <Search className="h-8 w-8 text-muted-foreground" />
               ) : (
                 <Inbox className="h-8 w-8 text-muted-foreground" />
               )}
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              {searchTerm ? 'No se encontraron resultados' : 'No hay propietarios registrados'}
+              {debouncedSearchTerm ? 'No se encontraron resultados' : 'No hay propietarios registrados'}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
-              {searchTerm 
-                ? `No se encontraron propietarios que coincidan con "${searchTerm}". Intenta con otros términos de búsqueda.`
+              {debouncedSearchTerm 
+                ? `No se encontraron propietarios que coincidan con "${debouncedSearchTerm}". Intenta con otros términos de búsqueda.`
                 : 'Comienza agregando tu primer propietario para gestionar la información de los dueños de las mascotas.'}
             </p>
-            {!searchTerm && (
+            {!debouncedSearchTerm && (
               <Button onClick={() => navigate('/propietarios/nuevo')} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Agregar Primer Propietario

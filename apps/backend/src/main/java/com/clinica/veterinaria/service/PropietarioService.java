@@ -2,6 +2,8 @@ package com.clinica.veterinaria.service;
 
 import com.clinica.veterinaria.dto.PropietarioDTO;
 import com.clinica.veterinaria.entity.Propietario;
+import com.clinica.veterinaria.exception.domain.DuplicateResourceException;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,13 +90,13 @@ public class PropietarioService {
      * 
      * @param id ID del propietario. No puede ser null.
      * @return DTO con la información completa del propietario, incluyendo lista de pacientes.
-     * @throws RuntimeException si el propietario no existe.
+     * @throws ResourceNotFoundException si el propietario no existe.
      */
     @Transactional(readOnly = true)
     public PropietarioDTO findById(Long id) {
         log.debug("Buscando propietario con ID: {}", id);
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Propietario no encontrado con ID: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
         return PropietarioDTO.fromEntity(propietario, true);
     }
 
@@ -119,15 +121,17 @@ public class PropietarioService {
      * 
      * @param dto Datos del nuevo propietario. No puede ser null.
      * @return DTO con los datos del propietario creado, incluyendo ID asignado.
-     * @throws RuntimeException si el documento ya está registrado.
+     * @throws DuplicateResourceException si el documento ya está registrado.
      */
     public PropietarioDTO create(PropietarioDTO dto) {
-        log.info("Creando nuevo propietario: {}", dto.getNombre());
+        log.info("→ Creando nuevo propietario: {}", dto.getNombre());
         
-        // Validar documento único si se proporciona
-        if (dto.getDocumento() != null 
-            && propietarioRepository.existsByDocumento(dto.getDocumento())) {
-            throw new RuntimeException("El documento ya está registrado: " + dto.getDocumento());
+        // VALIDACIÓN: Documento único si se proporciona
+        if (dto.getDocumento() != null && !dto.getDocumento().trim().isEmpty()) {
+            if (propietarioRepository.existsByDocumento(dto.getDocumento())) {
+                log.error("✗ Documento duplicado: {}", dto.getDocumento());
+                throw new DuplicateResourceException("Propietario", "documento", dto.getDocumento());
+            }
         }
 
         Propietario propietario = Propietario.builder()
@@ -140,7 +144,8 @@ public class PropietarioService {
             .build();
 
         propietario = propietarioRepository.save(propietario);
-        log.info("Propietario creado exitosamente con ID: {}", propietario.getId());
+        log.info("✓ Propietario creado exitosamente con ID: {} | Nombre: {}", 
+                propietario.getId(), propietario.getNombre());
         
         return PropietarioDTO.fromEntity(propietario);
     }
@@ -153,19 +158,25 @@ public class PropietarioService {
      * @param id ID del propietario a actualizar. No puede ser null.
      * @param dto Nuevos datos del propietario. No puede ser null.
      * @return DTO con los datos actualizados.
-     * @throws RuntimeException si el propietario no existe o el documento ya está registrado.
+     * @throws ResourceNotFoundException si el propietario no existe.
+     * @throws DuplicateResourceException si el documento ya está registrado.
      */
     public PropietarioDTO update(Long id, PropietarioDTO dto) {
-        log.info("Actualizando propietario con ID: {}", id);
+        log.info("→ Actualizando propietario con ID: {}", id);
         
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Propietario no encontrado con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Propietario no encontrado con ID: {}", id);
+                return new ResourceNotFoundException("Propietario", "id", id);
+            });
 
-        // Validar documento único si cambió
-        if (dto.getDocumento() != null 
-            && !dto.getDocumento().equals(propietario.getDocumento())
-            && propietarioRepository.existsByDocumento(dto.getDocumento())) {
-            throw new RuntimeException("El documento ya está registrado: " + dto.getDocumento());
+        // VALIDACIÓN: Documento único si cambió
+        if (dto.getDocumento() != null && !dto.getDocumento().trim().isEmpty()) {
+            if (!dto.getDocumento().equals(propietario.getDocumento())
+                && propietarioRepository.existsByDocumento(dto.getDocumento())) {
+                log.error("✗ Documento duplicado: {}", dto.getDocumento());
+                throw new DuplicateResourceException("Propietario", "documento", dto.getDocumento());
+            }
         }
 
         propietario.setNombre(dto.getNombre());
@@ -175,7 +186,7 @@ public class PropietarioService {
         propietario.setDireccion(dto.getDireccion());
 
         propietario = propietarioRepository.save(propietario);
-        log.info("Propietario actualizado exitosamente con ID: {}", id);
+        log.info("✓ Propietario actualizado exitosamente con ID: {}", id);
         
         return PropietarioDTO.fromEntity(propietario);
     }
@@ -187,18 +198,21 @@ public class PropietarioService {
      * con sus mascotas y el historial asociado.</p>
      * 
      * @param id ID del propietario a desactivar. No puede ser null.
-     * @throws RuntimeException si el propietario no existe.
+     * @throws ResourceNotFoundException si el propietario no existe.
      */
     public void delete(Long id) {
-        log.info("Eliminando propietario con ID: {}", id);
+        log.warn("→ Eliminando propietario con ID: {}", id);
         
         Propietario propietario = propietarioRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Propietario no encontrado con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Propietario no encontrado con ID: {}", id);
+                return new ResourceNotFoundException("Propietario", "id", id);
+            });
         
         propietario.setActivo(false);
         propietarioRepository.save(propietario);
         
-        log.info("Propietario eliminado exitosamente con ID: {}", id);
+        log.warn("⚠ Propietario desactivado con ID: {}", id);
     }
 
     /**
@@ -209,5 +223,124 @@ public class PropietarioService {
     @Transactional(readOnly = true)
     public long countActivos() {
         return propietarioRepository.countActivos();
+    }
+    
+    /**
+     * Busca propietarios con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p><strong>PATRÓN STRATEGY:</strong> Este método implementa el patrón Strategy para
+     * seleccionar dinámicamente el query apropiado según los filtros proporcionados.
+     * Evita múltiples ifs anidados y código duplicado al delegar la decisión de qué
+     * método del repository usar basándose en los parámetros no nulos.</p>
+     * 
+     * <p><strong>Optimización:</strong> La paginación se realiza en la base de datos,
+     * no en memoria, lo que permite manejar eficientemente datasets grandes. Solo se
+     * transfieren y procesan los registros de la página solicitada.</p>
+     * 
+     * <p><strong>Casos de uso soportados:</strong></p>
+     * <ul>
+     *   <li><b>Sin filtros:</b> Retorna todos los propietarios paginados</li>
+     *   <li><b>Por nombre:</b> Búsqueda parcial case-insensitive</li>
+     *   <li><b>Por documento:</b> Búsqueda parcial en documento de identidad</li>
+     *   <li><b>Por teléfono:</b> Búsqueda parcial en número telefónico</li>
+     *   <li><b>Nombre + documento:</b> Búsqueda combinada para mayor precisión</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplo de uso:</strong></p>
+     * <pre>
+     * // Caso 1: Buscar por nombre
+     * Pageable pageable = PageRequest.of(0, 20, Sort.by("nombre"));
+     * Page&lt;PropietarioDTO&gt; result = service.searchWithFilters("Juan", null, null, pageable);
+     * 
+     * // Caso 2: Buscar por documento
+     * result = service.searchWithFilters(null, "12345", null, pageable);
+     * 
+     * // Caso 3: Buscar por nombre y documento (más preciso)
+     * result = service.searchWithFilters("Juan", "12345", null, pageable);
+     * 
+     * // Caso 4: Buscar por teléfono
+     * result = service.searchWithFilters(null, null, "555", pageable);
+     * 
+     * // Caso 5: Todos los propietarios (sin filtros)
+     * result = service.searchWithFilters(null, null, null, pageable);
+     * </pre>
+     * 
+     * <p><strong>Ventajas del enfoque Strategy:</strong></p>
+     * <ul>
+     *   <li>Código más limpio y mantenible</li>
+     *   <li>Fácil agregar nuevos filtros sin modificar la lógica existente</li>
+     *   <li>Cada query está optimizado para su caso de uso específico</li>
+     *   <li>Evita queries complejos con múltiples OR que afectan performance</li>
+     * </ul>
+     * 
+     * @param nombre Texto a buscar en el nombre (opcional, null = sin filtro)
+     * @param documento Texto a buscar en el documento (opcional, null = sin filtro)
+     * @param telefono Texto a buscar en el teléfono (opcional, null = sin filtro)
+     * @param pageable Configuración de paginación y ordenamiento. No puede ser null.
+     * @return Página de propietarios que cumplen los criterios de búsqueda
+     */
+    @Transactional(readOnly = true)
+    public Page<PropietarioDTO> searchWithFilters(
+            String nombre, 
+            String documento, 
+            String telefono,
+            Pageable pageable) {
+        
+        log.debug("Buscando propietarios con filtros - nombre: {}, documento: {}, telefono: {}, page: {}", 
+            nombre, documento, telefono, pageable.getPageNumber());
+        
+        Page<Propietario> propietarios;
+        
+        // STRATEGY PATTERN: Selección dinámica del query apropiado
+        
+        // Estrategia 1: Búsqueda combinada nombre + documento (más precisa)
+        if (isNotEmpty(nombre) && isNotEmpty(documento)) {
+            log.debug("Estrategia: Búsqueda por nombre y documento");
+            propietarios = propietarioRepository
+                .findByNombreContainingIgnoreCaseAndDocumentoContaining(nombre, documento, pageable);
+        }
+        // Estrategia 2: Búsqueda solo por nombre
+        else if (isNotEmpty(nombre)) {
+            log.debug("Estrategia: Búsqueda solo por nombre");
+            propietarios = propietarioRepository
+                .findByNombreContainingIgnoreCase(nombre, pageable);
+        }
+        // Estrategia 3: Búsqueda solo por documento
+        else if (isNotEmpty(documento)) {
+            log.debug("Estrategia: Búsqueda solo por documento");
+            propietarios = propietarioRepository
+                .findByDocumentoContaining(documento, pageable);
+        }
+        // Estrategia 4: Búsqueda solo por teléfono
+        else if (isNotEmpty(telefono)) {
+            log.debug("Estrategia: Búsqueda solo por teléfono");
+            propietarios = propietarioRepository
+                .findByTelefonoContaining(telefono, pageable);
+        }
+        // Estrategia 5: Sin filtros, todos los propietarios
+        else {
+            log.debug("Estrategia: Sin filtros, retornar todos");
+            propietarios = propietarioRepository.findAll(pageable);
+        }
+        
+        log.debug("Propietarios encontrados: {} en página {} de {}", 
+            propietarios.getNumberOfElements(), 
+            propietarios.getNumber() + 1, 
+            propietarios.getTotalPages());
+        
+        return propietarios.map(PropietarioDTO::fromEntity);
+    }
+    
+    /**
+     * Método helper para validar strings no vacíos.
+     * 
+     * <p>Parte del patrón Null Object: evita NullPointerException
+     * y simplifica las validaciones de strings.</p>
+     * 
+     * @param value String a validar
+     * @return true si el string no es null y no está vacío (después de trim)
+     */
+    private boolean isNotEmpty(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
