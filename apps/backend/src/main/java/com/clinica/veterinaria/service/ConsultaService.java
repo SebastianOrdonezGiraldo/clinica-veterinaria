@@ -4,11 +4,14 @@ import com.clinica.veterinaria.dto.ConsultaDTO;
 import com.clinica.veterinaria.entity.Consulta;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Usuario;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.ConsultaRepository;
 import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,13 +84,13 @@ public class ConsultaService {
      * 
      * @param id Identificador único de la consulta. No puede ser null.
      * @return DTO con la información completa de la consulta.
-     * @throws RuntimeException si no existe una consulta con el ID especificado.
+     * @throws ResourceNotFoundException si no existe una consulta con el ID especificado.
      */
     @Transactional(readOnly = true)
     public ConsultaDTO findById(Long id) {
         log.debug("Buscando consulta con ID: {}", id);
         Consulta consulta = consultaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Consulta no encontrada con ID: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Consulta", "id", id));
         return ConsultaDTO.fromEntity(consulta, true);
     }
 

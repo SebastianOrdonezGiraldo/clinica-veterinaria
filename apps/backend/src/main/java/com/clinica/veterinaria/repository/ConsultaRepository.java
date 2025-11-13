@@ -127,5 +127,81 @@ public interface ConsultaRepository extends JpaRepository<Consulta, Long> {
         @Param("fechaInicio") LocalDateTime fechaInicio,
         @Param("fechaFin") LocalDateTime fechaFin
     );
+    
+    /**
+     * Busca consultas por paciente con paginación.
+     * 
+     * <p>Ideal para ver el historial médico completo de una mascota,
+     * ordenado por fecha descendente (más recientes primero).</p>
+     * 
+     * @param pacienteId ID del paciente
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de consultas del paciente
+     */
+    Page<Consulta> findByPacienteId(Long pacienteId, Pageable pageable);
+    
+    /**
+     * Busca consultas por profesional con paginación.
+     * 
+     * <p>Útil para ver todas las consultas realizadas por un veterinario
+     * específico con soporte de paginación.</p>
+     * 
+     * @param profesionalId ID del profesional
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de consultas del profesional
+     */
+    Page<Consulta> findByProfesionalId(Long profesionalId, Pageable pageable);
+    
+    /**
+     * Busca consultas por rango de fechas con paginación.
+     * 
+     * <p>Permite filtrar consultas en un período específico,
+     * útil para reportes y estadísticas.</p>
+     * 
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de consultas en ese rango
+     */
+    Page<Consulta> findByFechaBetween(
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin, 
+        Pageable pageable);
+    
+    /**
+     * Busca consultas por paciente y rango de fechas con paginación.
+     * 
+     * <p>Combina filtro por paciente y fechas para búsquedas más específicas,
+     * por ejemplo: historial del último año de una mascota.</p>
+     * 
+     * @param pacienteId ID del paciente
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de consultas que cumplen los criterios
+     */
+    Page<Consulta> findByPacienteIdAndFechaBetween(
+        Long pacienteId, 
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin, 
+        Pageable pageable);
+    
+    /**
+     * Busca consultas por profesional y rango de fechas con paginación.
+     * 
+     * <p>Permite ver las consultas de un veterinario en un período específico,
+     * útil para evaluaciones de desempeño o estadísticas.</p>
+     * 
+     * @param profesionalId ID del profesional
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de consultas que cumplen los criterios
+     */
+    Page<Consulta> findByProfesionalIdAndFechaBetween(
+        Long profesionalId, 
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin, 
+        Pageable pageable);
 }
 

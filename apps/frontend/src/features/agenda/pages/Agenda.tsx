@@ -1,95 +1,119 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, Plus, Filter, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Calendar } from '@shared/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { citaService } from '@features/agenda/services/citaService';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
-import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { citaService, EstadoCita } from '@features/agenda/services/citaService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
-import { Cita, Paciente, Propietario, Usuario } from '@core/types';
+import { Cita, Usuario, PageResponse } from '@core/types';
 import { toast } from 'sonner';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
   PENDIENTE: 'bg-status-pending/10 text-status-pending border-status-pending/20',
+  EN_PROCESO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  COMPLETADA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
   CANCELADA: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
-  ATENDIDA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
+  ATENDIDA: 'bg-status-completed/10 text-status-completed border-status-completed/20', // Alias para compatibilidad
 };
 
+/**
+ * Componente Agenda - Gestión de citas con paginación backend
+ * 
+ * MEJORAS IMPLEMENTADAS:
+ * - ✓ Paginación del lado del servidor (no carga todas las citas)
+ * - ✓ Filtros por fecha, estado y profesional en backend
+ * - ✓ Solo carga citas del día seleccionado (eficiente)
+ * - ✓ Las relaciones (paciente, propietario) vienen del backend
+ * 
+ * PATRONES APLICADOS:
+ * - Observer Pattern: useEffect reacciona a cambios de fecha y filtros
+ * - Strategy Pattern: Backend selecciona query apropiado
+ */
 export default function Agenda() {
   const navigate = useNavigate();
+  
+  // ESTADO: Fecha y filtros
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filtroVet, setFiltroVet] = useState<string>('todos');
-  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [filtroEstado, setFiltroEstado] = useState<EstadoCita | 'todos'>('todos');
+  
+  // ESTADO: Paginación backend
+  const [citasPage, setCitasPage] = useState<PageResponse<Cita> | null>(null);
+  const [currentPage, setCurrentPage] = useState(0); // 0-indexed para backend
+  const itemsPerPage = 20;
+  
+  // ESTADO: Veterinarios para filtro
   const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
+  
+  // ESTADO: UI
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // EFECTO: Cargar veterinarios una sola vez
   useEffect(() => {
-    loadData();
+    loadVeterinarios();
   }, []);
 
-  const loadData = async () => {
+  // EFECTO: Cargar citas cuando cambian fecha, filtros o página
+  // PATRÓN: Observer - Reacciona a cambios de dependencias
+  useEffect(() => {
+    loadCitas();
+  }, [selectedDate, filtroVet, filtroEstado, currentPage]);
+
+  /**
+   * Carga la lista de veterinarios para el filtro
+   * Se ejecuta una sola vez al montar el componente
+   */
+  const loadVeterinarios = async () => {
+    try {
+      const usuarios = await usuarioService.getAll();
+      setVeterinarios(usuarios.filter(u => u.rol === 'VET'));
+    } catch (error) {
+      console.error('Error al cargar veterinarios:', error);
+      // No es crítico, solo afecta el filtro
+    }
+  };
+
+  /**
+   * Carga citas del día seleccionado con filtros
+   * 
+   * VENTAJAS:
+   * - Solo carga citas del día (eficiente)
+   * - Filtros aplicados en BD (rápido)
+   * - Las relaciones vienen incluidas desde el backend
+   */
+  const loadCitas = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Cargar datos en paralelo, pero manejar errores individualmente
-      const results = await Promise.allSettled([
-        citaService.getAll(),
-        pacienteService.getAll(),
-        propietarioService.getAll(),
-        usuarioService.getAll(),
-      ]);
-
-      // Procesar resultados
-      if (results[0].status === 'fulfilled') {
-        setCitas(results[0].value);
-      } else {
-        console.error('Error al cargar citas:', results[0].reason);
-        const errorMessage = results[0].reason?.response?.data?.message || 'Error al cargar citas';
-        toast.error(errorMessage);
-      }
-
-      if (results[1].status === 'fulfilled') {
-        setPacientes(results[1].value);
-      } else {
-        console.error('Error al cargar pacientes:', results[1].reason);
-        // No mostrar toast, solo log
-      }
-
-      if (results[2].status === 'fulfilled') {
-        setPropietarios(results[2].value);
-      } else {
-        console.error('Error al cargar propietarios:', results[2].reason);
-        // No mostrar toast, solo log
-      }
-
-      if (results[3].status === 'fulfilled') {
-        setVeterinarios(results[3].value.filter(u => u.rol === 'VET'));
-      } else {
-        console.error('Error al cargar usuarios:', results[3].reason);
-        // No mostrar toast, solo log
-      }
-
-      // Si todos fallaron, mostrar error general
-      if (results.every(r => r.status === 'rejected')) {
-        setError('No se pudieron cargar los datos. Por favor, intenta recargar la página.');
-        toast.error('Error al cargar los datos de la agenda');
-      }
+      // Calcular rango de fechas del día seleccionado
+      const fechaInicio = startOfDay(selectedDate).toISOString();
+      const fechaFin = endOfDay(selectedDate).toISOString();
+      
+      // Construir parámetros de búsqueda
+      const searchParams = {
+        fechaInicio,
+        fechaFin,
+        profesionalId: filtroVet !== 'todos' ? filtroVet : undefined,
+        estado: filtroEstado !== 'todos' ? filtroEstado : undefined,
+        page: currentPage,
+        size: itemsPerPage,
+        sort: 'fecha,asc',
+      };
+      
+      const result = await citaService.searchWithFilters(searchParams);
+      setCitasPage(result);
     } catch (error: any) {
-      console.error('Error inesperado al cargar datos:', error);
-      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar la agenda';
+      console.error('Error al cargar citas:', error);
+      const errorMessage = error.response?.data?.mensaje || error.response?.data?.message || 'Error al cargar citas';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -97,27 +121,16 @@ export default function Agenda() {
     }
   };
 
-  let citasFiltradas = citas.map(cita => ({
-    ...cita,
-    paciente: pacientes.find(p => p.id === cita.pacienteId),
-    propietario: propietarios.find(p => pacientes.find(pac => pac.id === cita.pacienteId)?.propietarioId === p.id),
-  }));
-
-  // Filtrar por fecha
-  citasFiltradas = citasFiltradas.filter(cita => {
-    const citaDate = new Date(cita.fecha);
-    return citaDate.toDateString() === selectedDate.toDateString();
-  });
-
-  // Filtrar por veterinario
-  if (filtroVet !== 'todos') {
-    citasFiltradas = citasFiltradas.filter(cita => cita.profesionalId === filtroVet);
-  }
-
-  // Filtrar por estado
-  if (filtroEstado !== 'todos') {
-    citasFiltradas = citasFiltradas.filter(cita => cita.estado === filtroEstado);
-  }
+  /**
+   * Maneja el cambio de fecha del calendario
+   * Resetea la página a 0 cuando cambia la fecha
+   */
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setCurrentPage(0); // Resetear paginación
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -154,7 +167,7 @@ export default function Agenda() {
                   <Calendar
                     mode="single"
                     selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
+                    onSelect={handleDateChange}
                     initialFocus
                   />
                 </PopoverContent>
@@ -176,7 +189,10 @@ export default function Agenda() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Estado</label>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <Select value={filtroEstado} onValueChange={(value) => {
+                setFiltroEstado(value as EstadoCita | 'todos');
+                setCurrentPage(0); // Resetear paginación al cambiar filtro
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -184,7 +200,8 @@ export default function Agenda() {
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="PENDIENTE">Pendiente</SelectItem>
                   <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
-                  <SelectItem value="ATENDIDA">Atendida</SelectItem>
+                  <SelectItem value="EN_PROCESO">En Proceso</SelectItem>
+                  <SelectItem value="COMPLETADA">Completada</SelectItem>
                   <SelectItem value="CANCELADA">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
@@ -205,7 +222,7 @@ export default function Agenda() {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={handleDateChange}
               className="rounded-md border"
             />
           </CardContent>
@@ -213,9 +230,34 @@ export default function Agenda() {
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              Citas del Día ({citasFiltradas.length})
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Citas del Día ({citasPage?.totalElements || 0})
+              </div>
+              {citasPage && citasPage.totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Página {currentPage + 1} de {citasPage.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(citasPage.totalPages - 1, prev + 1))}
+                    disabled={currentPage === citasPage.totalPages - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -228,13 +270,13 @@ export default function Agenda() {
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">Error al cargar datos</h3>
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button onClick={loadData} variant="outline">
+                <Button onClick={loadCitas} variant="outline">
                   Reintentar
                 </Button>
               </div>
-            ) : citasFiltradas.length > 0 ? (
+            ) : citasPage && citasPage.content.length > 0 ? (
               <div className="space-y-3">
-                {citasFiltradas.map((cita) => (
+                {citasPage.content.map((cita) => (
                 <div
                   key={cita.id}
                   className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
