@@ -7,6 +7,8 @@ import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -92,6 +94,7 @@ public class PropietarioService {
      * @return DTO con la información completa del propietario, incluyendo lista de pacientes.
      * @throws ResourceNotFoundException si el propietario no existe.
      */
+    @Cacheable(value = "propietarios", key = "#id")
     @Transactional(readOnly = true)
     public PropietarioDTO findById(Long id) {
         log.debug("Buscando propietario con ID: {}", id);
@@ -119,10 +122,13 @@ public class PropietarioService {
      * 
      * <p>Valida que el documento sea único antes de crear el registro.</p>
      * 
+     * <p><strong>CACHE:</strong> Invalida el caché de propietarios.</p>
+     * 
      * @param dto Datos del nuevo propietario. No puede ser null.
      * @return DTO con los datos del propietario creado, incluyendo ID asignado.
      * @throws DuplicateResourceException si el documento ya está registrado.
      */
+    @CacheEvict(value = "propietarios", allEntries = true)
     public PropietarioDTO create(PropietarioDTO dto) {
         log.info("→ Creando nuevo propietario: {}", dto.getNombre());
         
@@ -161,6 +167,7 @@ public class PropietarioService {
      * @throws ResourceNotFoundException si el propietario no existe.
      * @throws DuplicateResourceException si el documento ya está registrado.
      */
+    @CacheEvict(value = "propietarios", allEntries = true)
     public PropietarioDTO update(Long id, PropietarioDTO dto) {
         log.info("→ Actualizando propietario con ID: {}", id);
         
@@ -197,9 +204,12 @@ public class PropietarioService {
      * <p>Los propietarios no se eliminan físicamente para preservar la relación
      * con sus mascotas y el historial asociado.</p>
      * 
+     * <p><strong>CACHE:</strong> Invalida el caché de propietarios.</p>
+     * 
      * @param id ID del propietario a desactivar. No puede ser null.
      * @throws ResourceNotFoundException si el propietario no existe.
      */
+    @CacheEvict(value = "propietarios", allEntries = true)
     public void delete(Long id) {
         log.warn("→ Eliminando propietario con ID: {}", id);
         

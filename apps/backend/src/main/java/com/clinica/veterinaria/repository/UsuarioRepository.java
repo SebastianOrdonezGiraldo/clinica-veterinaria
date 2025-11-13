@@ -2,6 +2,8 @@ package com.clinica.veterinaria.repository;
 
 import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.entity.Usuario.Rol;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -95,5 +97,16 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      */
     @Query("SELECT u FROM Usuario u WHERE u.rol = 'VET' AND u.activo = true ORDER BY u.nombre")
     List<Usuario> findVeterinariosActivos();
+    
+    // Métodos de paginación
+    Page<Usuario> findByRol(Rol rol, Pageable pageable);
+    
+    Page<Usuario> findByActivo(Boolean activo, Pageable pageable);
+    
+    Page<Usuario> findByRolAndActivo(Rol rol, Boolean activo, Pageable pageable);
+    
+    Page<Usuario> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+    
+    Page<Usuario> findByNombreContainingIgnoreCaseAndRol(String nombre, Rol rol, Pageable pageable);
 }
 

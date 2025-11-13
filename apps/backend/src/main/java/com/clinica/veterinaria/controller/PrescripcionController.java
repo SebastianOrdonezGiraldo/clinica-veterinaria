@@ -5,6 +5,8 @@ import com.clinica.veterinaria.service.PrescripcionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,11 +68,13 @@ public class PrescripcionController {
     /**
      * Obtener todas las prescripciones
      * ADMIN, VET
+     * @deprecated Usar {@link #searchWithFilters}
      */
+    @Deprecated
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'VET')")
     public ResponseEntity<List<PrescripcionDTO>> getAll() {
-        log.info("GET /api/prescripciones");
+        log.info("GET /api/prescripciones (DEPRECATED)");
         return ResponseEntity.ok(prescripcionService.findAll());
     }
 
@@ -82,36 +86,75 @@ public class PrescripcionController {
         log.info("GET /api/prescripciones/{}", id);
         return ResponseEntity.ok(prescripcionService.findById(id));
     }
+    
+    /**
+     * Endpoint de búsqueda avanzada con filtros combinados y paginación del lado del servidor.
+     * 
+     * @param pacienteId Filtro opcional por ID de paciente
+     * @param consultaId Filtro opcional por ID de consulta
+     * @param fechaInicio Filtro opcional por fecha inicial (formato ISO 8601)
+     * @param fechaFin Filtro opcional por fecha final (formato ISO 8601)
+     * @param pageable Parámetros automáticos de paginación y orden de Spring
+     * @return Page con prescripciones que cumplen los criterios de búsqueda
+     */
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VET')")
+    public ResponseEntity<Page<PrescripcionDTO>> searchWithFilters(
+            @RequestParam(required = false) Long pacienteId,
+            @RequestParam(required = false) Long consultaId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin,
+            Pageable pageable) {
+        
+        log.info("GET /api/prescripciones/search - paciente: {}, consulta: {}, fechas: {} - {}",
+            pacienteId, consultaId, fechaInicio, fechaFin);
+        
+        Page<PrescripcionDTO> result = prescripcionService.searchWithFilters(
+            pacienteId, consultaId, fechaInicio, fechaFin, pageable);
+        
+        log.info("✓ Encontradas {} prescripciones | Página {}/{} | Total: {}", 
+            result.getNumberOfElements(), 
+            result.getNumber() + 1, 
+            result.getTotalPages(), 
+            result.getTotalElements());
+        
+        return ResponseEntity.ok(result);
+    }
 
     /**
      * Obtener prescripciones por consulta
+     * @deprecated Usar {@link #searchWithFilters} con consultaId
      */
+    @Deprecated
     @GetMapping("/consulta/{consultaId}")
     public ResponseEntity<List<PrescripcionDTO>> getByConsulta(@PathVariable Long consultaId) {
-        log.info("GET /api/prescripciones/consulta/{}", consultaId);
+        log.info("GET /api/prescripciones/consulta/{} (DEPRECATED)", consultaId);
         return ResponseEntity.ok(prescripcionService.findByConsulta(consultaId));
     }
 
     /**
      * Obtener prescripciones por paciente
+     * @deprecated Usar {@link #searchWithFilters} con pacienteId
      */
+    @Deprecated
     @GetMapping("/paciente/{pacienteId}")
     public ResponseEntity<List<PrescripcionDTO>> getByPaciente(@PathVariable Long pacienteId) {
-        log.info("GET /api/prescripciones/paciente/{}", pacienteId);
+        log.info("GET /api/prescripciones/paciente/{} (DEPRECATED)", pacienteId);
         return ResponseEntity.ok(prescripcionService.findByPaciente(pacienteId));
     }
 
     /**
      * Obtener prescripciones por rango de fechas
      * ADMIN, VET
+     * @deprecated Usar {@link #searchWithFilters} con fechaInicio y fechaFin
      */
+    @Deprecated
     @GetMapping("/rango")
     @PreAuthorize("hasAnyRole('ADMIN', 'VET')")
     public ResponseEntity<List<PrescripcionDTO>> getByFechaRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        log.info("GET /api/prescripciones/rango?inicio={}&fin={}", inicio, fin);
-        // Nota: Este método requeriría agregar findByFechaEmisionBetween al repository
+        log.info("GET /api/prescripciones/rango?inicio={}&fin={} (DEPRECATED)", inicio, fin);
         return ResponseEntity.ok(List.of());
     }
 

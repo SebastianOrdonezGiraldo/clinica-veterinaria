@@ -11,6 +11,8 @@ import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -120,10 +122,13 @@ public class PacienteService {
      * 
      * <p>Incluye información completa del propietario en el DTO retornado.</p>
      * 
+     * <p><strong>CACHE:</strong> Almacena el resultado por 5 minutos usando el ID como key.</p>
+     * 
      * @param id Identificador único del paciente. No puede ser null.
      * @return DTO con la información completa del paciente.
      * @throws ResourceNotFoundException si no existe un paciente con el ID especificado.
      */
+    @Cacheable(value = "pacientes", key = "#id")
     @Transactional(readOnly = true)
     public PacienteDTO findById(Long id) {
         log.debug("Buscando paciente con ID: {}", id);
@@ -229,6 +234,8 @@ public class PacienteService {
      * <p><strong>Registro de auditoría:</strong> Se registra automáticamente la creación
      * con información del paciente y propietario para trazabilidad.</p>
      * 
+     * <p><strong>CACHE:</strong> Invalida el caché de pacientes para mantener consistencia.</p>
+     * 
      * @param dto Datos del nuevo paciente. No puede ser null. Debe incluir nombre,
      *            especie y propietarioId válido.
      * @return DTO con los datos del paciente creado, incluyendo ID asignado.
@@ -237,6 +244,7 @@ public class PacienteService {
      * @throws InvalidDataException si los datos no cumplen reglas de negocio.
      * @see AuditLogger#logCreate(String, Long, String)
      */
+    @CacheEvict(value = "pacientes", allEntries = true)
     public PacienteDTO create(PacienteDTO dto) {
         log.info("→ Creando nuevo paciente: {} (Especie: {})", dto.getNombre(), dto.getEspecie());
         
@@ -320,6 +328,8 @@ public class PacienteService {
      * <p><strong>Auditoría:</strong> Registra los valores anteriores y nuevos para
      * mantener trazabilidad completa de los cambios.</p>
      * 
+     * <p><strong>CACHE:</strong> Invalida el caché de pacientes para reflejar cambios.</p>
+     * 
      * @param id ID del paciente a actualizar. No puede ser null.
      * @param dto Nuevos datos del paciente. No puede ser null.
      * @return DTO con los datos actualizados del paciente.
@@ -328,6 +338,7 @@ public class PacienteService {
      * @throws InvalidDataException si los datos no cumplen reglas de negocio.
      * @see AuditLogger#logUpdate(String, Long, String, String)
      */
+    @CacheEvict(value = "pacientes", allEntries = true)
     public PacienteDTO update(Long id, PacienteDTO dto) {
         log.info("→ Actualizando paciente con ID: {}", id);
         
@@ -421,10 +432,13 @@ public class PacienteService {
      * <p>Un paciente inactivo no aparecerá en búsquedas regulares pero su historial
      * permanece accesible.</p>
      * 
+     * <p><strong>CACHE:</strong> Invalida el caché de pacientes.</p>
+     * 
      * @param id ID del paciente a desactivar. No puede ser null.
      * @throws ResourceNotFoundException si el paciente no existe.
      * @see AuditLogger#logDelete(String, Long)
      */
+    @CacheEvict(value = "pacientes", allEntries = true)
     public void delete(Long id) {
         log.warn("→ Eliminando paciente con ID: {}", id);
         

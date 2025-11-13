@@ -4,10 +4,13 @@ import com.clinica.veterinaria.dto.PrescripcionDTO;
 import com.clinica.veterinaria.entity.Consulta;
 import com.clinica.veterinaria.entity.ItemPrescripcion;
 import com.clinica.veterinaria.entity.Prescripcion;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.ConsultaRepository;
 import com.clinica.veterinaria.repository.PrescripcionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,7 +80,10 @@ public class PrescripcionService {
     public PrescripcionDTO findById(Long id) {
         log.debug("Buscando prescripción con ID: {}", id);
         Prescripcion prescripcion = prescripcionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Prescripción no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Prescripción no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Prescripción", "id", id);
+            });
         return PrescripcionDTO.fromEntity(prescripcion, true);
     }
 
@@ -120,11 +126,14 @@ public class PrescripcionService {
      * @throws RuntimeException si la consulta no existe.
      */
     public PrescripcionDTO create(PrescripcionDTO dto) {
-        log.info("Creando nueva prescripción para consulta ID: {}", dto.getConsultaId());
+        log.info("→ Creando nueva prescripción para consulta ID: {}", dto.getConsultaId());
         
-        // Validar que la consulta existe
+        // VALIDACIÓN: Consulta existe
         Consulta consulta = consultaRepository.findById(dto.getConsultaId())
-            .orElseThrow(() -> new RuntimeException("Consulta no encontrada con ID: " + dto.getConsultaId()));
+            .orElseThrow(() -> {
+                log.error("✗ Consulta no encontrada con ID: {}", dto.getConsultaId());
+                return new ResourceNotFoundException("Consulta", "id", dto.getConsultaId());
+            });
 
         // Crear prescripción
         Prescripcion prescripcion = Prescripcion.builder()
@@ -154,7 +163,8 @@ public class PrescripcionService {
             prescripcion.setItems(items);
             prescripcion = prescripcionRepository.save(prescripcion);
         }
-        log.info("Prescripción creada exitosamente con ID: {}", prescripcion.getId());
+        log.info("✓ Prescripción creada exitosamente con ID: {} | {} items", 
+                prescripcion.getId(), prescripcion.getItems().size());
         
         return PrescripcionDTO.fromEntity(prescripcion, true);
     }
@@ -171,10 +181,13 @@ public class PrescripcionService {
      * @throws RuntimeException si la prescripción no existe.
      */
     public PrescripcionDTO update(Long id, PrescripcionDTO dto) {
-        log.info("Actualizando prescripción con ID: {}", id);
+        log.info("→ Actualizando prescripción con ID: {}", id);
         
         Prescripcion prescripcion = prescripcionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Prescripción no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Prescripción no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Prescripción", "id", id);
+            });
 
         // Actualizar campos básicos
         prescripcion.setFechaEmision(dto.getFechaEmision());
@@ -200,7 +213,7 @@ public class PrescripcionService {
         }
 
         prescripcion = prescripcionRepository.save(prescripcion);
-        log.info("Prescripción actualizada exitosamente con ID: {}", prescripcion.getId());
+        log.info("✓ Prescripción actualizada exitosamente con ID: {}", prescripcion.getId());
         
         return PrescripcionDTO.fromEntity(prescripcion, true);
     }
@@ -211,16 +224,67 @@ public class PrescripcionService {
      * <p>Elimina la prescripción y todos sus items asociados (cascade delete).</p>
      * 
      * @param id ID de la prescripción a eliminar. No puede ser null.
-     * @throws RuntimeException si la prescripción no existe.
+     * @throws ResourceNotFoundException si la prescripción no existe.
      */
     public void delete(Long id) {
-        log.info("Eliminando prescripción con ID: {}", id);
+        log.warn("→ Eliminando prescripción con ID: {}", id);
         
         Prescripcion prescripcion = prescripcionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Prescripción no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Prescripción no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Prescripción", "id", id);
+            });
         
         prescripcionRepository.delete(prescripcion);
-        log.info("Prescripción eliminada exitosamente con ID: {}", id);
+        log.warn("⚠ Prescripción eliminada exitosamente con ID: {}", id);
+    }
+    
+    /**
+     * Busca prescripciones con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p><strong>PATRÓN STRATEGY:</strong> Selecciona dinámicamente el query apropiado
+     * según los filtros proporcionados.</p>
+     * 
+     * @param pacienteId Filtro opcional por ID de paciente
+     * @param consultaId Filtro opcional por ID de consulta
+     * @param fechaInicio Filtro opcional por fecha inicial
+     * @param fechaFin Filtro opcional por fecha final
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de prescripciones que cumplen los criterios
+     */
+    @Transactional(readOnly = true)
+    public Page<PrescripcionDTO> searchWithFilters(
+            Long pacienteId,
+            Long consultaId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin,
+            Pageable pageable) {
+        
+        log.debug("Buscando prescripciones - paciente: {}, consulta: {}, fechas: {} - {}", 
+            pacienteId, consultaId, fechaInicio, fechaFin);
+        
+        Page<Prescripcion> prescripciones;
+        
+        // STRATEGY PATTERN: Selección dinámica del query apropiado
+        if (pacienteId != null && fechaInicio != null && fechaFin != null) {
+            prescripciones = prescripcionRepository.findByPacienteIdAndFechaEmisionBetween(
+                pacienteId, fechaInicio, fechaFin, pageable);
+        } else if (consultaId != null) {
+            prescripciones = prescripcionRepository.findByConsultaId(consultaId, pageable);
+        } else if (pacienteId != null) {
+            prescripciones = prescripcionRepository.findByPacienteId(pacienteId, pageable);
+        } else if (fechaInicio != null && fechaFin != null) {
+            prescripciones = prescripcionRepository.findByFechaEmisionBetween(fechaInicio, fechaFin, pageable);
+        } else {
+            prescripciones = prescripcionRepository.findAll(pageable);
+        }
+        
+        log.debug("Prescripciones encontradas: {} en página {}/{}", 
+            prescripciones.getNumberOfElements(), 
+            prescripciones.getNumber() + 1, 
+            prescripciones.getTotalPages());
+        
+        return prescripciones.map(p -> PrescripcionDTO.fromEntity(p, true));
     }
 }
 

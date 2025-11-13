@@ -4,10 +4,13 @@ import com.clinica.veterinaria.dto.ResetPasswordDTO;
 import com.clinica.veterinaria.dto.UsuarioCreateDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
 import com.clinica.veterinaria.dto.UsuarioUpdateDTO;
+import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -59,11 +62,13 @@ public class UsuarioController {
     /**
      * Obtener todos los usuarios
      * Solo ADMIN
+     * @deprecated Usar {@link #searchWithFilters}
      */
+    @Deprecated
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioDTO>> getAll() {
-        log.info("GET /api/usuarios");
+        log.info("GET /api/usuarios (DEPRECATED)");
         return ResponseEntity.ok(usuarioService.findAll());
     }
 
@@ -76,6 +81,38 @@ public class UsuarioController {
     public ResponseEntity<UsuarioDTO> getById(@PathVariable Long id) {
         log.info("GET /api/usuarios/{}", id);
         return ResponseEntity.ok(usuarioService.findById(id));
+    }
+
+    /**
+     * Endpoint de búsqueda avanzada con filtros combinados y paginación del lado del servidor.
+     * 
+     * @param nombre Filtro opcional por nombre (búsqueda parcial, case-insensitive)
+     * @param rol Filtro opcional por rol (ADMIN, VET, RECEPCION, ESTUDIANTE)
+     * @param activo Filtro opcional por estado (true/false)
+     * @param pageable Parámetros automáticos de paginación y orden de Spring
+     * @return Page con usuarios que cumplen los criterios de búsqueda
+     */
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<UsuarioDTO>> searchWithFilters(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) Usuario.Rol rol,
+            @RequestParam(required = false) Boolean activo,
+            Pageable pageable) {
+        
+        log.info("GET /api/usuarios/search - nombre: {}, rol: {}, activo: {}",
+            nombre, rol, activo);
+        
+        Page<UsuarioDTO> result = usuarioService.searchWithFilters(
+            nombre, rol, activo, pageable);
+        
+        log.info("✓ Encontrados {} usuarios | Página {}/{} | Total: {}", 
+            result.getNumberOfElements(), 
+            result.getNumber() + 1, 
+            result.getTotalPages(), 
+            result.getTotalElements());
+        
+        return ResponseEntity.ok(result);
     }
 
     /**

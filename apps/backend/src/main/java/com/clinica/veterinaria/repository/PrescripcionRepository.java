@@ -1,6 +1,8 @@
 package com.clinica.veterinaria.repository;
 
 import com.clinica.veterinaria.entity.Prescripcion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -65,5 +67,21 @@ public interface PrescripcionRepository extends JpaRepository<Prescripcion, Long
      */
     @Query("SELECT COUNT(p) FROM Prescripcion p JOIN p.consulta c WHERE c.paciente.id = :pacienteId")
     long countByPacienteId(@Param("pacienteId") Long pacienteId);
+    
+    // Métodos de paginación
+    Page<Prescripcion> findByConsultaId(Long consultaId, Pageable pageable);
+    
+    @Query("SELECT p FROM Prescripcion p JOIN p.consulta c WHERE c.paciente.id = :pacienteId ORDER BY p.fechaEmision DESC")
+    Page<Prescripcion> findByPacienteId(@Param("pacienteId") Long pacienteId, Pageable pageable);
+    
+    Page<Prescripcion> findByFechaEmisionBetween(LocalDateTime fechaInicio, LocalDateTime fechaFin, Pageable pageable);
+    
+    @Query("SELECT p FROM Prescripcion p JOIN p.consulta c WHERE c.paciente.id = :pacienteId " +
+           "AND p.fechaEmision BETWEEN :fechaInicio AND :fechaFin ORDER BY p.fechaEmision DESC")
+    Page<Prescripcion> findByPacienteIdAndFechaEmisionBetween(
+        @Param("pacienteId") Long pacienteId,
+        @Param("fechaInicio") LocalDateTime fechaInicio,
+        @Param("fechaFin") LocalDateTime fechaFin,
+        Pageable pageable);
 }
 

@@ -185,14 +185,20 @@ public class ConsultaService {
      * @throws RuntimeException si el paciente o profesional no existen.
      */
     public ConsultaDTO create(ConsultaDTO dto) {
-        log.info("Creando nueva consulta para paciente ID: {}", dto.getPacienteId());
+        log.info("→ Creando nueva consulta para paciente ID: {}", dto.getPacienteId());
         
-        // Validar entidades relacionadas
+        // VALIDACIONES: Entidades relacionadas
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-            .orElseThrow(() -> new RuntimeException("Paciente no encontrado con ID: " + dto.getPacienteId()));
+            .orElseThrow(() -> {
+                log.error("✗ Paciente no encontrado con ID: {}", dto.getPacienteId());
+                return new ResourceNotFoundException("Paciente", "id", dto.getPacienteId());
+            });
         
         Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
-            .orElseThrow(() -> new RuntimeException("Profesional no encontrado con ID: " + dto.getProfesionalId()));
+            .orElseThrow(() -> {
+                log.error("✗ Profesional no encontrado con ID: {}", dto.getProfesionalId());
+                return new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId());
+            });
 
         Consulta consulta = Consulta.builder()
             .fecha(dto.getFecha() != null ? dto.getFecha() : LocalDateTime.now())
@@ -209,7 +215,8 @@ public class ConsultaService {
             .build();
 
         consulta = consultaRepository.save(consulta);
-        log.info("Consulta creada exitosamente con ID: {}", consulta.getId());
+        log.info("✓ Consulta creada exitosamente con ID: {} | Paciente: {}", 
+                consulta.getId(), paciente.getNombre());
         
         return ConsultaDTO.fromEntity(consulta, true);
     }
@@ -241,10 +248,13 @@ public class ConsultaService {
      * @throws RuntimeException si la consulta o el profesional no existen.
      */
     public ConsultaDTO update(Long id, ConsultaDTO dto) {
-        log.info("Actualizando consulta con ID: {}", id);
+        log.info("→ Actualizando consulta con ID: {}", id);
         
         Consulta consulta = consultaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Consulta no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Consulta no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Consulta", "id", id);
+            });
 
         // Actualizar campos
         consulta.setFecha(dto.getFecha());
@@ -257,15 +267,15 @@ public class ConsultaService {
         consulta.setTratamiento(dto.getTratamiento());
         consulta.setObservaciones(dto.getObservaciones());
 
-        // Actualizar profesional si cambió
+        // VALIDACIÓN: Actualizar profesional si cambió
         if (!consulta.getProfesional().getId().equals(dto.getProfesionalId())) {
             Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
-                .orElseThrow(() -> new RuntimeException("Profesional no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));
             consulta.setProfesional(profesional);
         }
 
         consulta = consultaRepository.save(consulta);
-        log.info("Consulta actualizada exitosamente con ID: {}", id);
+        log.info("✓ Consulta actualizada exitosamente con ID: {}", id);
         
         return ConsultaDTO.fromEntity(consulta, true);
     }
@@ -284,14 +294,110 @@ public class ConsultaService {
      * @throws RuntimeException si la consulta no existe.
      */
     public void delete(Long id) {
-        log.info("Eliminando consulta con ID: {}", id);
+        log.warn("→ Eliminando consulta con ID: {}", id);
         
         if (!consultaRepository.existsById(id)) {
-            throw new RuntimeException("Consulta no encontrada con ID: " + id);
+            log.error("✗ Consulta no encontrada con ID: {}", id);
+            throw new ResourceNotFoundException("Consulta", "id", id);
         }
         
         consultaRepository.deleteById(id);
-        log.info("Consulta eliminada exitosamente con ID: {}", id);
+        log.warn("⚠ Consulta eliminada exitosamente con ID: {}", id);
+    }
+    
+    /**
+     * Busca consultas con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p><strong>PATRÓN STRATEGY:</strong> Selecciona dinámicamente el query apropiado
+     * según los filtros proporcionados. Optimizado para historiales médicos extensos.</p>
+     * 
+     * <p><strong>Casos de uso soportados:</strong></p>
+     * <ul>
+     *   <li><b>Sin filtros:</b> Todas las consultas paginadas</li>
+     *   <li><b>Por paciente:</b> Historial médico completo de una mascota</li>
+     *   <li><b>Por profesional:</b> Todas las consultas de un veterinario</li>
+     *   <li><b>Por rango de fechas:</b> Consultas en un período específico</li>
+     *   <li><b>Paciente + fechas:</b> Historial de un paciente en un período</li>
+     *   <li><b>Profesional + fechas:</b> Consultas de un veterinario en un período</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplo de uso:</strong></p>
+     * <pre>
+     * // Caso 1: Historial completo de mascota ID 10
+     * Pageable pageable = PageRequest.of(0, 20, Sort.by("fecha").descending());
+     * Page&lt;ConsultaDTO&gt; result = service.searchWithFilters(10L, null, null, null, pageable);
+     * 
+     * // Caso 2: Consultas del Dr. Smith este mes
+     * LocalDateTime inicioMes = LocalDateTime.now().withDayOfMonth(1);
+     * LocalDateTime finMes = inicioMes.plusMonths(1);
+     * result = service.searchWithFilters(null, 5L, inicioMes, finMes, pageable);
+     * 
+     * // Caso 3: Historial de mascota del último año
+     * LocalDateTime haceUnAno = LocalDateTime.now().minusYears(1);
+     * result = service.searchWithFilters(10L, null, haceUnAno, LocalDateTime.now(), pageable);
+     * </pre>
+     * 
+     * @param pacienteId Filtro opcional por ID de paciente (mascota)
+     * @param profesionalId Filtro opcional por ID de profesional (veterinario)
+     * @param fechaInicio Filtro opcional por fecha inicial (inclusivo)
+     * @param fechaFin Filtro opcional por fecha final (inclusivo)
+     * @param pageable Configuración de paginación y ordenamiento. No puede ser null.
+     * @return Página de consultas que cumplen los criterios de búsqueda
+     */
+    @Transactional(readOnly = true)
+    public Page<ConsultaDTO> searchWithFilters(
+            Long pacienteId,
+            Long profesionalId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin,
+            Pageable pageable) {
+        
+        log.debug("Buscando consultas con filtros - paciente: {}, profesional: {}, fechas: {} - {}, page: {}", 
+            pacienteId, profesionalId, fechaInicio, fechaFin, pageable.getPageNumber());
+        
+        Page<Consulta> consultas;
+        
+        // STRATEGY PATTERN: Selección dinámica del query apropiado
+        
+        // Estrategia 1: Paciente + rango de fechas (historial específico)
+        if (pacienteId != null && fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Historial de paciente en rango de fechas");
+            consultas = consultaRepository.findByPacienteIdAndFechaBetween(
+                pacienteId, fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 2: Profesional + rango de fechas (evaluación/estadísticas)
+        else if (profesionalId != null && fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Consultas de profesional en rango de fechas");
+            consultas = consultaRepository.findByProfesionalIdAndFechaBetween(
+                profesionalId, fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 3: Solo rango de fechas (reportes generales)
+        else if (fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Solo rango de fechas");
+            consultas = consultaRepository.findByFechaBetween(fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 4: Solo paciente (historial completo)
+        else if (pacienteId != null) {
+            log.debug("Estrategia: Historial completo de paciente");
+            consultas = consultaRepository.findByPacienteId(pacienteId, pageable);
+        }
+        // Estrategia 5: Solo profesional (todas sus consultas)
+        else if (profesionalId != null) {
+            log.debug("Estrategia: Todas las consultas del profesional");
+            consultas = consultaRepository.findByProfesionalId(profesionalId, pageable);
+        }
+        // Estrategia 6: Sin filtros, todas las consultas
+        else {
+            log.debug("Estrategia: Sin filtros, retornar todas");
+            consultas = consultaRepository.findAll(pageable);
+        }
+        
+        log.debug("Consultas encontradas: {} en página {} de {}", 
+            consultas.getNumberOfElements(), 
+            consultas.getNumber() + 1, 
+            consultas.getTotalPages());
+        
+        return consultas.map(c -> ConsultaDTO.fromEntity(c, true));
     }
 }
 
