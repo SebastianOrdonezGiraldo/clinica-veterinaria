@@ -2,10 +2,13 @@ package com.clinica.veterinaria.controller;
 
 import com.clinica.veterinaria.dto.CitaDTO;
 import com.clinica.veterinaria.entity.Cita;
+import com.clinica.veterinaria.entity.Cita.EstadoCita;
 import com.clinica.veterinaria.service.CitaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,10 +67,13 @@ public class CitaController {
 
     /**
      * Obtener todas las citas
+     * 
+     * @deprecated Usar {@link #searchWithFilters} en su lugar para búsquedas paginadas con filtros
      */
+    @Deprecated
     @GetMapping
     public ResponseEntity<List<CitaDTO>> getAll() {
-        log.info("GET /api/citas");
+        log.info("GET /api/citas (DEPRECATED)");
         return ResponseEntity.ok(citaService.findAll());
     }
 
@@ -79,42 +85,136 @@ public class CitaController {
         log.info("GET /api/citas/{}", id);
         return ResponseEntity.ok(citaService.findById(id));
     }
+    
+    /**
+     * Endpoint de búsqueda avanzada con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p>Este endpoint implementa <strong>búsqueda multicritero</strong> para citas médicas,
+     * soportando filtros por estado, profesional, paciente y rangos de fechas. La paginación
+     * se realiza en la base de datos para manejar eficientemente grandes volúmenes.</p>
+     * 
+     * <p><strong>Parámetros de búsqueda (todos opcionales):</strong></p>
+     * <ul>
+     *   <li><b>estado:</b> Estado de cita (PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA)</li>
+     *   <li><b>profesionalId:</b> ID del veterinario para ver su agenda</li>
+     *   <li><b>pacienteId:</b> ID del paciente para ver su historial</li>
+     *   <li><b>fechaInicio:</b> Fecha inicial del rango (formato ISO 8601)</li>
+     *   <li><b>fechaFin:</b> Fecha final del rango (formato ISO 8601)</li>
+     * </ul>
+     * 
+     * <p><strong>Parámetros de paginación (Spring Data):</strong></p>
+     * <ul>
+     *   <li><b>page:</b> Número de página (0-indexed, default: 0)</li>
+     *   <li><b>size:</b> Elementos por página (default: 20)</li>
+     *   <li><b>sort:</b> Ordenamiento, ej: "fecha,asc" o "estado,desc"</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplos de uso:</strong></p>
+     * <pre>
+     * // Caso 1: Todas las citas pendientes
+     * GET /api/citas/search?estado=PENDIENTE&page=0&size=20&sort=fecha,asc
+     * 
+     * // Caso 2: Agenda del Dr. Smith (ID 5) esta semana
+     * GET /api/citas/search?profesionalId=5&fechaInicio=2024-01-08T00:00:00&fechaFin=2024-01-14T23:59:59
+     * 
+     * // Caso 3: Historial de mascota ID 10
+     * GET /api/citas/search?pacienteId=10&page=0&size=15&sort=fecha,desc
+     * 
+     * // Caso 4: Citas completadas del último mes
+     * GET /api/citas/search?estado=COMPLETADA&fechaInicio=2024-01-01T00:00:00&fechaFin=2024-01-31T23:59:59
+     * 
+     * // Caso 5: Todas las citas con paginación
+     * GET /api/citas/search?page=0&size=20&sort=fecha,desc
+     * </pre>
+     * 
+     * <p><strong>Formato de respuesta:</strong> Objeto Page de Spring con:</p>
+     * <ul>
+     *   <li><b>content:</b> Array de CitaDTO</li>
+     *   <li><b>totalElements:</b> Total de citas que cumplen los filtros</li>
+     *   <li><b>totalPages:</b> Total de páginas</li>
+     *   <li><b>size:</b> Tamaño de página solicitado</li>
+     *   <li><b>number:</b> Número de página actual (0-indexed)</li>
+     * </ul>
+     * 
+     * @param estado Filtro opcional por estado de cita
+     * @param profesionalId Filtro opcional por ID de profesional (veterinario)
+     * @param pacienteId Filtro opcional por ID de paciente (mascota)
+     * @param fechaInicio Filtro opcional por fecha inicial (formato ISO 8601)
+     * @param fechaFin Filtro opcional por fecha final (formato ISO 8601)
+     * @param pageable Parámetros automáticos de paginación y orden de Spring
+     * @return Page con citas que cumplen los criterios de búsqueda
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<CitaDTO>> searchWithFilters(
+            @RequestParam(required = false) EstadoCita estado,
+            @RequestParam(required = false) Long profesionalId,
+            @RequestParam(required = false) Long pacienteId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin,
+            Pageable pageable) {
+        
+        log.info("GET /api/citas/search - estado: {}, profesional: {}, paciente: {}, fechas: {} - {}, page: {}, size: {}", 
+            estado, profesionalId, pacienteId, fechaInicio, fechaFin, pageable.getPageNumber(), pageable.getPageSize());
+        
+        Page<CitaDTO> result = citaService.searchWithFilters(
+            estado, profesionalId, pacienteId, fechaInicio, fechaFin, pageable);
+        
+        log.info("✓ Encontradas {} citas | Página {}/{} | Total: {}", 
+            result.getNumberOfElements(), 
+            result.getNumber() + 1, 
+            result.getTotalPages(), 
+            result.getTotalElements());
+        
+        return ResponseEntity.ok(result);
+    }
 
     /**
      * Obtener citas por paciente
+     * 
+     * @deprecated Usar {@link #searchWithFilters} con pacienteId
      */
+    @Deprecated
     @GetMapping("/paciente/{pacienteId}")
     public ResponseEntity<List<CitaDTO>> getByPaciente(@PathVariable Long pacienteId) {
-        log.info("GET /api/citas/paciente/{}", pacienteId);
+        log.info("GET /api/citas/paciente/{} (DEPRECATED)", pacienteId);
         return ResponseEntity.ok(citaService.findByPaciente(pacienteId));
     }
 
     /**
      * Obtener citas por profesional
+     * 
+     * @deprecated Usar {@link #searchWithFilters} con profesionalId
      */
+    @Deprecated
     @GetMapping("/profesional/{profesionalId}")
     public ResponseEntity<List<CitaDTO>> getByProfesional(@PathVariable Long profesionalId) {
-        log.info("GET /api/citas/profesional/{}", profesionalId);
+        log.info("GET /api/citas/profesional/{} (DEPRECATED)", profesionalId);
         return ResponseEntity.ok(citaService.findByProfesional(profesionalId));
     }
 
     /**
      * Obtener citas por estado
+     * 
+     * @deprecated Usar {@link #searchWithFilters} con estado
      */
+    @Deprecated
     @GetMapping("/estado/{estado}")
     public ResponseEntity<List<CitaDTO>> getByEstado(@PathVariable Cita.EstadoCita estado) {
-        log.info("GET /api/citas/estado/{}", estado);
+        log.info("GET /api/citas/estado/{} (DEPRECATED)", estado);
         return ResponseEntity.ok(citaService.findByEstado(estado));
     }
 
     /**
      * Obtener citas por rango de fechas
+     * 
+     * @deprecated Usar {@link #searchWithFilters} con fechaInicio y fechaFin
      */
+    @Deprecated
     @GetMapping("/rango")
     public ResponseEntity<List<CitaDTO>> getByFechaRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        log.info("GET /api/citas/rango?inicio={}&fin={}", inicio, fin);
+        log.info("GET /api/citas/rango?inicio={}&fin={} (DEPRECATED)", inicio, fin);
         return ResponseEntity.ok(citaService.findByFechaRange(inicio, fin));
     }
 

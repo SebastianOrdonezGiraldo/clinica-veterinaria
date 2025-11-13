@@ -2,15 +2,19 @@ package com.clinica.veterinaria.service;
 
 import com.clinica.veterinaria.dto.CitaDTO;
 import com.clinica.veterinaria.entity.Cita;
+import com.clinica.veterinaria.entity.Cita.EstadoCita;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
 import com.clinica.veterinaria.entity.Usuario;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.CitaRepository;
 import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,13 +91,13 @@ public class CitaService {
      * 
      * @param id Identificador único de la cita. No puede ser null.
      * @return DTO con la información completa de la cita.
-     * @throws RuntimeException si no existe una cita con el ID especificado.
+     * @throws ResourceNotFoundException si no existe una cita con el ID especificado.
      */
     @Transactional(readOnly = true)
     public CitaDTO findById(Long id) {
         log.debug("Buscando cita con ID: {}", id);
         Cita cita = citaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Cita no encontrada con ID: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Cita", "id", id));
         return CitaDTO.fromEntity(cita, true);
     }
 
@@ -206,17 +210,26 @@ public class CitaService {
      * @see CitaDTO
      */
     public CitaDTO create(CitaDTO dto) {
-        log.info("Creando nueva cita para paciente ID: {}", dto.getPacienteId());
+        log.info("→ Creando nueva cita para paciente ID: {}", dto.getPacienteId());
         
-        // Validar entidades relacionadas
+        // VALIDACIONES: Entidades relacionadas
         Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-            .orElseThrow(() -> new RuntimeException("Paciente no encontrado con ID: " + dto.getPacienteId()));
+            .orElseThrow(() -> {
+                log.error("✗ Paciente no encontrado con ID: {}", dto.getPacienteId());
+                return new ResourceNotFoundException("Paciente", "id", dto.getPacienteId());
+            });
         
         Propietario propietario = propietarioRepository.findById(dto.getPropietarioId())
-            .orElseThrow(() -> new RuntimeException("Propietario no encontrado con ID: " + dto.getPropietarioId()));
+            .orElseThrow(() -> {
+                log.error("✗ Propietario no encontrado con ID: {}", dto.getPropietarioId());
+                return new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId());
+            });
         
         Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
-            .orElseThrow(() -> new RuntimeException("Profesional no encontrado con ID: " + dto.getProfesionalId()));
+            .orElseThrow(() -> {
+                log.error("✗ Profesional no encontrado con ID: {}", dto.getProfesionalId());
+                return new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId());
+            });
 
         Cita cita = Cita.builder()
             .fecha(dto.getFecha())
@@ -280,10 +293,13 @@ public class CitaService {
      * @throws RuntimeException si la cita no existe o alguna entidad relacionada no existe.
      */
     public CitaDTO update(Long id, CitaDTO dto) {
-        log.info("Actualizando cita con ID: {}", id);
+        log.info("→ Actualizando cita con ID: {}", id);
         
         Cita cita = citaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Cita no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Cita no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Cita", "id", id);
+            });
 
         // Actualizar campos básicos
         cita.setFecha(dto.getFecha());
@@ -291,27 +307,27 @@ public class CitaService {
         cita.setEstado(dto.getEstado());
         cita.setObservaciones(dto.getObservaciones());
 
-        // Actualizar relaciones si cambiaron
+        // VALIDACIONES: Actualizar relaciones si cambiaron
         if (!cita.getPaciente().getId().equals(dto.getPacienteId())) {
             Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new RuntimeException("Paciente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente", "id", dto.getPacienteId()));
             cita.setPaciente(paciente);
         }
 
         if (!cita.getPropietario().getId().equals(dto.getPropietarioId())) {
             Propietario propietario = propietarioRepository.findById(dto.getPropietarioId())
-                .orElseThrow(() -> new RuntimeException("Propietario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId()));
             cita.setPropietario(propietario);
         }
 
         if (!cita.getProfesional().getId().equals(dto.getProfesionalId())) {
             Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
-                .orElseThrow(() -> new RuntimeException("Profesional no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));
             cita.setProfesional(profesional);
         }
 
         cita = citaRepository.save(cita);
-        log.info("Cita actualizada exitosamente con ID: {}", id);
+        log.info("✓ Cita actualizada exitosamente con ID: {}", id);
         
         return CitaDTO.fromEntity(cita, true);
     }
@@ -338,14 +354,18 @@ public class CitaService {
      * @see Cita.EstadoCita
      */
     public CitaDTO cambiarEstado(Long id, Cita.EstadoCita nuevoEstado) {
-        log.info("Cambiando estado de cita ID: {} a {}", id, nuevoEstado);
+        log.info("→ Cambiando estado de cita ID: {} a {}", id, nuevoEstado);
         
         Cita cita = citaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Cita no encontrada con ID: " + id));
+            .orElseThrow(() -> {
+                log.error("✗ Cita no encontrada con ID: {}", id);
+                return new ResourceNotFoundException("Cita", "id", id);
+            });
         
         cita.setEstado(nuevoEstado);
         cita = citaRepository.save(cita);
         
+        log.info("✓ Estado de cita actualizado a: {}", nuevoEstado);
         return CitaDTO.fromEntity(cita, true);
     }
 
@@ -362,14 +382,129 @@ public class CitaService {
      * @throws RuntimeException si la cita no existe.
      */
     public void delete(Long id) {
-        log.info("Eliminando cita con ID: {}", id);
+        log.warn("→ Eliminando cita con ID: {}", id);
         
         if (!citaRepository.existsById(id)) {
-            throw new RuntimeException("Cita no encontrada con ID: " + id);
+            log.error("✗ Cita no encontrada con ID: {}", id);
+            throw new ResourceNotFoundException("Cita", "id", id);
         }
         
         citaRepository.deleteById(id);
-        log.info("Cita eliminada exitosamente con ID: {}", id);
+        log.warn("⚠ Cita eliminada exitosamente con ID: {}", id);
+    }
+    
+    /**
+     * Busca citas con filtros combinados y paginación del lado del servidor.
+     * 
+     * <p><strong>PATRÓN STRATEGY:</strong> Selecciona dinámicamente el query apropiado
+     * según los filtros proporcionados. Esto evita queries complejos con múltiples
+     * joins y condiciones anidadas que pueden afectar el rendimiento.</p>
+     * 
+     * <p><strong>Optimización:</strong> La paginación se realiza en la base de datos,
+     * permitiendo manejar agendas con miles de citas sin problemas de memoria.</p>
+     * 
+     * <p><strong>Casos de uso soportados:</strong></p>
+     * <ul>
+     *   <li><b>Sin filtros:</b> Todas las citas paginadas</li>
+     *   <li><b>Por estado:</b> PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA</li>
+     *   <li><b>Por profesional:</b> Agenda de un veterinario específico</li>
+     *   <li><b>Por paciente:</b> Historial de citas de una mascota</li>
+     *   <li><b>Por rango de fechas:</b> Citas en un período específico</li>
+     *   <li><b>Estado + fechas:</b> Combinación para reportes</li>
+     *   <li><b>Profesional + fechas:</b> Agenda de un veterinario en un período</li>
+     * </ul>
+     * 
+     * <p><strong>Ejemplo de uso:</strong></p>
+     * <pre>
+     * // Caso 1: Todas las citas pendientes
+     * Pageable pageable = PageRequest.of(0, 20, Sort.by("fecha").ascending());
+     * Page&lt;CitaDTO&gt; result = service.searchWithFilters(
+     *     EstadoCita.PENDIENTE, null, null, null, null, pageable);
+     * 
+     * // Caso 2: Agenda del Dr. Smith esta semana
+     * LocalDateTime inicio = LocalDateTime.now().with(DayOfWeek.MONDAY);
+     * LocalDateTime fin = inicio.plusDays(7);
+     * result = service.searchWithFilters(
+     *     null, 5L, null, inicio, fin, pageable);
+     * 
+     * // Caso 3: Historial de citas de mascota ID 10
+     * result = service.searchWithFilters(
+     *     null, null, 10L, null, null, pageable);
+     * 
+     * // Caso 4: Citas completadas del último mes
+     * LocalDateTime hace30Dias = LocalDateTime.now().minusDays(30);
+     * result = service.searchWithFilters(
+     *     EstadoCita.COMPLETADA, null, null, hace30Dias, LocalDateTime.now(), pageable);
+     * </pre>
+     * 
+     * @param estado Filtro opcional por estado de cita
+     * @param profesionalId Filtro opcional por ID de profesional (veterinario)
+     * @param pacienteId Filtro opcional por ID de paciente (mascota)
+     * @param fechaInicio Filtro opcional por fecha inicial (inclusivo)
+     * @param fechaFin Filtro opcional por fecha final (inclusivo)
+     * @param pageable Configuración de paginación y ordenamiento. No puede ser null.
+     * @return Página de citas que cumplen los criterios de búsqueda
+     */
+    @Transactional(readOnly = true)
+    public Page<CitaDTO> searchWithFilters(
+            EstadoCita estado,
+            Long profesionalId,
+            Long pacienteId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin,
+            Pageable pageable) {
+        
+        log.debug("Buscando citas con filtros - estado: {}, profesional: {}, paciente: {}, fechas: {} - {}, page: {}", 
+            estado, profesionalId, pacienteId, fechaInicio, fechaFin, pageable.getPageNumber());
+        
+        Page<Cita> citas;
+        
+        // STRATEGY PATTERN: Selección dinámica del query apropiado
+        
+        // Estrategia 1: Profesional + rango de fechas (agenda de un veterinario)
+        if (profesionalId != null && fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Agenda de profesional en rango de fechas");
+            citas = citaRepository.findByProfesionalIdAndFechaBetween(
+                profesionalId, fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 2: Estado + rango de fechas (reportes)
+        else if (estado != null && fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Estado y rango de fechas");
+            citas = citaRepository.findByEstadoAndFechaBetween(
+                estado, fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 3: Solo rango de fechas
+        else if (fechaInicio != null && fechaFin != null) {
+            log.debug("Estrategia: Solo rango de fechas");
+            citas = citaRepository.findByFechaBetween(fechaInicio, fechaFin, pageable);
+        }
+        // Estrategia 4: Solo profesional
+        else if (profesionalId != null) {
+            log.debug("Estrategia: Solo profesional");
+            citas = citaRepository.findByProfesionalId(profesionalId, pageable);
+        }
+        // Estrategia 5: Solo paciente
+        else if (pacienteId != null) {
+            log.debug("Estrategia: Solo paciente");
+            citas = citaRepository.findByPacienteId(pacienteId, pageable);
+        }
+        // Estrategia 6: Solo estado
+        else if (estado != null) {
+            log.debug("Estrategia: Solo estado");
+            citas = citaRepository.findByEstado(estado, pageable);
+        }
+        // Estrategia 7: Sin filtros, todas las citas
+        else {
+            log.debug("Estrategia: Sin filtros, retornar todas");
+            citas = citaRepository.findAll(pageable);
+        }
+        
+        log.debug("Citas encontradas: {} en página {} de {}", 
+            citas.getNumberOfElements(), 
+            citas.getNumber() + 1, 
+            citas.getTotalPages());
+        
+        return citas.map(c -> CitaDTO.fromEntity(c, true));
     }
 }
 
