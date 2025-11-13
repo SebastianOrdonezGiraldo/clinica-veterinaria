@@ -1,5 +1,6 @@
 package com.clinica.veterinaria.exception;
 
+import com.clinica.veterinaria.dto.ErrorResponseDTO;
 import com.clinica.veterinaria.exception.domain.BusinessException;
 import com.clinica.veterinaria.exception.domain.DuplicateResourceException;
 import com.clinica.veterinaria.exception.domain.InvalidDataException;
@@ -54,22 +55,19 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 404 y detalles del error
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(
+    public ResponseEntity<ErrorResponseDTO> handleResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
         log.warn("ResourceNotFoundException: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            ex.getMessage(),
-            HttpStatus.NOT_FOUND,
-            request.getDescription(false).replace("uri=", "")
-        );
-        
-        // Agregar detalles adicionales si están disponibles
-        if (ex.getResourceName() != null) {
-            errorResponse.put("recurso", ex.getResourceName());
-            errorResponse.put("campo", ex.getFieldName());
-            errorResponse.put("valor", ex.getFieldValue());
-        }
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(ex.getMessage())
+            .status(HttpStatus.NOT_FOUND.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .recurso(ex.getResourceName())
+            .campo(ex.getFieldName())
+            .valor(ex.getFieldValue())
+            .build();
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
@@ -82,22 +80,19 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 409 y detalles del error
      */
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicateResourceException(
+    public ResponseEntity<ErrorResponseDTO> handleDuplicateResourceException(
             DuplicateResourceException ex, WebRequest request) {
         log.warn("DuplicateResourceException: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            ex.getMessage(),
-            HttpStatus.CONFLICT,
-            request.getDescription(false).replace("uri=", "")
-        );
-        
-        // Agregar detalles adicionales si están disponibles
-        if (ex.getResourceName() != null) {
-            errorResponse.put("recurso", ex.getResourceName());
-            errorResponse.put("campo", ex.getFieldName());
-            errorResponse.put("valor", ex.getFieldValue());
-        }
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(ex.getMessage())
+            .status(HttpStatus.CONFLICT.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .recurso(ex.getResourceName())
+            .campo(ex.getFieldName())
+            .valor(ex.getFieldValue())
+            .build();
         
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
@@ -110,22 +105,19 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 400 y detalles del error
      */
     @ExceptionHandler(InvalidDataException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidDataException(
+    public ResponseEntity<ErrorResponseDTO> handleInvalidDataException(
             InvalidDataException ex, WebRequest request) {
         log.warn("InvalidDataException: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            ex.getMessage(),
-            HttpStatus.BAD_REQUEST,
-            request.getDescription(false).replace("uri=", "")
-        );
-        
-        // Agregar detalles adicionales si están disponibles
-        if (ex.getFieldName() != null) {
-            errorResponse.put("campo", ex.getFieldName());
-            errorResponse.put("valorRechazado", ex.getRejectedValue());
-            errorResponse.put("razon", ex.getReason());
-        }
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(ex.getMessage())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .campo(ex.getFieldName())
+            .valor(ex.getRejectedValue())
+            .detalle(ex.getReason())
+            .build();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
@@ -138,15 +130,16 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 422 y detalles del error
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<Map<String, Object>> handleBusinessException(
+    public ResponseEntity<ErrorResponseDTO> handleBusinessException(
             BusinessException ex, WebRequest request) {
         log.warn("BusinessException: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            ex.getMessage(),
-            HttpStatus.UNPROCESSABLE_ENTITY,
-            request.getDescription(false).replace("uri=", "")
-        );
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(ex.getMessage())
+            .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .build();
         
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(errorResponse);
     }
@@ -162,15 +155,16 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 400 y detalles del error
      */
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(
+    public ResponseEntity<ErrorResponseDTO> handleRuntimeException(
             RuntimeException ex, WebRequest request) {
         log.error("RuntimeException: {} - Considere usar una excepción personalizada", ex.getMessage());
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            ex.getMessage(),
-            HttpStatus.BAD_REQUEST,
-            request.getDescription(false).replace("uri=", "")
-        );
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(ex.getMessage())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .build();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
@@ -185,7 +179,7 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 400 y lista de errores de validación
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+    public ResponseEntity<ErrorResponseDTO> handleValidationExceptions(
             MethodArgumentNotValidException ex, WebRequest request) {
         log.warn("Validation errors: {} errors found", ex.getBindingResult().getErrorCount());
         
@@ -196,12 +190,13 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            "Errores de validación",
-            HttpStatus.BAD_REQUEST,
-            request.getDescription(false).replace("uri=", "")
-        );
-        errorResponse.put("errores", errors);
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje("Errores de validación")
+            .status(HttpStatus.BAD_REQUEST.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .errores(errors)
+            .build();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
@@ -210,12 +205,14 @@ public class GlobalExceptionHandler {
      * Maneja excepciones de autenticación (credenciales incorrectas)
      */
     @ExceptionHandler({AuthenticationException.class, BadCredentialsException.class})
-    public ResponseEntity<Map<String, Object>> handleAuthenticationException(Exception ex) {
+    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(Exception ex) {
         log.error("Authentication error: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("mensaje", "Credenciales inválidas");
-        errorResponse.put("status", 401);
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje("Credenciales inválidas")
+            .status(HttpStatus.UNAUTHORIZED.value())
+            .timestamp(LocalDateTime.now())
+            .build();
         
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
@@ -224,12 +221,15 @@ public class GlobalExceptionHandler {
      * Maneja excepciones de acceso denegado (permisos insuficientes)
      */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
+    public ResponseEntity<ErrorResponseDTO> handleAccessDeniedException(AccessDeniedException ex) {
         log.error("Access denied: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("mensaje", "Acceso denegado");
-        errorResponse.put("status", 403);
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje("Acceso denegado - No tiene permisos para realizar esta acción")
+            .status(HttpStatus.FORBIDDEN.value())
+            .timestamp(LocalDateTime.now())
+            .detalle(ex.getMessage())
+            .build();
         
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
@@ -238,16 +238,23 @@ public class GlobalExceptionHandler {
      * Maneja errores de conversión de tipos (ej: enum inválido en RequestParam)
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Map<String, Object>> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ErrorResponseDTO> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.error("Type mismatch error: {}", ex.getMessage());
         
-        Map<String, Object> errorResponse = new HashMap<>();
         String mensaje = "Valor inválido para el parámetro '" + ex.getName() + "': " + ex.getValue();
+        String detalle = null;
         if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
-            mensaje += ". Valores válidos: " + java.util.Arrays.toString(ex.getRequiredType().getEnumConstants());
+            detalle = "Valores válidos: " + java.util.Arrays.toString(ex.getRequiredType().getEnumConstants());
         }
-        errorResponse.put("mensaje", mensaje);
-        errorResponse.put("status", 400);
+        
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje(mensaje)
+            .status(HttpStatus.BAD_REQUEST.value())
+            .timestamp(LocalDateTime.now())
+            .campo(ex.getName())
+            .valor(ex.getValue())
+            .detalle(detalle)
+            .build();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
@@ -262,43 +269,19 @@ public class GlobalExceptionHandler {
      * @return ResponseEntity con status 500 y detalles del error
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(
+    public ResponseEntity<ErrorResponseDTO> handleGenericException(
             Exception ex, WebRequest request) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
         
-        Map<String, Object> errorResponse = buildErrorResponse(
-            "Error interno del servidor",
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            request.getDescription(false).replace("uri=", "")
-        );
-        errorResponse.put("detalle", ex.getMessage());
+        ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+            .mensaje("Error interno del servidor")
+            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .timestamp(LocalDateTime.now())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .detalle(ex.getMessage())
+            .build();
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-    }
-    
-    /**
-     * Construye una respuesta de error consistente.
-     * 
-     * <p>Todas las respuestas de error incluyen:</p>
-     * <ul>
-     *   <li><b>mensaje:</b> Descripción del error</li>
-     *   <li><b>status:</b> Código HTTP</li>
-     *   <li><b>timestamp:</b> Momento del error</li>
-     *   <li><b>path:</b> Ruta del endpoint que falló</li>
-     * </ul>
-     * 
-     * @param message Mensaje de error
-     * @param status Status HTTP
-     * @param path Ruta del request
-     * @return Map con la estructura de respuesta de error
-     */
-    private Map<String, Object> buildErrorResponse(String message, HttpStatus status, String path) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("mensaje", message);
-        errorResponse.put("status", status.value());
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("path", path);
-        return errorResponse;
     }
 }
 

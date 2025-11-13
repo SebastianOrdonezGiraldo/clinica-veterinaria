@@ -216,5 +216,21 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
         LocalDateTime fechaInicio, 
         LocalDateTime fechaFin, 
         Pageable pageable);
+    
+    /**
+     * Busca citas de un profesional en un rango de fechas sin paginación.
+     * 
+     * <p>Útil para validaciones de disponibilidad donde se necesita verificar
+     * si hay citas en un rango horario específico.</p>
+     * 
+     * @param profesionalId ID del profesional
+     * @param fechaInicio Fecha inicial del rango
+     * @param fechaFin Fecha final del rango
+     * @return Lista de citas del profesional en ese rango
+     */
+    List<Cita> findByProfesionalIdAndFechaBetween(
+        Long profesionalId, 
+        LocalDateTime fechaInicio, 
+        LocalDateTime fechaFin);
 }
 

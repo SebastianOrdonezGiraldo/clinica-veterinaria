@@ -14,7 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -38,6 +40,26 @@ class CitaControllerIntegrationTest extends BaseIntegrationTest {
     private Propietario propietario;
     private Paciente paciente;
     private Cita cita1;
+    
+    /**
+     * Genera una fecha válida para citas (día hábil, horario de atención 10 AM)
+     */
+    private LocalDateTime generarFechaValida(int diasEnFuturo) {
+        LocalDateTime fecha = LocalDateTime.now()
+            .plusDays(diasEnFuturo)
+            .withHour(10)  // 10 AM, dentro del horario 8 AM - 6 PM
+            .withMinute(0)
+            .withSecond(0)
+            .withNano(0);
+        
+        // Si cae en fin de semana, mover al próximo lunes
+        while (fecha.getDayOfWeek() == DayOfWeek.SATURDAY || 
+               fecha.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            fecha = fecha.plusDays(1);
+        }
+        
+        return fecha;
+    }
 
     @BeforeEach
     void setUp() {
@@ -69,7 +91,7 @@ class CitaControllerIntegrationTest extends BaseIntegrationTest {
 
         // Crear cita
         cita1 = Cita.builder()
-            .fecha(LocalDateTime.now().plusDays(1))
+            .fecha(generarFechaValida(1))
             .motivo("Vacunación")
             .estado(Cita.EstadoCita.PENDIENTE)
             .paciente(paciente)
@@ -103,7 +125,7 @@ class CitaControllerIntegrationTest extends BaseIntegrationTest {
     @DisplayName("POST /api/citas - Debe crear cita")
     void testCrearCita() throws Exception {
         CitaDTO nuevaDTO = CitaDTO.builder()
-            .fecha(LocalDateTime.now().plusDays(2))
+            .fecha(generarFechaValida(2))
             .motivo("Control general")
             .estado(Cita.EstadoCita.PENDIENTE)
             .pacienteId(paciente.getId())
@@ -124,7 +146,7 @@ class CitaControllerIntegrationTest extends BaseIntegrationTest {
     @DisplayName("PUT /api/citas/{id} - Debe actualizar cita")
     void testActualizarCita() throws Exception {
         CitaDTO actualizacionDTO = CitaDTO.builder()
-            .fecha(LocalDateTime.now().plusDays(3))
+            .fecha(generarFechaValida(3))
             .motivo("Vacunación y desparasitación")
             .estado(Cita.EstadoCita.CONFIRMADA)
             .pacienteId(paciente.getId())

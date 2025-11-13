@@ -149,32 +149,91 @@ public class CacheConfig {
     public static final String PRESCRIPCIONES_CACHE = "prescripciones";
 
     /**
-     * Configura el CacheManager con Caffeine como proveedor.
+     * Configura el CacheManager con Caffeine usando configuraciones personalizadas por caché.
      * 
-     * <p>Crea múltiples cachés con diferentes configuraciones de TTL y max size
-     * según la naturaleza de los datos y frecuencia de acceso.</p>
-     * 
-     * <p><strong>Configuración por caché:</strong></p>
+     * <p>Cada caché tiene su propia configuración optimizada según:</p>
      * <ul>
-     *   <li><b>Datos de referencia (usuarios, veterinarios):</b> TTL largo (10 min), max size moderado</li>
-     *   <li><b>Datos transaccionales (citas, consultas):</b> TTL corto (2-3 min), max size alto</li>
-     *   <li><b>Datos maestros (propietarios, pacientes):</b> TTL medio (5 min), max size alto</li>
+     *   <li><b>Frecuencia de acceso:</b> Datos muy consultados → mayor max size</li>
+     *   <li><b>Volatilidad:</b> Datos que cambian poco → mayor TTL</li>
+     *   <li><b>Tamaño de datos:</b> Registros grandes → menor max size</li>
      * </ul>
      * 
-     * <p><strong>Algoritmo de evicción:</strong> Window TinyLfu (Caffeine default)</p>
-     * <ul>
-     *   <li>Mantiene entries más frecuentemente usadas</li>
-     *   <li>Protección contra cache pollution (ataques de scan)</li>
-     *   <li>Better hit rate que LRU tradicional</li>
-     * </ul>
-     * 
-     * @return CacheManager configurado con múltiples cachés Caffeine
+     * @return CacheManager configurado con múltiples cachés Caffeine personalizados
      */
     @Bean
     public CacheManager cacheManager() {
-        log.info("🚀 Inicializando Cache Manager con Caffeine");
+        log.info("🚀 Inicializando Cache Manager con Caffeine - Configuración personalizada");
         
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager() {
+            @Override
+            protected com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(String name) {
+                // Configuración específica por cada caché
+                return switch (name) {
+                    case VETERINARIOS_ACTIVOS_CACHE -> 
+                        // Datos estables, consultados frecuentemente para asignar citas
+                        Caffeine.newBuilder()
+                            .maximumSize(100)
+                            .expireAfterWrite(10, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case USUARIOS_CACHE -> 
+                        // Datos de usuarios, cambian poco
+                        Caffeine.newBuilder()
+                            .maximumSize(200)
+                            .expireAfterWrite(10, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case PROPIETARIOS_CACHE -> 
+                        // Búsquedas individuales frecuentes
+                        Caffeine.newBuilder()
+                            .maximumSize(500)
+                            .expireAfterWrite(5, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case PACIENTES_CACHE -> 
+                        // Alta frecuencia de acceso, datos maestros
+                        Caffeine.newBuilder()
+                            .maximumSize(1000)
+                            .expireAfterWrite(5, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case CONSULTAS_CACHE -> 
+                        // Datos médicos, se actualizan con frecuencia media
+                        Caffeine.newBuilder()
+                            .maximumSize(500)
+                            .expireAfterWrite(3, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case CITAS_CACHE -> 
+                        // Alta volatilidad, agenda cambia constantemente
+                        Caffeine.newBuilder()
+                            .maximumSize(300)
+                            .expireAfterWrite(2, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    case PRESCRIPCIONES_CACHE -> 
+                        // Datos médicos, volatilidad media
+                        Caffeine.newBuilder()
+                            .maximumSize(200)
+                            .expireAfterWrite(5, TimeUnit.MINUTES)
+                            .recordStats()
+                            .build();
+                    
+                    default -> 
+                        // Configuración por defecto para nuevos cachés
+                        defaultCaffeineConfig().build();
+                };
+            }
+        };
+        
+        // Registrar nombres de cachés
+        cacheManager.setCacheNames(java.util.List.of(
             VETERINARIOS_ACTIVOS_CACHE,
             PROPIETARIOS_CACHE,
             PACIENTES_CACHE,
@@ -182,13 +241,9 @@ public class CacheConfig {
             CONSULTAS_CACHE,
             CITAS_CACHE,
             PRESCRIPCIONES_CACHE
-        );
+        ));
         
-        // Configuración base para todos los cachés
-        // Si no se especifica configuración específica, usa esta
-        cacheManager.setCaffeine(defaultCaffeineConfig());
-        
-        log.info("✓ Cache Manager configurado con {} cachés", 7);
+        log.info("✓ Cache Manager configurado con {} cachés personalizados", 7);
         logCacheConfiguration();
         
         return cacheManager;

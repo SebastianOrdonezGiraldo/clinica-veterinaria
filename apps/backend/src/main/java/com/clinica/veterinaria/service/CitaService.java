@@ -6,6 +6,7 @@ import com.clinica.veterinaria.entity.Cita.EstadoCita;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
 import com.clinica.veterinaria.entity.Usuario;
+import com.clinica.veterinaria.exception.domain.BusinessException;
 import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.CitaRepository;
 import com.clinica.veterinaria.repository.PacienteRepository;
@@ -18,9 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Servicio para gestionar citas médicas de la clínica veterinaria.
@@ -65,6 +67,14 @@ public class CitaService {
     private final PropietarioRepository propietarioRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
+    
+    // Configuración de horarios de atención
+    private static final LocalTime HORARIO_INICIO = LocalTime.of(8, 0);  // 8:00 AM
+    private static final LocalTime HORARIO_FIN = LocalTime.of(18, 0);     // 6:00 PM
+    private static final int DURACION_CITA_MINUTOS = 30;                  // Duración estándar
+    
+    // Mensajes de log constantes
+    private static final String MSG_CITA_NO_ENCONTRADA = "✗ Cita no encontrada con ID: {}";
 
     /**
      * Obtiene todas las citas registradas en el sistema.
@@ -81,7 +91,7 @@ public class CitaService {
         log.debug("Obteniendo todas las citas");
         return citaRepository.findAll().stream()
             .map(c -> CitaDTO.fromEntity(c, true))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -115,7 +125,7 @@ public class CitaService {
         log.debug("Buscando citas del paciente con ID: {}", pacienteId);
         return citaRepository.findByPacienteId(pacienteId).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -132,7 +142,7 @@ public class CitaService {
         log.debug("Buscando citas del profesional con ID: {}", profesionalId);
         return citaRepository.findByProfesionalId(profesionalId).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -155,7 +165,7 @@ public class CitaService {
         log.debug("Buscando citas con estado: {}", estado);
         return citaRepository.findByEstado(estado).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -180,33 +190,127 @@ public class CitaService {
         log.debug("Buscando citas entre {} y {}", inicio, fin);
         return citaRepository.findByFechaBetween(inicio, fin).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
-            .collect(Collectors.toList());
+            .toList();
     }
 
+    /**
+     * Valida las reglas de negocio para una cita.
+     * 
+     * <p>Realiza múltiples validaciones:</p>
+     * <ul>
+     *   <li>La fecha no puede ser en el pasado</li>
+     *   <li>La cita debe estar dentro del horario de atención</li>
+     *   <li>No puede haber solapamiento con otras citas del mismo profesional</li>
+     *   <li>El paciente debe pertenecer al propietario especificado</li>
+     * </ul>
+     * 
+     * @param fecha Fecha y hora de la cita
+     * @param profesionalId ID del profesional
+     * @param paciente Entidad del paciente
+     * @param propietario Entidad del propietario
+     * @param citaId ID de la cita (null para creación, ID para actualización)
+     * @throws BusinessException si alguna validación falla
+     */
+    private void validarReglasDeNegocio(LocalDateTime fecha, Long profesionalId, 
+                                         Paciente paciente, Propietario propietario, 
+                                         Long citaId) {
+        // 1. Validar que la fecha no sea en el pasado
+        if (fecha.isBefore(LocalDateTime.now())) {
+            log.error("✗ La fecha de la cita no puede ser en el pasado: {}", fecha);
+            throw new BusinessException(
+                "No se puede agendar una cita en el pasado. Fecha proporcionada: " + fecha);
+        }
+        
+        // 2. Validar horario de atención (lunes a viernes, 8 AM - 6 PM)
+        DayOfWeek diaSemana = fecha.getDayOfWeek();
+        if (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY) {
+            log.error("✗ No se atiende los fines de semana: {}", fecha);
+            throw new BusinessException(
+                "La clínica no atiende los fines de semana. Por favor, seleccione un día hábil.");
+        }
+        
+        LocalTime hora = fecha.toLocalTime();
+        if (hora.isBefore(HORARIO_INICIO) || hora.isAfter(HORARIO_FIN)) {
+            log.error("✗ Horario fuera de atención: {}", hora);
+            throw new BusinessException(
+                String.format("La cita debe estar dentro del horario de atención (%s - %s). Hora seleccionada: %s",
+                    HORARIO_INICIO, HORARIO_FIN, hora));
+        }
+        
+        // 3. Validar que no haya solapamiento de citas para el mismo profesional
+        validarDisponibilidadProfesional(fecha, profesionalId, citaId);
+        
+        // 4. Validar que el paciente pertenezca al propietario
+        if (!paciente.getPropietario().getId().equals(propietario.getId())) {
+            log.error("✗ El paciente {} no pertenece al propietario {}", 
+                paciente.getId(), propietario.getId());
+            throw new BusinessException(
+                String.format("El paciente '%s' no pertenece al propietario '%s'", 
+                    paciente.getNombre(), propietario.getNombre()));
+        }
+    }
+    
+    /**
+     * Valida que el profesional esté disponible en el horario solicitado.
+     * 
+     * <p>Busca citas existentes del mismo profesional en un rango de ±30 minutos
+     * para detectar solapamientos.</p>
+     * 
+     * @param fecha Fecha y hora de la cita a validar
+     * @param profesionalId ID del profesional
+     * @param citaId ID de la cita actual (null para creación, se excluye en actualización)
+     * @throws BusinessException si hay solapamiento
+     */
+    private void validarDisponibilidadProfesional(LocalDateTime fecha, Long profesionalId, Long citaId) {
+        LocalDateTime inicio = fecha.minusMinutes(DURACION_CITA_MINUTOS);
+        LocalDateTime fin = fecha.plusMinutes(DURACION_CITA_MINUTOS);
+        
+        List<Cita> citasSolapadas = citaRepository
+            .findByProfesionalIdAndFechaBetween(profesionalId, inicio, fin)
+            .stream()
+            .filter(c -> !c.getEstado().equals(EstadoCita.CANCELADA))  // Ignorar canceladas
+            .filter(c -> citaId == null || !c.getId().equals(citaId))  // Excluir la misma cita en actualización
+            .toList();
+        
+        if (!citasSolapadas.isEmpty()) {
+            Cita citaExistente = citasSolapadas.get(0);
+            log.error("✗ El profesional ya tiene una cita a las {}", citaExistente.getFecha());
+            throw new BusinessException(
+                String.format("El profesional ya tiene una cita programada a las %s. " +
+                    "Por favor, seleccione otro horario.",
+                    citaExistente.getFecha().toLocalTime()));
+        }
+    }
+    
     /**
      * Crea y registra una nueva cita en el sistema.
      * 
      * <p>Este método realiza las siguientes operaciones:</p>
      * <ol>
      *   <li>Valida la existencia del paciente, propietario y profesional</li>
+     *   <li>Valida las reglas de negocio (horarios, disponibilidad, etc.)</li>
      *   <li>Asigna estado inicial PENDIENTE si no se especifica otro</li>
      *   <li>Persiste la cita en la base de datos</li>
+     *   <li>Crea notificación automática para el veterinario</li>
      *   <li>Registra la operación en el log de auditoría</li>
      * </ol>
      * 
      * <p><strong>Validaciones realizadas:</strong></p>
      * <ul>
-     *   <li>El paciente debe existir en el sistema</li>
+     *   <li>El paciente debe existir en el sistema y estar activo</li>
      *   <li>El propietario debe existir en el sistema</li>
      *   <li>El profesional (veterinario) debe existir y estar activo</li>
-     *   <li>La fecha de la cita es requerida</li>
-     *   <li>El motivo de consulta es requerido</li>
+     *   <li>El paciente debe pertenecer al propietario</li>
+     *   <li>La fecha no puede ser en el pasado</li>
+     *   <li>La cita debe estar en horario de atención (L-V, 8AM-6PM)</li>
+     *   <li>No debe haber solapamiento con otras citas del profesional</li>
      * </ul>
      * 
      * @param dto Datos de la nueva cita. No puede ser null. Debe incluir IDs válidos
      *            de paciente, propietario y profesional, además de fecha y motivo.
      * @return DTO con los datos de la cita creada, incluyendo el ID asignado.
-     * @throws RuntimeException si alguna entidad relacionada no existe.
+     * @throws ResourceNotFoundException si alguna entidad relacionada no existe.
+     * @throws BusinessException si alguna validación de negocio falla.
      * @see CitaDTO
      */
     public CitaDTO create(CitaDTO dto) {
@@ -230,6 +334,10 @@ public class CitaService {
                 log.error("✗ Profesional no encontrado con ID: {}", dto.getProfesionalId());
                 return new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId());
             });
+        
+        // VALIDACIONES DE NEGOCIO
+        validarReglasDeNegocio(dto.getFecha(), dto.getProfesionalId(), 
+                               paciente, propietario, null);
 
         Cita cita = Cita.builder()
             .fecha(dto.getFecha())
@@ -276,55 +384,58 @@ public class CitaService {
      * con paciente, propietario y profesional. Solo actualiza las relaciones si
      * los IDs han cambiado, validando la existencia de las nuevas entidades.</p>
      * 
-     * <p><strong>Campos actualizables:</strong></p>
+     * <p><strong>Validaciones aplicadas:</strong></p>
      * <ul>
-     *   <li>Fecha y hora de la cita</li>
-     *   <li>Motivo de consulta</li>
-     *   <li>Estado de la cita</li>
-     *   <li>Observaciones</li>
-     *   <li>Paciente asignado</li>
-     *   <li>Propietario</li>
-     *   <li>Profesional responsable</li>
+     *   <li>Mismas validaciones de negocio que en creación</li>
+     *   <li>La fecha no puede ser en el pasado</li>
+     *   <li>Debe estar en horario de atención</li>
+     *   <li>No debe haber solapamiento con otras citas del profesional</li>
+     *   <li>El paciente debe pertenecer al propietario</li>
      * </ul>
      * 
      * @param id ID de la cita a actualizar. No puede ser null.
      * @param dto Nuevos datos para la cita. No puede ser null.
      * @return DTO con los datos actualizados de la cita.
-     * @throws RuntimeException si la cita no existe o alguna entidad relacionada no existe.
+     * @throws ResourceNotFoundException si la cita no existe o alguna entidad relacionada no existe.
+     * @throws BusinessException si alguna validación de negocio falla.
      */
     public CitaDTO update(Long id, CitaDTO dto) {
         log.info("→ Actualizando cita con ID: {}", id);
         
         Cita cita = citaRepository.findById(id)
             .orElseThrow(() -> {
-                log.error("✗ Cita no encontrada con ID: {}", id);
+                log.error(MSG_CITA_NO_ENCONTRADA, id);
                 return new ResourceNotFoundException("Cita", "id", id);
             });
 
-        // Actualizar campos básicos
+        // Obtener entidades (las actuales o las nuevas si cambiaron)
+        Paciente paciente = dto.getPacienteId().equals(cita.getPaciente().getId())
+            ? cita.getPaciente()
+            : pacienteRepository.findById(dto.getPacienteId())
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente", "id", dto.getPacienteId()));
+        
+        Propietario propietario = dto.getPropietarioId().equals(cita.getPropietario().getId())
+            ? cita.getPropietario()
+            : propietarioRepository.findById(dto.getPropietarioId())
+                .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId()));
+        
+        Usuario profesional = dto.getProfesionalId().equals(cita.getProfesional().getId())
+            ? cita.getProfesional()
+            : usuarioRepository.findById(dto.getProfesionalId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));
+        
+        // VALIDACIONES DE NEGOCIO (incluyendo el ID de la cita para excluirla del solapamiento)
+        validarReglasDeNegocio(dto.getFecha(), dto.getProfesionalId(), 
+                               paciente, propietario, id);
+
+        // Actualizar todos los campos
         cita.setFecha(dto.getFecha());
         cita.setMotivo(dto.getMotivo());
         cita.setEstado(dto.getEstado());
         cita.setObservaciones(dto.getObservaciones());
-
-        // VALIDACIONES: Actualizar relaciones si cambiaron
-        if (!cita.getPaciente().getId().equals(dto.getPacienteId())) {
-            Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
-                .orElseThrow(() -> new ResourceNotFoundException("Paciente", "id", dto.getPacienteId()));
-            cita.setPaciente(paciente);
-        }
-
-        if (!cita.getPropietario().getId().equals(dto.getPropietarioId())) {
-            Propietario propietario = propietarioRepository.findById(dto.getPropietarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId()));
-            cita.setPropietario(propietario);
-        }
-
-        if (!cita.getProfesional().getId().equals(dto.getProfesionalId())) {
-            Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));
-            cita.setProfesional(profesional);
-        }
+        cita.setPaciente(paciente);
+        cita.setPropietario(propietario);
+        cita.setProfesional(profesional);
 
         cita = citaRepository.save(cita);
         log.info("✓ Cita actualizada exitosamente con ID: {}", id);
@@ -358,7 +469,7 @@ public class CitaService {
         
         Cita cita = citaRepository.findById(id)
             .orElseThrow(() -> {
-                log.error("✗ Cita no encontrada con ID: {}", id);
+                log.error(MSG_CITA_NO_ENCONTRADA, id);
                 return new ResourceNotFoundException("Cita", "id", id);
             });
         
@@ -385,7 +496,7 @@ public class CitaService {
         log.warn("→ Eliminando cita con ID: {}", id);
         
         if (!citaRepository.existsById(id)) {
-            log.error("✗ Cita no encontrada con ID: {}", id);
+            log.error(MSG_CITA_NO_ENCONTRADA, id);
             throw new ResourceNotFoundException("Cita", "id", id);
         }
         

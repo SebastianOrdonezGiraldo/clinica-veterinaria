@@ -1,7 +1,7 @@
 package com.clinica.veterinaria.config;
 
 import com.clinica.veterinaria.logging.RequestResponseLoggingInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -35,10 +35,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @see WebMvcConfigurer
  */
 @Configuration
+@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
     
-    @Autowired
-    private RequestResponseLoggingInterceptor loggingInterceptor;
+    private final RequestResponseLoggingInterceptor loggingInterceptor;
     
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
