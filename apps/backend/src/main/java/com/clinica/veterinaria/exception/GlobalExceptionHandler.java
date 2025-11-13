@@ -8,6 +8,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -96,6 +97,24 @@ public class GlobalExceptionHandler {
         errorResponse.put("status", 403);
         
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    /**
+     * Maneja errores de conversión de tipos (ej: enum inválido en RequestParam)
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.error("Type mismatch error: {}", ex.getMessage());
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        String mensaje = "Valor inválido para el parámetro '" + ex.getName() + "': " + ex.getValue();
+        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
+            mensaje += ". Valores válidos: " + java.util.Arrays.toString(ex.getRequiredType().getEnumConstants());
+        }
+        errorResponse.put("mensaje", mensaje);
+        errorResponse.put("status", 400);
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**

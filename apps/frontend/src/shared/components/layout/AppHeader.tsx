@@ -1,5 +1,6 @@
-import { Bell, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@core/auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { SidebarTrigger } from '@shared/components/ui/sidebar';
 import { Button } from '@shared/components/ui/button';
 import {
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
-import { Badge } from '@shared/components/ui/badge';
+import { NotificacionesDropdown } from '@features/notificaciones/components/NotificacionesDropdown';
 
 const roleLabels = {
   ADMIN: 'Administrador',
@@ -21,6 +22,7 @@ const roleLabels = {
 
 export function AppHeader() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-10">
@@ -29,10 +31,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full"></span>
-        </Button>
+        <NotificacionesDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -51,7 +50,10 @@ export function AppHeader() {
           <DropdownMenuContent align="end" className="w-56 bg-popover">
             <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => navigate('/perfil')}
+            >
               <User className="mr-2 h-4 w-4" />
               Perfil
             </DropdownMenuItem>

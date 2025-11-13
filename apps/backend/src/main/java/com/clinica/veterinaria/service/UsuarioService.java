@@ -2,6 +2,7 @@ package com.clinica.veterinaria.service;
 
 import com.clinica.veterinaria.dto.UsuarioCreateDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
+import com.clinica.veterinaria.dto.UsuarioUpdateDTO;
 import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -159,7 +160,7 @@ public class UsuarioService {
      * @return DTO del usuario actualizado sin la contraseña.
      * @throws RuntimeException si el usuario no existe o el email ya está registrado.
      */
-    public UsuarioDTO update(Long id, UsuarioCreateDTO dto) {
+    public UsuarioDTO update(Long id, UsuarioUpdateDTO dto) {
         log.info("Actualizando usuario con ID: {}", id);
         
         Usuario usuario = usuarioRepository.findById(id)
@@ -180,7 +181,7 @@ public class UsuarioService {
         }
         
         // Solo actualizar password si se proporciona
-        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
             usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
 
@@ -238,5 +239,30 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public long countByRol(Usuario.Rol rol) {
         return usuarioRepository.countByRol(rol);
+    }
+
+    /**
+     * Resetea la contraseña de un usuario.
+     * 
+     * <p>Permite a un administrador cambiar la contraseña de cualquier usuario del sistema.
+     * La nueva contraseña se hashea automáticamente con BCrypt antes de almacenarse.</p>
+     * 
+     * <p><strong>Uso típico:</strong> Cuando un usuario olvida su contraseña o necesita
+     * un reset por razones de seguridad.</p>
+     * 
+     * @param id ID del usuario cuya contraseña se va a resetear. No puede ser null.
+     * @param newPassword Nueva contraseña en texto plano. Será hasheada antes de almacenarse.
+     * @throws RuntimeException si el usuario no existe.
+     */
+    public void resetPassword(Long id, String newPassword) {
+        log.info("Reseteando contraseña del usuario con ID: {}", id);
+        
+        Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        
+        usuario.setPassword(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+        
+        log.info("Contraseña reseteada exitosamente para usuario con ID: {}", id);
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controlador REST para gestión de citas médicas veterinarias.
@@ -146,9 +147,34 @@ public class CitaController {
      */
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'VET')")
-    public ResponseEntity<CitaDTO> cambiarEstado(@PathVariable Long id, @RequestParam Cita.EstadoCita estado) {
-        log.info("PATCH /api/citas/{}/estado?estado={}", id, estado);
-        return ResponseEntity.ok(citaService.cambiarEstado(id, estado));
+    public ResponseEntity<CitaDTO> cambiarEstado(
+            @PathVariable Long id, 
+            @RequestParam(required = false) String estado,
+            @RequestBody(required = false) Map<String, String> body) {
+        log.info("PATCH /api/citas/{}/estado", id);
+        
+        // Obtener el estado del body o del query param
+        String estadoStr = null;
+        if (body != null && body.containsKey("estado")) {
+            estadoStr = body.get("estado");
+        } else if (estado != null) {
+            estadoStr = estado;
+        }
+        
+        if (estadoStr == null || estadoStr.isEmpty()) {
+            throw new RuntimeException("El estado es requerido");
+        }
+        
+        // Convertir String a enum
+        Cita.EstadoCita estadoEnum;
+        try {
+            estadoEnum = Cita.EstadoCita.valueOf(estadoStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Estado inválido: " + estadoStr + ". Valores válidos: PENDIENTE, CONFIRMADA, ATENDIDA, CANCELADA");
+        }
+        
+        log.info("Cambiando estado de cita {} a {}", id, estadoEnum);
+        return ResponseEntity.ok(citaService.cambiarEstado(id, estadoEnum));
     }
 
     /**

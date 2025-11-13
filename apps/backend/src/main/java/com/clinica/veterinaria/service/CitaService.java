@@ -60,6 +60,7 @@ public class CitaService {
     private final PacienteRepository pacienteRepository;
     private final PropietarioRepository propietarioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final NotificacionService notificacionService;
 
     /**
      * Obtiene todas las citas registradas en el sistema.
@@ -229,6 +230,28 @@ public class CitaService {
 
         cita = citaRepository.save(cita);
         log.info("Cita creada exitosamente con ID: {}", cita.getId());
+        
+        // Crear notificación automática para el veterinario
+        try {
+            String titulo = "Nueva cita programada";
+            String mensaje = String.format("Tienes una nueva cita con %s (%s) el %s a las %s. Motivo: %s",
+                    paciente.getNombre(),
+                    propietario.getNombre(),
+                    dto.getFecha().toLocalDate(),
+                    dto.getFecha().toLocalTime(),
+                    dto.getMotivo());
+            
+            notificacionService.crearNotificacion(
+                    profesional.getId(),
+                    titulo,
+                    mensaje,
+                    com.clinica.veterinaria.entity.Notificacion.Tipo.CITA,
+                    "CITA",
+                    cita.getId()
+            );
+        } catch (Exception e) {
+            log.warn("No se pudo crear notificación para la cita: {}", e.getMessage());
+        }
         
         return CitaDTO.fromEntity(cita, true);
     }

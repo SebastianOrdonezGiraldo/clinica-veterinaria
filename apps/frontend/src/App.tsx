@@ -18,6 +18,7 @@ import PropietarioDetalle from "@features/propietarios/pages/PropietarioDetalle"
 import PropietarioForm from "@features/propietarios/pages/PropietarioForm";
 import Agenda from "@features/agenda/pages/Agenda";
 import CitaForm from "@features/agenda/pages/CitaForm";
+import CitaDetalle from "@features/agenda/pages/CitaDetalle";
 import HistoriasClinicas from "@features/historias/pages/HistoriasClinicas";
 import HistoriaDetalle from "@features/historias/pages/HistoriaDetalle";
 import ConsultaForm from "@features/historias/pages/ConsultaForm";
@@ -27,6 +28,7 @@ import PrescripcionForm from "@features/prescripciones/pages/PrescripcionForm";
 import Reportes from "@features/reportes/pages/Reportes";
 import SeguridadRoles from "@features/usuarios/pages/SeguridadRoles";
 import SeguridadUsuarios from "@features/usuarios/pages/SeguridadUsuarios";
+import Perfil from "@features/usuarios/pages/Perfil";
 import NotFound from "@shared/components/common/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,7 @@ const App = () => (
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/agenda/nuevo" element={<CitaForm />} />
               <Route path="/agenda/:id/editar" element={<CitaForm />} />
+              <Route path="/agenda/:id" element={<CitaDetalle />} />
               <Route path="/historias" element={<HistoriasClinicas />} />
               <Route path="/historias/:id" element={<HistoriaDetalle />} />
               <Route path="/historias/:pacienteId/nueva-consulta" element={<ConsultaForm />} />
@@ -101,6 +104,7 @@ const App = () => (
                   <SeguridadUsuarios />
                 </ProtectedRoute>
               } />
+              <Route path="/perfil" element={<Perfil />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

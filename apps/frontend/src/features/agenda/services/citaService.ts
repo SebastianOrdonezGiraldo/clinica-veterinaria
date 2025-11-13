@@ -75,7 +75,8 @@ export const citaService = {
   },
 
   async updateEstado(id: string, estado: EstadoCita): Promise<Cita> {
-    const response = await axios.patch<any>(`/citas/${id}/estado?estado=${estado}`);
+    // Enviar el estado en el body para mayor confiabilidad
+    const response = await axios.patch<any>(`/citas/${id}/estado`, { estado });
     return normalizeCita(response.data);
   },
 

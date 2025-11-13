@@ -1,7 +1,9 @@
 package com.clinica.veterinaria.controller;
 
+import com.clinica.veterinaria.dto.ResetPasswordDTO;
 import com.clinica.veterinaria.dto.UsuarioCreateDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
+import com.clinica.veterinaria.dto.UsuarioUpdateDTO;
 import com.clinica.veterinaria.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -104,7 +107,7 @@ public class UsuarioController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioDTO> update(@PathVariable Long id, @Valid @RequestBody UsuarioCreateDTO dto) {
+    public ResponseEntity<UsuarioDTO> update(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDTO dto) {
         log.info("PUT /api/usuarios/{}", id);
         return ResponseEntity.ok(usuarioService.update(id, dto));
     }
@@ -129,6 +132,47 @@ public class UsuarioController {
     public ResponseEntity<List<UsuarioDTO>> getVeterinarios() {
         log.info("GET /api/usuarios/veterinarios");
         return ResponseEntity.ok(usuarioService.findVeterinariosActivos());
+    }
+
+    /**
+     * Resetear la contraseña de un usuario
+     * Solo ADMIN
+     */
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ResetPasswordDTO dto) {
+        log.info("POST /api/usuarios/{}/reset-password", id);
+        usuarioService.resetPassword(id, dto.getPassword());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Actualizar el perfil del usuario autenticado
+     * Cualquier usuario autenticado puede actualizar su propio perfil
+     * No permite cambiar el rol ni el estado activo
+     */
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioDTO> updateMyProfile(@Valid @RequestBody UsuarioUpdateDTO dto) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("PUT /api/usuarios/me - email: {}", email);
+        
+        // Obtener el usuario actual por email
+        UsuarioDTO currentUser = usuarioService.findByEmail(email);
+        
+        // Crear un DTO que solo permita cambiar nombre, email y password
+        // No permitir cambiar rol ni estado desde el perfil
+        UsuarioUpdateDTO updateDTO = UsuarioUpdateDTO.builder()
+            .nombre(dto.getNombre())
+            .email(dto.getEmail())
+            .password(dto.getPassword())
+            .rol(currentUser.getRol()) // Mantener el rol actual
+            .activo(currentUser.getActivo()) // Mantener el estado actual
+            .build();
+        
+        UsuarioDTO updated = usuarioService.update(currentUser.getId(), updateDTO);
+        return ResponseEntity.ok(updated);
     }
 }
 

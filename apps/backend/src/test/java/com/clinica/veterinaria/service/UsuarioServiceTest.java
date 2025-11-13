@@ -2,6 +2,7 @@ package com.clinica.veterinaria.service;
 
 import com.clinica.veterinaria.dto.UsuarioCreateDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
+import com.clinica.veterinaria.dto.UsuarioUpdateDTO;
 import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,10 +141,11 @@ class UsuarioServiceTest {
     @DisplayName("Debe actualizar un usuario existente")
     void testUpdate() {
         // Arrange
-        UsuarioCreateDTO updateDTO = UsuarioCreateDTO.builder()
+        UsuarioUpdateDTO updateDTO = UsuarioUpdateDTO.builder()
             .nombre("Admin Actualizado")
             .email("admin@test.com")
             .rol(Usuario.Rol.ADMIN)
+            .activo(true)
             .build();
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioAdmin));
@@ -205,6 +207,51 @@ class UsuarioServiceTest {
         // Act & Assert
         assertThrows(RuntimeException.class, () -> usuarioService.create(createDTO));
         verify(usuarioRepository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    @DisplayName("Debe validar email único al actualizar con email diferente")
+    void testUpdate_EmailDuplicado() {
+        // Arrange
+        UsuarioUpdateDTO updateDTO = UsuarioUpdateDTO.builder()
+            .nombre("Admin Actualizado")
+            .email("vet@test.com") // Email diferente que ya existe
+            .rol(Usuario.Rol.ADMIN)
+            .activo(true)
+            .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioAdmin));
+        when(usuarioRepository.existsByEmail("vet@test.com")).thenReturn(true);
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> usuarioService.update(1L, updateDTO));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    @DisplayName("Debe actualizar password si se proporciona")
+    void testUpdate_ConPassword() {
+        // Arrange
+        UsuarioUpdateDTO updateDTO = UsuarioUpdateDTO.builder()
+            .nombre("Admin Actualizado")
+            .email("admin@test.com")
+            .password("nuevaPassword123")
+            .rol(Usuario.Rol.ADMIN)
+            .activo(true)
+            .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioAdmin));
+        when(passwordEncoder.encode("nuevaPassword123")).thenReturn("encodedNewPassword");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        UsuarioDTO resultado = usuarioService.update(1L, updateDTO);
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals("Admin Actualizado", resultado.getNombre());
+        verify(passwordEncoder, times(1)).encode("nuevaPassword123");
+        verify(usuarioRepository, times(1)).save(any(Usuario.class));
     }
 }
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Shield, Plus, Edit, Trash2, Check, X } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Shield, Plus, Edit, Trash2, Check, X, AlertCircle, Loader2, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
 import { Checkbox } from '@shared/components/ui/checkbox';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -13,13 +14,31 @@ import {
   TableRow,
 } from '@shared/components/ui/table';
 import { toast } from 'sonner';
+import { Usuario, Rol } from '@core/types';
+import { usuarioService } from '@features/usuarios/services/usuarioService';
 
-const roles = [
-  { id: 'ADMIN', nombre: 'Administrador', descripcion: 'Acceso total al sistema', usuarios: 1, color: 'bg-destructive/10 text-destructive' },
-  { id: 'VET', nombre: 'Veterinario', descripcion: 'Acceso a consultas y tratamientos', usuarios: 2, color: 'bg-primary/10 text-primary' },
-  { id: 'RECEPCION', nombre: 'Recepcionista', descripcion: 'Gestión de citas y registro', usuarios: 1, color: 'bg-secondary/10 text-secondary' },
-  { id: 'ESTUDIANTE', nombre: 'Estudiante', descripcion: 'Solo lectura de historias', usuarios: 1, color: 'bg-info/10 text-info' },
-];
+const roleLabels: Record<Rol, string> = {
+  ADMIN: 'Administrador',
+  VET: 'Veterinario',
+  RECEPCION: 'Recepcionista',
+  ESTUDIANTE: 'Estudiante',
+};
+
+const roleDescriptions: Record<Rol, string> = {
+  ADMIN: 'Acceso total al sistema',
+  VET: 'Acceso a consultas y tratamientos',
+  RECEPCION: 'Gestión de citas y registro',
+  ESTUDIANTE: 'Solo lectura de historias',
+};
+
+const roleColors: Record<Rol, string> = {
+  ADMIN: 'bg-destructive/10 text-destructive',
+  VET: 'bg-primary/10 text-primary',
+  RECEPCION: 'bg-secondary/10 text-secondary',
+  ESTUDIANTE: 'bg-info/10 text-info',
+};
+
+const roles: Rol[] = ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'];
 
 const permisosIniciales = [
   { modulo: 'Dashboard', ver: true, crear: false, editar: false, eliminar: false },
@@ -41,9 +60,54 @@ type Permiso = {
 };
 
 export default function SeguridadRoles() {
-  const [selectedRole, setSelectedRole] = useState<string | null>('VET');
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [selectedRole, setSelectedRole] = useState<Rol | null>('VET');
   const [permisos, setPermisos] = useState<Permiso[]>(permisosIniciales);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadUsuarios();
+  }, []);
+
+  const loadUsuarios = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await usuarioService.getAll();
+      setUsuarios(data);
+    } catch (error: any) {
+      console.error('Error al cargar usuarios:', error);
+      const errorMessage = error?.response?.data?.message || 'Error al cargar los usuarios';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Contar usuarios por rol
+  const usuariosPorRol = useMemo(() => {
+    const counts: Record<Rol, number> = {
+      ADMIN: 0,
+      VET: 0,
+      RECEPCION: 0,
+      ESTUDIANTE: 0,
+    };
+    usuarios.forEach(u => {
+      if (u.rol in counts) {
+        counts[u.rol as Rol]++;
+      }
+    });
+    return counts;
+  }, [usuarios]);
+
+  // Obtener usuarios del rol seleccionado
+  const usuariosDelRol = useMemo(() => {
+    if (!selectedRole) return [];
+    return usuarios.filter(u => u.rol === selectedRole && u.activo !== false);
+  }, [usuarios, selectedRole]);
 
   const handlePermissionChange = (index: number, field: keyof Omit<Permiso, 'modulo'>) => {
     const newPermisos = [...permisos];
@@ -56,7 +120,9 @@ export default function SeguridadRoles() {
   };
 
   const handleSave = () => {
-    toast.success('Permisos guardados exitosamente');
+    // Nota: Los permisos reales están definidos en el backend con @PreAuthorize
+    // Este es solo un resumen visual de los permisos por rol
+    toast.success('Nota: Los permisos están definidos en el sistema. Esta es solo una vista informativa.');
     setHasChanges(false);
   };
 
@@ -73,9 +139,13 @@ export default function SeguridadRoles() {
           <h1 className="text-3xl font-bold text-foreground">Roles y Permisos</h1>
           <p className="text-muted-foreground mt-1">Gestión de roles y control de acceso</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nuevo Rol
+        <Button 
+          className="gap-2" 
+          variant="outline"
+          onClick={() => toast.info('Los roles están predefinidos en el sistema (ADMIN, VET, RECEPCION, ESTUDIANTE)')}
+        >
+          <Shield className="h-4 w-4" />
+          Info Roles
         </Button>
       </div>
 
@@ -88,45 +158,56 @@ export default function SeguridadRoles() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {roles.map((rol) => (
-                <div
-                  key={rol.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedRole === rol.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:bg-accent/50'
-                  }`}
-                  onClick={() => setSelectedRole(rol.id)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">{rol.nombre}</h4>
-                    <Badge className={rol.color}>{rol.usuarios}</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{rol.descripcion}</p>
-                  {rol.id !== 'ADMIN' && (
-                    <div className="flex gap-2 mt-3">
-                      <Button variant="ghost" size="sm" className="h-7">
-                        <Edit className="h-3 w-3 mr-1" />
-                        Editar
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-7 text-destructive">
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Eliminar
-                      </Button>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">{error}</p>
+                <Button variant="outline" size="sm" onClick={loadUsuarios} className="mt-4">
+                  Reintentar
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {roles.map((rolId) => {
+                  const rol = rolId as Rol;
+                  const count = usuariosPorRol[rol];
+                  return (
+                    <div
+                      key={rol}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedRole === rol
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:bg-accent/50'
+                      }`}
+                      onClick={() => setSelectedRole(rol)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold">{roleLabels[rol]}</h4>
+                        <Badge className={roleColors[rol]}>{count}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{roleDescriptions[rol]}</p>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>
-              Matriz de Permisos - {roles.find(r => r.id === selectedRole)?.nombre}
+              Matriz de Permisos - {selectedRole ? roleLabels[selectedRole] : 'Selecciona un rol'}
             </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Nota: Los permisos reales están definidos en el sistema. Esta es una vista informativa.
+            </p>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border">
@@ -211,37 +292,57 @@ export default function SeguridadRoles() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Usuarios Asignados - {roles.find(r => r.id === selectedRole)?.nombre}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Usuarios Asignados - {selectedRole ? roleLabels[selectedRole] : 'Selecciona un rol'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="font-semibold text-primary">MP</span>
-                </div>
-                <div>
-                  <p className="font-medium">Dra. María Pérez</p>
-                  <p className="text-sm text-muted-foreground">maria@vetclinic.com</p>
-                </div>
-              </div>
-              <Badge className="bg-success/10 text-success border-success/20">Activo</Badge>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
-            {selectedRole === 'VET' && (
-              <div className="flex items-center justify-between p-3 rounded-lg border border-border">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="font-semibold text-primary">CR</span>
+          ) : !selectedRole ? (
+            <div className="text-center py-8">
+              <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Selecciona un rol para ver los usuarios asignados</p>
+            </div>
+          ) : usuariosDelRol.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No hay usuarios activos con este rol</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {usuariosDelRol.map((usuario) => {
+                const iniciales = usuario.nombre
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                
+                return (
+                  <div key={usuario.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="font-semibold text-primary text-sm">{iniciales}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{usuario.nombre}</p>
+                        <p className="text-sm text-muted-foreground">{usuario.email}</p>
+                      </div>
+                    </div>
+                    <Badge className={usuario.activo !== false ? 'bg-success/10 text-success border-success/20' : 'bg-muted'}>
+                      {usuario.activo !== false ? 'Activo' : 'Inactivo'}
+                    </Badge>
                   </div>
-                  <div>
-                    <p className="font-medium">Dr. Carlos Ruiz</p>
-                    <p className="text-sm text-muted-foreground">carlos@vetclinic.com</p>
-                  </div>
-                </div>
-                <Badge className="bg-success/10 text-success border-success/20">Activo</Badge>
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

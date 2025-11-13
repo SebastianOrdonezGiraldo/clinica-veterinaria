@@ -8,6 +8,7 @@ import {
   BarChart3,
   Shield,
   ChevronRight,
+  UserCog,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@core/auth/AuthContext';
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { title: 'Prescripciones', url: '/prescripciones', icon: Pill, roles: ['ADMIN', 'VET'] },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, roles: ['ADMIN', 'VET'] },
   { title: 'Seguridad', url: '/seguridad/roles', icon: Shield, roles: ['ADMIN'] },
+  { title: 'Usuarios', url: '/seguridad/usuarios', icon: UserCog, roles: ['ADMIN'] },
 ];
 
 export function AppSidebar() {
