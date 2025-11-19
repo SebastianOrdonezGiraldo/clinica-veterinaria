@@ -22,9 +22,9 @@ public class VeterinariaApplication {
         logger.info("\n========================================");
         logger.info("🐾 Clínica Veterinaria API Iniciada");
         logger.info("========================================");
-        logger.info("📍 Puerto: http://localhost:8081");
-        logger.info("📚 Swagger UI: http://localhost:8081/swagger-ui.html");
-        logger.info("💾 H2 Console: http://localhost:8081/h2-console");
+        logger.info("📍 Puerto: http://localhost:8080");
+        logger.info("📚 Swagger UI: http://localhost:8080/swagger-ui/index.html");
+        logger.info("📖 API Docs: http://localhost:8080/v3/api-docs");
         logger.info("========================================\n");
     }
 }

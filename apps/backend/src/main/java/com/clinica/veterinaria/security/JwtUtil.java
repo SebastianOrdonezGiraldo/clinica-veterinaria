@@ -8,6 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,10 +59,32 @@ public class JwtUtil {
     private static final long JWT_TOKEN_VALIDITY = 10L * 60L * 60L * 1000L; // 10 horas
 
     /**
-     * Obtiene la clave de firma
+     * Obtiene la clave de firma garantizando al menos 256 bits (32 bytes).
+     * 
+     * <p>Si el secret tiene menos de 32 caracteres, se genera un hash SHA-256
+     * para garantizar exactamente 32 bytes (256 bits) requeridos por JWT HS256.</p>
+     * 
+     * @return SecretKey con al menos 256 bits
+     * @throws IllegalStateException si no se puede generar la clave
      */
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes();
+        
+        // Si el secret tiene menos de 32 bytes, generar hash SHA-256 para obtener exactamente 32 bytes
+        if (keyBytes.length < 32) {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                keyBytes = digest.digest(secret.getBytes());
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException("No se pudo generar la clave JWT: algoritmo SHA-256 no disponible", e);
+            }
+        } else if (keyBytes.length > 32) {
+            // Si es más largo, usar solo los primeros 32 bytes para consistencia
+            byte[] truncated = new byte[32];
+            System.arraycopy(keyBytes, 0, truncated, 0, 32);
+            keyBytes = truncated;
+        }
+        
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
