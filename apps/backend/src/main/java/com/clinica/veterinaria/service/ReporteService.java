@@ -96,7 +96,8 @@ public class ReporteService {
         LocalDateTime inicio;
         LocalDateTime fin = hoy.atTime(LocalTime.MAX);
 
-        switch (periodo.toLowerCase()) {
+        String periodoLower = (periodo != null) ? periodo.toLowerCase() : "mes";
+        switch (periodoLower) {
             case "hoy":
                 inicio = hoy.atStartOfDay();
                 break;
@@ -132,7 +133,7 @@ public class ReporteService {
                 .estado(estado.name())
                 .cantidad(citaRepository.countByEstado(estado))
                 .build())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -166,27 +167,36 @@ public class ReporteService {
     private List<ReporteDTO.PacientesPorEspecieDTO> getPacientesPorEspecie() {
         List<com.clinica.veterinaria.entity.Paciente> pacientes = pacienteRepository.findByActivo(true);
 
+        // Constantes para categorías de especies
+        final String CATEGORIA_CANINO = "Canino";
+        final String CATEGORIA_FELINO = "Felino";
+        final String CATEGORIA_OTRO = "Otro";
+
         Map<String, Long> especiesMap = pacientes.stream()
             .collect(Collectors.groupingBy(
                 paciente -> {
-                    String especie = paciente.getEspecie().toLowerCase();
-                    if (especie.contains("canino") || especie.contains("perro") || especie.contains("can")) {
-                        return "Canino";
-                    } else if (especie.contains("felino") || especie.contains("gato") || especie.contains("fel")) {
-                        return "Felino";
+                    String especie = paciente.getEspecie();
+                    if (especie == null || especie.trim().isEmpty()) {
+                        return CATEGORIA_OTRO;
+                    }
+                    String especieLower = especie.toLowerCase();
+                    if (especieLower.contains("canino") || especieLower.contains("perro") || especieLower.contains("can")) {
+                        return CATEGORIA_CANINO;
+                    } else if (especieLower.contains("felino") || especieLower.contains("gato") || especieLower.contains("fel")) {
+                        return CATEGORIA_FELINO;
                     } else {
-                        return "Otro";
+                        return CATEGORIA_OTRO;
                     }
                 },
                 Collectors.counting()
             ));
 
-        return Arrays.asList("Canino", "Felino", "Otro").stream()
+        return Arrays.asList(CATEGORIA_CANINO, CATEGORIA_FELINO, CATEGORIA_OTRO).stream()
             .map(especie -> ReporteDTO.PacientesPorEspecieDTO.builder()
                 .especie(especie)
                 .cantidad(especiesMap.getOrDefault(especie, 0L))
                 .build())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -198,7 +208,11 @@ public class ReporteService {
         return veterinarios.stream()
             .map(vet -> {
                 long consultas = consultaRepository.findByProfesionalId(vet.getId()).size();
-                String nombre = vet.getNombre().split(" ")[0]; // Solo primer nombre
+                String nombreCompleto = vet.getNombre();
+                // Extraer solo el primer nombre de forma segura
+                String nombre = (nombreCompleto != null && !nombreCompleto.trim().isEmpty()) 
+                    ? nombreCompleto.split("\\s+")[0] 
+                    : "Sin nombre";
                 return ReporteDTO.AtencionesPorVeterinarioDTO.builder()
                     .nombre(nombre)
                     .consultas(consultas)
@@ -206,7 +220,7 @@ public class ReporteService {
             })
             .filter(a -> a.getConsultas() > 0) // Solo veterinarios con consultas
             .sorted((a, b) -> Long.compare(b.getConsultas(), a.getConsultas())) // Ordenar por cantidad descendente
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -256,7 +270,7 @@ public class ReporteService {
                 .cantidad(entry.getValue())
                 .porcentaje(total > 0 ? (entry.getValue().doubleValue() / total) * 100 : 0.0)
                 .build())
-            .collect(Collectors.toList());
+            .toList();
     }
 }
 
