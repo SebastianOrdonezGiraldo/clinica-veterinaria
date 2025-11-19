@@ -104,7 +104,7 @@ public class DashboardService {
                     .fecha(cita.getFecha())
                     .build();
             })
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -158,17 +158,26 @@ public class DashboardService {
     private List<DashboardStatsDTO.DistribucionEspecieDTO> getDistribucionEspecies() {
         List<Paciente> pacientes = pacienteRepository.findByActivo(true);
 
+        // Constantes para categorías de especies
+        final String CATEGORIA_CANINOS = "Caninos";
+        final String CATEGORIA_FELINOS = "Felinos";
+        final String CATEGORIA_OTROS = "Otros";
+
         // Contar por especie
         Map<String, Long> especiesMap = pacientes.stream()
             .collect(Collectors.groupingBy(
                 paciente -> {
-                    String especie = paciente.getEspecie().toLowerCase();
-                    if (especie.contains("canino") || especie.contains("perro") || especie.contains("can")) {
-                        return "Caninos";
-                    } else if (especie.contains("felino") || especie.contains("gato") || especie.contains("fel")) {
-                        return "Felinos";
+                    String especie = paciente.getEspecie();
+                    if (especie == null || especie.trim().isEmpty()) {
+                        return CATEGORIA_OTROS;
+                    }
+                    String especieLower = especie.toLowerCase();
+                    if (especieLower.contains("canino") || especieLower.contains("perro") || especieLower.contains("can")) {
+                        return CATEGORIA_CANINOS;
+                    } else if (especieLower.contains("felino") || especieLower.contains("gato") || especieLower.contains("fel")) {
+                        return CATEGORIA_FELINOS;
                     } else {
-                        return "Otros";
+                        return CATEGORIA_OTROS;
                     }
                 },
                 Collectors.counting()
@@ -176,18 +185,18 @@ public class DashboardService {
 
         // Crear lista con colores
         Map<String, String> colores = Map.of(
-            "Caninos", "hsl(var(--primary))",
-            "Felinos", "hsl(var(--secondary))",
-            "Otros", "hsl(var(--info))"
+            CATEGORIA_CANINOS, "hsl(var(--primary))",
+            CATEGORIA_FELINOS, "hsl(var(--secondary))",
+            CATEGORIA_OTROS, "hsl(var(--info))"
         );
 
-        return Arrays.asList("Caninos", "Felinos", "Otros").stream()
+        return Arrays.asList(CATEGORIA_CANINOS, CATEGORIA_FELINOS, CATEGORIA_OTROS).stream()
             .map(especie -> DashboardStatsDTO.DistribucionEspecieDTO.builder()
                 .nombre(especie)
                 .valor(especiesMap.getOrDefault(especie, 0L))
                 .color(colores.get(especie))
                 .build())
-            .collect(Collectors.toList());
+            .toList();
     }
 }
 
