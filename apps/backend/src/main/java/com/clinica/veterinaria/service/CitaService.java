@@ -7,6 +7,7 @@ import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
 import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.exception.domain.BusinessException;
+import com.clinica.veterinaria.exception.domain.InvalidDataException;
 import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.repository.CitaRepository;
 import com.clinica.veterinaria.repository.PacienteRepository;
@@ -23,6 +24,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Servicio para gestionar citas médicas de la clínica veterinaria.
@@ -409,17 +411,28 @@ public class CitaService {
             });
 
         // Obtener entidades (las actuales o las nuevas si cambiaron)
-        Paciente paciente = dto.getPacienteId().equals(cita.getPaciente().getId())
+        // Validar que los IDs no sean null antes de comparar
+        if (dto.getPacienteId() == null) {
+            throw new InvalidDataException("pacienteId", null, "El ID del paciente es requerido");
+        }
+        if (dto.getPropietarioId() == null) {
+            throw new InvalidDataException("propietarioId", null, "El ID del propietario es requerido");
+        }
+        if (dto.getProfesionalId() == null) {
+            throw new InvalidDataException("profesionalId", null, "El ID del profesional es requerido");
+        }
+        
+        Paciente paciente = Objects.equals(dto.getPacienteId(), cita.getPaciente().getId())
             ? cita.getPaciente()
             : pacienteRepository.findById(dto.getPacienteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente", "id", dto.getPacienteId()));
         
-        Propietario propietario = dto.getPropietarioId().equals(cita.getPropietario().getId())
+        Propietario propietario = Objects.equals(dto.getPropietarioId(), cita.getPropietario().getId())
             ? cita.getPropietario()
             : propietarioRepository.findById(dto.getPropietarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId()));
         
-        Usuario profesional = dto.getProfesionalId().equals(cita.getProfesional().getId())
+        Usuario profesional = Objects.equals(dto.getProfesionalId(), cita.getProfesional().getId())
             ? cita.getProfesional()
             : usuarioRepository.findById(dto.getProfesionalId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -268,7 +269,9 @@ public class ConsultaService {
         consulta.setObservaciones(dto.getObservaciones());
 
         // VALIDACIÓN: Actualizar profesional si cambió
-        if (!consulta.getProfesional().getId().equals(dto.getProfesionalId())) {
+        // Usar Objects.equals para evitar NullPointerException
+        if (dto.getProfesionalId() != null && 
+            !Objects.equals(consulta.getProfesional().getId(), dto.getProfesionalId())) {
             Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario/Profesional", "id", dto.getProfesionalId()));
             consulta.setProfesional(profesional);

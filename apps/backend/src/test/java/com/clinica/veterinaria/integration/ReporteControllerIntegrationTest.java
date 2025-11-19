@@ -3,11 +3,9 @@ package com.clinica.veterinaria.integration;
 import com.clinica.veterinaria.entity.Cita;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
-import com.clinica.veterinaria.entity.Usuario;
 import com.clinica.veterinaria.repository.CitaRepository;
 import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
-import com.clinica.veterinaria.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,9 +32,6 @@ class ReporteControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private PropietarioRepository propietarioRepository;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
     private Propietario propietario;
     private Paciente paciente;

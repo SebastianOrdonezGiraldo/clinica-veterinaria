@@ -64,6 +64,7 @@ public class LogController {
      * }
      */
     @PostMapping("/frontend")
+    @SuppressWarnings("unchecked")
     public ResponseEntity<Map<String, String>> receiveFrontendLog(@RequestBody Map<String, Object> logData) {
         try {
             // Extraer datos del log
