@@ -46,27 +46,40 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class AuditLogger implements IAuditLogger {
     
-    private static final Logger auditLogger = LoggerFactory.getLogger("com.clinica.veterinaria.audit");
+    private static final Logger logger = LoggerFactory.getLogger("com.clinica.veterinaria.audit");
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    
+    // Constantes para claves MDC
+    private static final String MDC_ACTION = "action";
+    private static final String MDC_ENTITY = "entity";
+    private static final String MDC_ENTITY_ID = "entityId";
+    private static final String MDC_USERNAME = "username";
+    private static final String MDC_CLIENT_IP = "clientIp";
+    private static final String MDC_TARGET_USER = "targetUser";
+    private static final String MDC_DATA_TYPE = "dataType";
+    private static final String MDC_CORRELATION_ID = "correlationId";
     
     /**
      * Registra un evento de creación
      */
     public void logCreate(String entity, Object entityId, Object data) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "CREATE");
-            MDC.put("entity", entity);
-            MDC.put("entityId", String.valueOf(entityId));
+            MDC.put(MDC_ACTION, "CREATE");
+            MDC.put(MDC_ENTITY, entity);
+            MDC.put(MDC_ENTITY_ID, String.valueOf(entityId));
             
-            auditLogger.info("✓ CREATED {} with ID {} | User: {} | Data: {}", 
+            logger.info("✓ CREATED {} with ID {} | User: {} | Data: {}", 
                     entity, 
                     entityId, 
                     getCurrentUsername(),
                     sanitizeData(data));
         } finally {
-            MDC.remove("action");
-            MDC.remove("entity");
-            MDC.remove("entityId");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_ENTITY);
+            MDC.remove(MDC_ENTITY_ID);
         }
     }
     
@@ -74,21 +87,24 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento de actualización
      */
     public void logUpdate(String entity, Object entityId, Object oldData, Object newData) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "UPDATE");
-            MDC.put("entity", entity);
-            MDC.put("entityId", String.valueOf(entityId));
+            MDC.put(MDC_ACTION, "UPDATE");
+            MDC.put(MDC_ENTITY, entity);
+            MDC.put(MDC_ENTITY_ID, String.valueOf(entityId));
             
-            auditLogger.info("✎ UPDATED {} with ID {} | User: {} | Old: {} | New: {}", 
+            logger.info("✎ UPDATED {} with ID {} | User: {} | Old: {} | New: {}", 
                     entity, 
                     entityId, 
                     getCurrentUsername(),
                     sanitizeData(oldData),
                     sanitizeData(newData));
         } finally {
-            MDC.remove("action");
-            MDC.remove("entity");
-            MDC.remove("entityId");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_ENTITY);
+            MDC.remove(MDC_ENTITY_ID);
         }
     }
     
@@ -96,20 +112,23 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento de eliminación
      */
     public void logDelete(String entity, Object entityId) {
+        if (!logger.isWarnEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "DELETE");
-            MDC.put("entity", entity);
-            MDC.put("entityId", String.valueOf(entityId));
+            MDC.put(MDC_ACTION, "DELETE");
+            MDC.put(MDC_ENTITY, entity);
+            MDC.put(MDC_ENTITY_ID, String.valueOf(entityId));
             
-            auditLogger.warn("⚠ DELETED {} with ID {} | User: {} | Timestamp: {}", 
+            logger.warn("⚠ DELETED {} with ID {} | User: {} | Timestamp: {}", 
                     entity, 
                     entityId, 
                     getCurrentUsername(),
                     LocalDateTime.now().format(formatter));
         } finally {
-            MDC.remove("action");
-            MDC.remove("entity");
-            MDC.remove("entityId");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_ENTITY);
+            MDC.remove(MDC_ENTITY_ID);
         }
     }
     
@@ -117,20 +136,23 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento de acceso/lectura a información sensible
      */
     public void logAccess(String entity, Object entityId, String reason) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "ACCESS");
-            MDC.put("entity", entity);
-            MDC.put("entityId", String.valueOf(entityId));
+            MDC.put(MDC_ACTION, "ACCESS");
+            MDC.put(MDC_ENTITY, entity);
+            MDC.put(MDC_ENTITY_ID, String.valueOf(entityId));
             
-            auditLogger.info("👁 ACCESSED {} with ID {} | User: {} | Reason: {}", 
+            logger.info("👁 ACCESSED {} with ID {} | User: {} | Reason: {}", 
                     entity, 
                     entityId, 
                     getCurrentUsername(),
                     reason);
         } finally {
-            MDC.remove("action");
-            MDC.remove("entity");
-            MDC.remove("entityId");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_ENTITY);
+            MDC.remove(MDC_ENTITY_ID);
         }
     }
     
@@ -138,19 +160,22 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento de autenticación exitosa
      */
     public void logLoginSuccess(String username, String ipAddress) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "LOGIN_SUCCESS");
-            MDC.put("username", username);
-            MDC.put("clientIp", ipAddress);
+            MDC.put(MDC_ACTION, "LOGIN_SUCCESS");
+            MDC.put(MDC_USERNAME, username);
+            MDC.put(MDC_CLIENT_IP, ipAddress);
             
-            auditLogger.info("🔓 LOGIN SUCCESS | User: {} | IP: {} | Timestamp: {}", 
+            logger.info("🔓 LOGIN SUCCESS | User: {} | IP: {} | Timestamp: {}", 
                     username, 
                     ipAddress,
                     LocalDateTime.now().format(formatter));
         } finally {
-            MDC.remove("action");
-            MDC.remove("username");
-            MDC.remove("clientIp");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_USERNAME);
+            MDC.remove(MDC_CLIENT_IP);
         }
     }
     
@@ -158,20 +183,23 @@ public class AuditLogger implements IAuditLogger {
      * Registra un intento de autenticación fallido
      */
     public void logLoginFailure(String username, String ipAddress, String reason) {
+        if (!logger.isWarnEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "LOGIN_FAILURE");
-            MDC.put("username", username);
-            MDC.put("clientIp", ipAddress);
+            MDC.put(MDC_ACTION, "LOGIN_FAILURE");
+            MDC.put(MDC_USERNAME, username);
+            MDC.put(MDC_CLIENT_IP, ipAddress);
             
-            auditLogger.warn("🔒 LOGIN FAILURE | User: {} | IP: {} | Reason: {} | Timestamp: {}", 
+            logger.warn("🔒 LOGIN FAILURE | User: {} | IP: {} | Reason: {} | Timestamp: {}", 
                     username, 
                     ipAddress,
                     reason,
                     LocalDateTime.now().format(formatter));
         } finally {
-            MDC.remove("action");
-            MDC.remove("username");
-            MDC.remove("clientIp");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_USERNAME);
+            MDC.remove(MDC_CLIENT_IP);
         }
     }
     
@@ -179,16 +207,19 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento de logout
      */
     public void logLogout(String username) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "LOGOUT");
-            MDC.put("username", username);
+            MDC.put(MDC_ACTION, "LOGOUT");
+            MDC.put(MDC_USERNAME, username);
             
-            auditLogger.info("🚪 LOGOUT | User: {} | Timestamp: {}", 
+            logger.info("🚪 LOGOUT | User: {} | Timestamp: {}", 
                     username,
                     LocalDateTime.now().format(formatter));
         } finally {
-            MDC.remove("action");
-            MDC.remove("username");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_USERNAME);
         }
     }
     
@@ -196,18 +227,21 @@ public class AuditLogger implements IAuditLogger {
      * Registra un cambio de permisos o roles
      */
     public void logPermissionChange(String targetUser, String action, String details) {
+        if (!logger.isWarnEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "PERMISSION_CHANGE");
-            MDC.put("targetUser", targetUser);
+            MDC.put(MDC_ACTION, "PERMISSION_CHANGE");
+            MDC.put(MDC_TARGET_USER, targetUser);
             
-            auditLogger.warn("⚡ PERMISSION CHANGE | Target: {} | Action: {} | Details: {} | By: {}", 
+            logger.warn("⚡ PERMISSION CHANGE | Target: {} | Action: {} | Details: {} | By: {}", 
                     targetUser,
                     action,
                     details,
                     getCurrentUsername());
         } finally {
-            MDC.remove("action");
-            MDC.remove("targetUser");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_TARGET_USER);
         }
     }
     
@@ -215,18 +249,21 @@ public class AuditLogger implements IAuditLogger {
      * Registra una exportación de datos
      */
     public void logDataExport(String dataType, int recordCount, String format) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "DATA_EXPORT");
-            MDC.put("dataType", dataType);
+            MDC.put(MDC_ACTION, "DATA_EXPORT");
+            MDC.put(MDC_DATA_TYPE, dataType);
             
-            auditLogger.info("📊 DATA EXPORT | Type: {} | Records: {} | Format: {} | User: {}", 
+            logger.info("📊 DATA EXPORT | Type: {} | Records: {} | Format: {} | User: {}", 
                     dataType,
                     recordCount,
                     format,
                     getCurrentUsername());
         } finally {
-            MDC.remove("action");
-            MDC.remove("dataType");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_DATA_TYPE);
         }
     }
     
@@ -234,21 +271,24 @@ public class AuditLogger implements IAuditLogger {
      * Registra un cambio de estado importante
      */
     public void logStatusChange(String entity, Object entityId, String oldStatus, String newStatus) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "STATUS_CHANGE");
-            MDC.put("entity", entity);
-            MDC.put("entityId", String.valueOf(entityId));
+            MDC.put(MDC_ACTION, "STATUS_CHANGE");
+            MDC.put(MDC_ENTITY, entity);
+            MDC.put(MDC_ENTITY_ID, String.valueOf(entityId));
             
-            auditLogger.info("🔄 STATUS CHANGE | {} ID: {} | From: {} → To: {} | User: {}", 
+            logger.info("🔄 STATUS CHANGE | {} ID: {} | From: {} → To: {} | User: {}", 
                     entity,
                     entityId,
                     oldStatus,
                     newStatus,
                     getCurrentUsername());
         } finally {
-            MDC.remove("action");
-            MDC.remove("entity");
-            MDC.remove("entityId");
+            MDC.remove(MDC_ACTION);
+            MDC.remove(MDC_ENTITY);
+            MDC.remove(MDC_ENTITY_ID);
         }
     }
     
@@ -256,15 +296,18 @@ public class AuditLogger implements IAuditLogger {
      * Registra un evento personalizado
      */
     public void logCustomEvent(String eventType, String message, Object... params) {
+        if (!logger.isInfoEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", eventType);
+            MDC.put(MDC_ACTION, eventType);
             
-            auditLogger.info("📝 {} | {} | User: {}", 
+            logger.info("📝 {} | {} | User: {}", 
                     eventType,
                     String.format(message, params),
                     getCurrentUsername());
         } finally {
-            MDC.remove("action");
+            MDC.remove(MDC_ACTION);
         }
     }
     
@@ -272,16 +315,19 @@ public class AuditLogger implements IAuditLogger {
      * Registra un error de seguridad
      */
     public void logSecurityEvent(String eventType, String details) {
+        if (!logger.isErrorEnabled()) {
+            return;
+        }
         try {
-            MDC.put("action", "SECURITY_EVENT");
+            MDC.put(MDC_ACTION, "SECURITY_EVENT");
             
-            auditLogger.error("🚨 SECURITY EVENT | Type: {} | Details: {} | User: {} | Correlation-ID: {}", 
+            logger.error("🚨 SECURITY EVENT | Type: {} | Details: {} | User: {} | Correlation-ID: {}", 
                     eventType,
                     details,
                     getCurrentUsername(),
-                    MDC.get("correlationId"));
+                    MDC.get(MDC_CORRELATION_ID));
         } finally {
-            MDC.remove("action");
+            MDC.remove(MDC_ACTION);
         }
     }
     
