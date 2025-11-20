@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,7 +95,7 @@ public class UsuarioService {
      */
     @Cacheable(value = "usuarios", key = "#id")
     @Transactional(readOnly = true)
-    public UsuarioDTO findById(Long id) {
+    public UsuarioDTO findById(@NonNull Long id) {
         log.debug("Buscando usuario con ID: {} (cache miss)", id);
         Usuario usuario = usuarioRepository.findById(id)
             .orElseThrow(() -> {
@@ -112,7 +113,7 @@ public class UsuarioService {
      * @throws ResourceNotFoundException si el usuario no existe.
      */
     @Transactional(readOnly = true)
-    public UsuarioDTO findByEmail(String email) {
+    public UsuarioDTO findByEmail(@NonNull String email) {
         log.debug("Buscando usuario con email: {}", email);
         Usuario usuario = usuarioRepository.findByEmail(email)
             .orElseThrow(() -> {
@@ -143,7 +144,8 @@ public class UsuarioService {
      * @throws RuntimeException si el email ya está registrado.
      */
     @CacheEvict(value = {"veterinariosActivos", "usuarios"}, allEntries = true)
-    public UsuarioDTO create(UsuarioCreateDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public UsuarioDTO create(@NonNull UsuarioCreateDTO dto) {
         log.info("→ Creando nuevo usuario: {}", dto.getEmail());
         
         // VALIDACIÓN: Email único
@@ -185,7 +187,8 @@ public class UsuarioService {
      * @throws RuntimeException si el usuario no existe o el email ya está registrado.
      */
     @CacheEvict(value = {"veterinariosActivos", "usuarios"}, allEntries = true)
-    public UsuarioDTO update(Long id, UsuarioUpdateDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public UsuarioDTO update(@NonNull Long id, @NonNull UsuarioUpdateDTO dto) {
         log.info("→ Actualizando usuario con ID: {}", id);
         
         Usuario usuario = usuarioRepository.findById(id)
@@ -232,7 +235,7 @@ public class UsuarioService {
      * @throws RuntimeException si el usuario no existe.
      */
     @CacheEvict(value = {"veterinariosActivos", "usuarios"}, allEntries = true)
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando usuario con ID: {}", id);
         
         Usuario usuario = usuarioRepository.findById(id)
@@ -316,7 +319,7 @@ public class UsuarioService {
      * @throws RuntimeException si el usuario no existe.
      */
     @CacheEvict(value = "usuarios", key = "#id")
-    public void resetPassword(Long id, String newPassword) {
+    public void resetPassword(@NonNull Long id, @NonNull String newPassword) {
         log.info("→ Reseteando contraseña del usuario con ID: {}", id);
         
         Usuario usuario = usuarioRepository.findById(id)

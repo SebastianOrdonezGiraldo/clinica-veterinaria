@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,7 +107,7 @@ public class CitaService {
      * @throws ResourceNotFoundException si no existe una cita con el ID especificado.
      */
     @Transactional(readOnly = true)
-    public CitaDTO findById(Long id) {
+    public CitaDTO findById(@NonNull Long id) {
         log.debug("Buscando cita con ID: {}", id);
         Cita cita = citaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Cita", "id", id));
@@ -123,7 +124,7 @@ public class CitaService {
      * @return Lista de citas del paciente. Puede estar vacía si no tiene citas.
      */
     @Transactional(readOnly = true)
-    public List<CitaDTO> findByPaciente(Long pacienteId) {
+    public List<CitaDTO> findByPaciente(@NonNull Long pacienteId) {
         log.debug("Buscando citas del paciente con ID: {}", pacienteId);
         return citaRepository.findByPacienteId(pacienteId).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
@@ -140,7 +141,7 @@ public class CitaService {
      * @return Lista de citas del profesional. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<CitaDTO> findByProfesional(Long profesionalId) {
+    public List<CitaDTO> findByProfesional(@NonNull Long profesionalId) {
         log.debug("Buscando citas del profesional con ID: {}", profesionalId);
         return citaRepository.findByProfesionalId(profesionalId).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
@@ -163,7 +164,7 @@ public class CitaService {
      * @return Lista de citas en el estado especificado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<CitaDTO> findByEstado(Cita.EstadoCita estado) {
+    public List<CitaDTO> findByEstado(@NonNull Cita.EstadoCita estado) {
         log.debug("Buscando citas con estado: {}", estado);
         return citaRepository.findByEstado(estado).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
@@ -188,7 +189,7 @@ public class CitaService {
      * @return Lista de citas en el rango especificado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<CitaDTO> findByFechaRange(LocalDateTime inicio, LocalDateTime fin) {
+    public List<CitaDTO> findByFechaRange(@NonNull LocalDateTime inicio, @NonNull LocalDateTime fin) {
         log.debug("Buscando citas entre {} y {}", inicio, fin);
         return citaRepository.findByFechaBetween(inicio, fin).stream()
             .map(c -> CitaDTO.fromEntity(c, true))
@@ -213,8 +214,8 @@ public class CitaService {
      * @param citaId ID de la cita (null para creación, ID para actualización)
      * @throws BusinessException si alguna validación falla
      */
-    private void validarReglasDeNegocio(LocalDateTime fecha, Long profesionalId, 
-                                         Paciente paciente, Propietario propietario, 
+    private void validarReglasDeNegocio(@NonNull LocalDateTime fecha, @NonNull Long profesionalId, 
+                                         @NonNull Paciente paciente, @NonNull Propietario propietario, 
                                          Long citaId) {
         // 1. Validar que la fecha no sea en el pasado
         if (fecha.isBefore(LocalDateTime.now())) {
@@ -263,7 +264,7 @@ public class CitaService {
      * @param citaId ID de la cita actual (null para creación, se excluye en actualización)
      * @throws BusinessException si hay solapamiento
      */
-    private void validarDisponibilidadProfesional(LocalDateTime fecha, Long profesionalId, Long citaId) {
+    private void validarDisponibilidadProfesional(@NonNull LocalDateTime fecha, @NonNull Long profesionalId, Long citaId) {
         LocalDateTime inicio = fecha.minusMinutes(DURACION_CITA_MINUTOS);
         LocalDateTime fin = fecha.plusMinutes(DURACION_CITA_MINUTOS);
         
@@ -315,7 +316,8 @@ public class CitaService {
      * @throws BusinessException si alguna validación de negocio falla.
      * @see CitaDTO
      */
-    public CitaDTO create(CitaDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public CitaDTO create(@NonNull CitaDTO dto) {
         log.info("→ Creando nueva cita para paciente ID: {}", dto.getPacienteId());
         
         // VALIDACIONES: Entidades relacionadas
@@ -401,7 +403,8 @@ public class CitaService {
      * @throws ResourceNotFoundException si la cita no existe o alguna entidad relacionada no existe.
      * @throws BusinessException si alguna validación de negocio falla.
      */
-    public CitaDTO update(Long id, CitaDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public CitaDTO update(@NonNull Long id, @NonNull CitaDTO dto) {
         log.info("→ Actualizando cita con ID: {}", id);
         
         Cita cita = citaRepository.findById(id)
@@ -477,7 +480,7 @@ public class CitaService {
      * @throws RuntimeException si la cita no existe.
      * @see Cita.EstadoCita
      */
-    public CitaDTO cambiarEstado(Long id, Cita.EstadoCita nuevoEstado) {
+    public CitaDTO cambiarEstado(@NonNull Long id, @NonNull Cita.EstadoCita nuevoEstado) {
         log.info("→ Cambiando estado de cita ID: {} a {}", id, nuevoEstado);
         
         Cita cita = citaRepository.findById(id)
@@ -505,7 +508,7 @@ public class CitaService {
      * @param id ID de la cita a eliminar. No puede ser null.
      * @throws RuntimeException si la cita no existe.
      */
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando cita con ID: {}", id);
         
         if (!citaRepository.existsById(id)) {
@@ -576,7 +579,7 @@ public class CitaService {
             Long pacienteId,
             LocalDateTime fechaInicio,
             LocalDateTime fechaFin,
-            Pageable pageable) {
+            @NonNull Pageable pageable) {
         
         log.debug("Buscando citas con filtros - estado: {}, profesional: {}, paciente: {}, fechas: {} - {}, page: {}", 
             estado, profesionalId, pacienteId, fechaInicio, fechaFin, pageable.getPageNumber());

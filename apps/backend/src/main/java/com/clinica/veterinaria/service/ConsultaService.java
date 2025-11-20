@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,7 +89,7 @@ public class ConsultaService {
      * @throws ResourceNotFoundException si no existe una consulta con el ID especificado.
      */
     @Transactional(readOnly = true)
-    public ConsultaDTO findById(Long id) {
+    public ConsultaDTO findById(@NonNull Long id) {
         log.debug("Buscando consulta con ID: {}", id);
         Consulta consulta = consultaRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Consulta", "id", id));
@@ -114,7 +115,7 @@ public class ConsultaService {
      * @return Lista de consultas ordenada descendentemente por fecha. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<ConsultaDTO> findByPaciente(Long pacienteId) {
+    public List<ConsultaDTO> findByPaciente(@NonNull Long pacienteId) {
         log.debug("Obteniendo historia clínica del paciente con ID: {}", pacienteId);
         return consultaRepository.findByPacienteIdOrderByFechaDesc(pacienteId).stream()
             .map(c -> ConsultaDTO.fromEntity(c, false))
@@ -131,7 +132,7 @@ public class ConsultaService {
      * @return Lista de consultas realizadas por el profesional. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<ConsultaDTO> findByProfesional(Long profesionalId) {
+    public List<ConsultaDTO> findByProfesional(@NonNull Long profesionalId) {
         log.debug("Buscando consultas del profesional con ID: {}", profesionalId);
         return consultaRepository.findByProfesionalId(profesionalId).stream()
             .map(c -> ConsultaDTO.fromEntity(c, true))
@@ -149,7 +150,7 @@ public class ConsultaService {
      * @return Lista de consultas en el período especificado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<ConsultaDTO> findByFechaRange(LocalDateTime inicio, LocalDateTime fin) {
+    public List<ConsultaDTO> findByFechaRange(@NonNull LocalDateTime inicio, @NonNull LocalDateTime fin) {
         log.debug("Buscando consultas entre {} y {}", inicio, fin);
         return consultaRepository.findByFechaBetween(inicio, fin).stream()
             .map(c -> ConsultaDTO.fromEntity(c, true))
@@ -185,7 +186,8 @@ public class ConsultaService {
      * @return DTO con los datos de la consulta registrada, incluyendo ID asignado.
      * @throws RuntimeException si el paciente o profesional no existen.
      */
-    public ConsultaDTO create(ConsultaDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public ConsultaDTO create(@NonNull ConsultaDTO dto) {
         log.info("→ Creando nueva consulta para paciente ID: {}", dto.getPacienteId());
         
         // VALIDACIONES: Entidades relacionadas
@@ -248,7 +250,8 @@ public class ConsultaService {
      * @return DTO con los datos actualizados de la consulta.
      * @throws RuntimeException si la consulta o el profesional no existen.
      */
-    public ConsultaDTO update(Long id, ConsultaDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public ConsultaDTO update(@NonNull Long id, @NonNull ConsultaDTO dto) {
         log.info("→ Actualizando consulta con ID: {}", id);
         
         Consulta consulta = consultaRepository.findById(id)
@@ -296,7 +299,7 @@ public class ConsultaService {
      * @param id ID de la consulta a eliminar. No puede ser null.
      * @throws RuntimeException si la consulta no existe.
      */
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando consulta con ID: {}", id);
         
         if (!consultaRepository.existsById(id)) {
@@ -353,7 +356,7 @@ public class ConsultaService {
             Long profesionalId,
             LocalDateTime fechaInicio,
             LocalDateTime fechaFin,
-            Pageable pageable) {
+            @NonNull Pageable pageable) {
         
         log.debug("Buscando consultas con filtros - paciente: {}, profesional: {}, fechas: {} - {}, page: {}", 
             pacienteId, profesionalId, fechaInicio, fechaFin, pageable.getPageNumber());
