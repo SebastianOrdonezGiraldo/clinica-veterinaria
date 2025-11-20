@@ -21,8 +21,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +35,7 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Tests Unitarios de AuthService")
+@SuppressWarnings({"unchecked", "null"}) // Suprimir warnings de type safety y null safety en tests
 class AuthServiceTest {
 
     @Mock
