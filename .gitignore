@@ -1,119 +1,463 @@
 # ================================
 # Clínica Veterinaria - .gitignore
 # ================================
+# Configuración completa para proyecto monorepo con:
+# - Backend: Java 17 + Spring Boot 3.x + Maven
+# - Frontend: React 18 + TypeScript + Vite + Node.js
+# ================================
 
 # ===========================
 # IDEs y Editores
 # ===========================
+
+# IntelliJ IDEA
 .idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+.metadata/
+*.launch
+*.pydevproject
+.cproject
+
+# VS Code
 .vscode/
+*.code-workspace
+.history/
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
 *.swp
 *.swo
 *~
-.DS_Store
-*.iml
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
 
-# ===========================
-# Backend (Java/Spring Boot)
-# ===========================
-apps/backend/target/
-apps/backend/.mvn/
-apps/backend/mvnw
-apps/backend/mvnw.cmd
-
-# Maven
-apps/backend/*.jar
-apps/backend/*.war
-apps/backend/*.ear
-
-# Logs
-apps/backend/*.log
-apps/backend/logs/
-
-# Spring Boot
-apps/backend/.springBeans
-
-# ===========================
-# Frontend (React/Vite)
-# ===========================
-apps/frontend/node_modules/
-apps/frontend/dist/
-apps/frontend/build/
-apps/frontend/.vite/
-apps/frontend/.env.local
-apps/frontend/.env.development.local
-apps/frontend/.env.test.local
-apps/frontend/.env.production.local
-
-# Logs
-apps/frontend/npm-debug.log*
-apps/frontend/yarn-debug.log*
-apps/frontend/yarn-error.log*
-apps/frontend/pnpm-debug.log*
-apps/frontend/lerna-debug.log*
-
-# ===========================
-# Dependencias
-# ===========================
-node_modules/
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-bun.lockb
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
 
 # ===========================
 # Sistema Operativo
 # ===========================
-Thumbs.db
-Desktop.ini
+
+# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# ===========================
+# Backend (Java/Spring Boot/Maven)
+# ===========================
+
+# Maven
+**/target/
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+**/.mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/maven-wrapper.properties
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+**/release.properties
+**/dependency-reduced-pom.xml
+**/buildNumber.properties
+**/.mvn/timing.properties
+
+# Archivos compilados
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+
+# Spring Boot
+**/.springBeans
+**/spring-boot-starter-parent/
+
+# Logs
+**/*.log
+**/logs/
+**/log/
+**/*.log.*
+**/*.log.gz
+**/*.log.zip
+
+# JaCoCo (Code Coverage)
+**/jacoco.exec
+**/jacoco.data
+**/site/jacoco/
+
+# Surefire Reports
+**/surefire-reports/
+**/surefire/
+**/failsafe-reports/
+
+# ===========================
+# Frontend (React/TypeScript/Vite/Node)
+# ===========================
+
+# Dependencias
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/lerna-debug.log*
+**/.pnpm-debug.log*
+
+# Build outputs
+**/dist/
+**/dist-ssr/
+**/build/
+**/.next/
+**/out/
+**/.nuxt/
+**/.output/
+**/.vite/
+**/.cache/
+
+# Vite
+**/.vite/
+**/vite.config.*.timestamp-*
+
+# TypeScript
+**/*.tsbuildinfo
+**/.tsbuildinfo
+
+# Testing
+**/coverage/
+**/.nyc_output/
+**/.jest/
+**/junit.xml
+**/test-results/
+**/playwright-report/
+**/playwright/.cache/
+
+# Storybook
+**/.storybook-static/
+**/storybook-static/
 
 # ===========================
 # Variables de Entorno
 # ===========================
+
+# Archivos de entorno (NUNCA commitees estos)
 .env
 .env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
 .env.*.local
+.envrc
+
+# Archivos de configuración sensibles
+**/application-local.properties
+**/application-secret.properties
+**/secrets/
+**/credentials/
+**/*.key
+**/*.pem
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*.truststore
 
 # ===========================
 # Base de Datos
 # ===========================
-*.sqlite
+
+# Bases de datos locales
 *.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.trace.db
+*.h2.db
+
+# Dumps de base de datos
+*.sql.dump
+*.dump
+*.bak
+*.backup
 
 # ===========================
-# Backups y Temporales
+# Archivos Temporales y Backups
 # ===========================
+
+# Temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Backups
 *_backup/
 *_old/
 *_tmp/
 *.bak
-*.tmp
+*.backup
+*.old
+*.orig
+
+# Archivos de recuperación
+*.rej
+*.orig
 
 # ===========================
 # Documentación Generada
 # ===========================
-docs/generated/
+
+# Documentación generada automáticamente
+**/docs/generated/
+**/docs/build/
+**/site/
+**/javadoc/
+**/api-docs/
+
+# PlantUML generado (opcional - descomentar si quieres ignorar imágenes generadas)
+# **/*.png
+# **/*.svg
+# **/*.pdf
+# !**/docs/architecture/*.puml
 
 # ===========================
-# Testing
+# Herramientas de Build y CI/CD
 # ===========================
-coverage/
-.nyc_output/
-apps/frontend/coverage/
-apps/backend/target/site/
+
+# Gradle (por si acaso)
+**/.gradle/
+**/gradle/
+**/build/
+**/gradlew
+**/gradlew.bat
+**/gradle-wrapper.jar
+
+# Docker
+**/.dockerignore
+**/docker-compose.override.yml
+**/docker-compose.local.yml
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform.lock.hcl
 
 # ===========================
-# Build Tools
+# Archivos Específicos del Proyecto
 # ===========================
-.gradle/
-build/
+
+# Logs de la aplicación
+**/logs/
+**/log/
+**/*.log
+**/*.log.*
+
+# Archivos de configuración local
+**/.local/
+**/local.properties
+**/local.yml
+**/local.yaml
+
+# Archivos de desarrollo
+**/.dev/
+**/dev.properties
+
+# Archivos de producción (no deberían estar en repo)
+**/prod.properties
+**/production.properties
 
 # ===========================
-# Otros
+# Cache y Archivos de Sistema
 # ===========================
-*.class
-*.pyc
-__pycache__/
+
+# Cache general
+**/.cache/
+**/.parcel-cache/
+**/.eslintcache
+**/.stylelintcache
+**/.sass-cache/
+**/.yarn/
+**/.pnp.*
+**/.yarn-integrity
+
+# Archivos de sistema
+**/.DS_Store
+**/Thumbs.db
+**/.gitkeep
+
+# ===========================
+# Archivos de Testing
+# ===========================
+
+# Reportes de testing
+**/test-results/
+**/playwright-report/
+**/test-results.xml
+**/coverage/
+**/.nyc_output/
+
+# Archivos de mock
+**/__mocks__/
+**/mocks/
+
+# ===========================
+# Archivos de Seguridad
+# ===========================
+
+# Claves y certificados (NUNCA commitees estos)
+**/*.key
+**/*.pem
+**/*.crt
+**/*.cer
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.truststore
+**/secrets/
+**/credentials/
+**/.secrets/
+
+# ===========================
+# Archivos de Performance y Profiling
+# ===========================
+
+# Profiling
+**/*.hprof
+**/*.prof
+**/perf.data*
+
+# Heap dumps
+**/*.hprof
+**/heap-dump.hprof
+
+# ===========================
+# Archivos de Editor Específicos
+# ===========================
+
+# JetBrains
+**/.idea/
+**/*.iml
+
+# Visual Studio
+**/.vs/
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# ===========================
+# Excepciones (Archivos que SÍ queremos trackear)
+# ===========================
+
+# Mantener estructura de directorios vacíos
+!**/.gitkeep
+
+# Mantener archivos de configuración de ejemplo
+!**/.env.example
+!**/.env.template
+!**/env.example
+!**/env.template
+!**/application.example.properties
+!**/application.template.properties
+
+# Mantener scripts de build si son necesarios
+!**/mvnw
+!**/mvnw.cmd
+!**/.mvn/wrapper/maven-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.properties
+
+# ===========================
+# NOTAS IMPORTANTES
+# ===========================
+# 
+# 1. NUNCA commitees archivos con información sensible:
+#    - Variables de entorno (.env)
+#    - Claves y certificados
+#    - Credenciales de base de datos
+#    - Tokens de API
+#
+# 2. Usa archivos .env.example como plantilla
+#
+# 3. Los logs y archivos compilados se regeneran automáticamente
+#
+# 4. node_modules/ y target/ son generados por npm/maven
+#
+# ===========================
