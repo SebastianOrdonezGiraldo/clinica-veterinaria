@@ -3,6 +3,7 @@ package com.clinica.veterinaria.config;
 import com.clinica.veterinaria.logging.RequestResponseLoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -41,7 +42,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private final RequestResponseLoggingInterceptor loggingInterceptor;
     
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
+    @SuppressWarnings("null") // loggingInterceptor nunca es null (inyectado por Spring)
+    public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(loggingInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
