@@ -102,21 +102,30 @@ public abstract class BaseIntegrationTest {
             .password(adminUser.getPassword())
             .authorities("ROLE_" + adminUser.getRol().name())
             .build();
-        adminToken = jwtUtil.generateToken(adminDetails);
+        java.util.Map<String, Object> adminClaims = new java.util.HashMap<>();
+        adminClaims.put("rol", adminUser.getRol().name());
+        adminClaims.put("userId", adminUser.getId());
+        adminToken = jwtUtil.generateToken(adminDetails, adminClaims);
 
         UserDetails vetDetails = User.builder()
             .username(vetUser.getEmail())
             .password(vetUser.getPassword())
             .authorities("ROLE_" + vetUser.getRol().name())
             .build();
-        vetToken = jwtUtil.generateToken(vetDetails);
+        java.util.Map<String, Object> vetClaims = new java.util.HashMap<>();
+        vetClaims.put("rol", vetUser.getRol().name());
+        vetClaims.put("userId", vetUser.getId());
+        vetToken = jwtUtil.generateToken(vetDetails, vetClaims);
 
         UserDetails recepcionDetails = User.builder()
             .username(recepcionUser.getEmail())
             .password(recepcionUser.getPassword())
             .authorities("ROLE_" + recepcionUser.getRol().name())
             .build();
-        recepcionToken = jwtUtil.generateToken(recepcionDetails);
+        java.util.Map<String, Object> recepcionClaims = new java.util.HashMap<>();
+        recepcionClaims.put("rol", recepcionUser.getRol().name());
+        recepcionClaims.put("userId", recepcionUser.getId());
+        recepcionToken = jwtUtil.generateToken(recepcionDetails, recepcionClaims);
     }
 
     /**
