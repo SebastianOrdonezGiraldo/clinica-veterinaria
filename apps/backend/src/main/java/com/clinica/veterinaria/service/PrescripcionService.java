@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,7 +78,7 @@ public class PrescripcionService {
      * @throws RuntimeException si no existe una prescripción con el ID especificado.
      */
     @Transactional(readOnly = true)
-    public PrescripcionDTO findById(Long id) {
+    public PrescripcionDTO findById(@NonNull Long id) {
         log.debug("Buscando prescripción con ID: {}", id);
         Prescripcion prescripcion = prescripcionRepository.findById(id)
             .orElseThrow(() -> {
@@ -94,7 +95,7 @@ public class PrescripcionService {
      * @return Lista de prescripciones de esa consulta. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<PrescripcionDTO> findByConsulta(Long consultaId) {
+    public List<PrescripcionDTO> findByConsulta(@NonNull Long consultaId) {
         log.debug("Buscando prescripciones de consulta ID: {}", consultaId);
         return prescripcionRepository.findByConsultaId(consultaId).stream()
             .map(p -> PrescripcionDTO.fromEntity(p, true))
@@ -108,7 +109,7 @@ public class PrescripcionService {
      * @return Lista de prescripciones del paciente ordenadas por fecha descendente.
      */
     @Transactional(readOnly = true)
-    public List<PrescripcionDTO> findByPaciente(Long pacienteId) {
+    public List<PrescripcionDTO> findByPaciente(@NonNull Long pacienteId) {
         log.debug("Buscando prescripciones de paciente ID: {}", pacienteId);
         return prescripcionRepository.findByPacienteId(pacienteId).stream()
             .map(p -> PrescripcionDTO.fromEntity(p, true))
@@ -125,7 +126,8 @@ public class PrescripcionService {
      * @return DTO con los datos de la prescripción creada, incluyendo IDs asignados.
      * @throws RuntimeException si la consulta no existe.
      */
-    public PrescripcionDTO create(PrescripcionDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PrescripcionDTO create(@NonNull PrescripcionDTO dto) {
         log.info("→ Creando nueva prescripción para consulta ID: {}", dto.getConsultaId());
         
         // VALIDACIÓN: Consulta existe
@@ -180,7 +182,8 @@ public class PrescripcionService {
      * @return DTO con los datos actualizados de la prescripción.
      * @throws RuntimeException si la prescripción no existe.
      */
-    public PrescripcionDTO update(Long id, PrescripcionDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PrescripcionDTO update(@NonNull Long id, @NonNull PrescripcionDTO dto) {
         log.info("→ Actualizando prescripción con ID: {}", id);
         
         Prescripcion prescripcion = prescripcionRepository.findById(id)
@@ -226,7 +229,7 @@ public class PrescripcionService {
      * @param id ID de la prescripción a eliminar. No puede ser null.
      * @throws ResourceNotFoundException si la prescripción no existe.
      */
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando prescripción con ID: {}", id);
         
         Prescripcion prescripcion = prescripcionRepository.findById(id)

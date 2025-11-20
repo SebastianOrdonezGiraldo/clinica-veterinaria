@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,7 +82,7 @@ public class PropietarioService {
      * @return Página de propietarios con metadatos de paginación.
      */
     @Transactional(readOnly = true)
-    public Page<PropietarioDTO> findAll(Pageable pageable) {
+    public Page<PropietarioDTO> findAll(@NonNull Pageable pageable) {
         log.debug("Obteniendo propietarios con paginación");
         return propietarioRepository.findAll(pageable)
             .map(PropietarioDTO::fromEntity);
@@ -96,7 +97,7 @@ public class PropietarioService {
      */
     @Cacheable(value = "propietarios", key = "#id")
     @Transactional(readOnly = true)
-    public PropietarioDTO findById(Long id) {
+    public PropietarioDTO findById(@NonNull Long id) {
         log.debug("Buscando propietario con ID: {}", id);
         Propietario propietario = propietarioRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Propietario", "id", id));
@@ -110,7 +111,7 @@ public class PropietarioService {
      * @return Lista de propietarios cuyos nombres contienen el texto. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<PropietarioDTO> findByNombre(String nombre) {
+    public List<PropietarioDTO> findByNombre(@NonNull String nombre) {
         log.debug("Buscando propietarios con nombre: {}", nombre);
         return propietarioRepository.findByNombreContainingIgnoreCase(nombre).stream()
             .map(PropietarioDTO::fromEntity)
@@ -129,7 +130,8 @@ public class PropietarioService {
      * @throws DuplicateResourceException si el documento ya está registrado.
      */
     @CacheEvict(value = "propietarios", allEntries = true)
-    public PropietarioDTO create(PropietarioDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PropietarioDTO create(@NonNull PropietarioDTO dto) {
         log.info("→ Creando nuevo propietario: {}", dto.getNombre());
         
         // VALIDACIÓN: Documento único si se proporciona
@@ -168,7 +170,8 @@ public class PropietarioService {
      * @throws DuplicateResourceException si el documento ya está registrado.
      */
     @CacheEvict(value = "propietarios", allEntries = true)
-    public PropietarioDTO update(Long id, PropietarioDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PropietarioDTO update(@NonNull Long id, @NonNull PropietarioDTO dto) {
         log.info("→ Actualizando propietario con ID: {}", id);
         
         Propietario propietario = propietarioRepository.findById(id)
@@ -210,7 +213,7 @@ public class PropietarioService {
      * @throws ResourceNotFoundException si el propietario no existe.
      */
     @CacheEvict(value = "propietarios", allEntries = true)
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando propietario con ID: {}", id);
         
         Propietario propietario = propietarioRepository.findById(id)

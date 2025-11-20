@@ -15,6 +15,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,7 +112,7 @@ public class PacienteService {
      * @return Página de pacientes con metadatos de paginación.
      */
     @Transactional(readOnly = true)
-    public Page<PacienteDTO> findAll(Pageable pageable) {
+    public Page<PacienteDTO> findAll(@NonNull Pageable pageable) {
         log.debug("Obteniendo pacientes con paginación");
         return pacienteRepository.findAll(pageable)
             .map(p -> PacienteDTO.fromEntity(p, true));
@@ -130,7 +131,7 @@ public class PacienteService {
      */
     @Cacheable(value = "pacientes", key = "#id")
     @Transactional(readOnly = true)
-    public PacienteDTO findById(Long id) {
+    public PacienteDTO findById(@NonNull Long id) {
         log.debug("Buscando paciente con ID: {}", id);
         Paciente paciente = pacienteRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Paciente", "id", id));
@@ -154,7 +155,7 @@ public class PacienteService {
      * @return Lista de pacientes del propietario. Puede estar vacía si no tiene mascotas.
      */
     @Transactional(readOnly = true)
-    public List<PacienteDTO> findByPropietario(Long propietarioId) {
+    public List<PacienteDTO> findByPropietario(@NonNull Long propietarioId) {
         log.debug("Buscando pacientes del propietario con ID: {}", propietarioId);
         return pacienteRepository.findByPropietarioId(propietarioId).stream()
             .map(p -> PacienteDTO.fromEntity(p, false))
@@ -177,7 +178,7 @@ public class PacienteService {
      * @return Lista de pacientes cuyos nombres contienen el texto buscado. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<PacienteDTO> findByNombre(String nombre) {
+    public List<PacienteDTO> findByNombre(@NonNull String nombre) {
         log.debug("Buscando pacientes con nombre: {}", nombre);
         return pacienteRepository.findByNombreContainingIgnoreCase(nombre).stream()
             .map(p -> PacienteDTO.fromEntity(p, true))
@@ -194,7 +195,7 @@ public class PacienteService {
      * @return Lista de pacientes de la especie especificada. Puede estar vacía.
      */
     @Transactional(readOnly = true)
-    public List<PacienteDTO> findByEspecie(String especie) {
+    public List<PacienteDTO> findByEspecie(@NonNull String especie) {
         log.debug("Buscando pacientes de especie: {}", especie);
         return pacienteRepository.findByEspecie(especie).stream()
             .map(p -> PacienteDTO.fromEntity(p, true))
@@ -245,7 +246,8 @@ public class PacienteService {
      * @see AuditLogger#logCreate(String, Long, String)
      */
     @CacheEvict(value = "pacientes", allEntries = true)
-    public PacienteDTO create(PacienteDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PacienteDTO create(@NonNull PacienteDTO dto) {
         log.info("→ Creando nuevo paciente: {} (Especie: {})", dto.getNombre(), dto.getEspecie());
         
         // VALIDACIÓN 1: Propietario debe existir
@@ -339,7 +341,8 @@ public class PacienteService {
      * @see AuditLogger#logUpdate(String, Long, String, String)
      */
     @CacheEvict(value = "pacientes", allEntries = true)
-    public PacienteDTO update(Long id, PacienteDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public PacienteDTO update(@NonNull Long id, @NonNull PacienteDTO dto) {
         log.info("→ Actualizando paciente con ID: {}", id);
         
         // VALIDACIÓN 1: Paciente debe existir
@@ -439,7 +442,7 @@ public class PacienteService {
      * @see AuditLogger#logDelete(String, Long)
      */
     @CacheEvict(value = "pacientes", allEntries = true)
-    public void delete(Long id) {
+    public void delete(@NonNull Long id) {
         log.warn("→ Eliminando paciente con ID: {}", id);
         
         Paciente paciente = pacienteRepository.findById(id)
@@ -491,7 +494,7 @@ public class PacienteService {
      * @return Número de pacientes de la especie especificada.
      */
     @Transactional(readOnly = true)
-    public long countByEspecie(String especie) {
+    public long countByEspecie(@NonNull String especie) {
         return pacienteRepository.countByEspecie(especie);
     }
     
@@ -531,7 +534,7 @@ public class PacienteService {
      * @return Página de pacientes que cumplen los filtros
      */
     @Transactional(readOnly = true)
-    public Page<PacienteDTO> searchWithFilters(String nombre, String especie, Pageable pageable) {
+    public Page<PacienteDTO> searchWithFilters(String nombre, String especie, @NonNull Pageable pageable) {
         log.debug("Buscando pacientes con filtros - nombre: {}, especie: {}, page: {}", 
             nombre, especie, pageable.getPageNumber());
         

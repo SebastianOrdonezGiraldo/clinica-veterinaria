@@ -8,6 +8,7 @@ import com.clinica.veterinaria.repository.NotificacionRepository;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class NotificacionService {
      * Obtiene todas las notificaciones de un usuario
      */
     @Transactional(readOnly = true)
-    public List<NotificacionDTO> findByUsuarioId(Long usuarioId) {
+    public List<NotificacionDTO> findByUsuarioId(@NonNull Long usuarioId) {
         log.info("Obteniendo notificaciones para usuario ID: {}", usuarioId);
         return notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId)
                 .stream()
@@ -46,7 +47,7 @@ public class NotificacionService {
      * Obtiene las notificaciones no leídas de un usuario
      */
     @Transactional(readOnly = true)
-    public List<NotificacionDTO> findNoLeidasByUsuarioId(Long usuarioId) {
+    public List<NotificacionDTO> findNoLeidasByUsuarioId(@NonNull Long usuarioId) {
         log.info("Obteniendo notificaciones no leídas para usuario ID: {}", usuarioId);
         return notificacionRepository.findByUsuarioIdAndLeidaFalseOrderByFechaCreacionDesc(usuarioId)
                 .stream()
@@ -58,14 +59,15 @@ public class NotificacionService {
      * Cuenta las notificaciones no leídas de un usuario
      */
     @Transactional(readOnly = true)
-    public long countNoLeidasByUsuarioId(Long usuarioId) {
+    public long countNoLeidasByUsuarioId(@NonNull Long usuarioId) {
         return notificacionRepository.countByUsuarioIdAndLeidaFalse(usuarioId);
     }
 
     /**
      * Crea una nueva notificación
      */
-    public NotificacionDTO create(NotificacionCreateDTO dto) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public NotificacionDTO create(@NonNull NotificacionCreateDTO dto) {
         log.info("Creando notificación para usuario ID: {}", dto.getUsuarioId());
         
         Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
@@ -90,7 +92,7 @@ public class NotificacionService {
     /**
      * Marca una notificación como leída
      */
-    public void marcarComoLeida(Long id, Long usuarioId) {
+    public void marcarComoLeida(@NonNull Long id, @NonNull Long usuarioId) {
         log.info("Marcando notificación ID: {} como leída para usuario ID: {}", id, usuarioId);
         int updated = notificacionRepository.marcarComoLeida(id, usuarioId);
         if (updated == 0) {
@@ -101,7 +103,7 @@ public class NotificacionService {
     /**
      * Marca todas las notificaciones de un usuario como leídas
      */
-    public void marcarTodasComoLeidas(Long usuarioId) {
+    public void marcarTodasComoLeidas(@NonNull Long usuarioId) {
         log.info("Marcando todas las notificaciones como leídas para usuario ID: {}", usuarioId);
         notificacionRepository.marcarTodasComoLeidas(usuarioId);
     }
@@ -109,7 +111,7 @@ public class NotificacionService {
     /**
      * Elimina una notificación
      */
-    public void delete(Long id, Long usuarioId) {
+    public void delete(@NonNull Long id, @NonNull Long usuarioId) {
         log.info("Eliminando notificación ID: {} para usuario ID: {}", id, usuarioId);
         Notificacion notificacion = notificacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Notificación no encontrada con ID: " + id));
@@ -124,7 +126,7 @@ public class NotificacionService {
     /**
      * Crea una notificación de forma simplificada (método helper)
      */
-    public void crearNotificacion(Long usuarioId, String titulo, String mensaje, 
+    public void crearNotificacion(@NonNull Long usuarioId, @NonNull String titulo, @NonNull String mensaje, 
                                    Notificacion.Tipo tipo, String entidadTipo, Long entidadId) {
         try {
             NotificacionCreateDTO dto = NotificacionCreateDTO.builder()

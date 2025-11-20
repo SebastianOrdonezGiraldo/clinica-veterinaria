@@ -10,6 +10,7 @@ import com.clinica.veterinaria.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -126,7 +127,8 @@ public class AuthService {
      * @see AuditLogger#logLoginFailure(String, String, String)
      * @see JwtUtil#generateToken(UserDetails, Map)
      */
-    public LoginResponseDTO login(LoginRequestDTO request) {
+    @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
+    public LoginResponseDTO login(@NonNull LoginRequestDTO request) {
         String ipAddress = getClientIp();
         log.info("→ Intento de login para usuario: {} desde IP: {}", request.getEmail(), ipAddress);
 
@@ -241,7 +243,7 @@ public class AuthService {
      * @return true si el token es válido, false en caso contrario.
      */
     @Transactional(readOnly = true)
-    public boolean validateToken(String token) {
+    public boolean validateToken(@NonNull String token) {
         try {
             String username = jwtUtil.extractUsername(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -263,7 +265,7 @@ public class AuthService {
      * @throws RuntimeException si el usuario no existe.
      */
     @Transactional(readOnly = true)
-    public UsuarioDTO getUserFromToken(String token) {
+    public UsuarioDTO getUserFromToken(@NonNull String token) {
         String email = jwtUtil.extractUsername(token);
         Usuario usuario = usuarioRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));

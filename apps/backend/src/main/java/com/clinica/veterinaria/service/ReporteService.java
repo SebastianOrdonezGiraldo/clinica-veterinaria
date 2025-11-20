@@ -9,6 +9,7 @@ import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +48,7 @@ public class ReporteService {
      * @param periodo Periodo del reporte: "hoy", "semana", "mes", "año"
      * @return DTO con todas las estadísticas del reporte
      */
-    public ReporteDTO generarReporte(String periodo) {
+    public ReporteDTO generarReporte(@NonNull String periodo) {
         log.debug("Generando reporte para periodo: {}", periodo);
         
         LocalDateTime[] rango = calcularRango(periodo);
