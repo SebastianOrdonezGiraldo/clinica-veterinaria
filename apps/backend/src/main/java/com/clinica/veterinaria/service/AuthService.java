@@ -4,6 +4,8 @@ import com.clinica.veterinaria.dto.LoginRequestDTO;
 import com.clinica.veterinaria.dto.LoginResponseDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
 import com.clinica.veterinaria.entity.Usuario;
+import com.clinica.veterinaria.exception.domain.BusinessException;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.logging.IAuditLogger;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import com.clinica.veterinaria.security.JwtUtil;
@@ -84,6 +86,11 @@ import java.util.Map;
 @Transactional
 public class AuthService {
 
+    private static final String MSG_USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
+    private static final String MSG_CREDENCIALES_INVALIDAS = "Email o contraseña incorrectos";
+    private static final String MSG_USUARIO_INACTIVO = "Usuario inactivo";
+    private static final String UNKNOWN_IP = "unknown";
+
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
@@ -144,7 +151,7 @@ public class AuthService {
             log.error("✗ Credenciales inválidas para usuario: {} desde IP: {}", request.getEmail(), ipAddress);
             // Registrar intento fallido en auditoría
             auditLogger.logLoginFailure(request.getEmail(), ipAddress, "Credenciales inválidas");
-            throw new RuntimeException("Email o contraseña incorrectos");
+            throw new BadCredentialsException(MSG_CREDENCIALES_INVALIDAS);
         }
 
         // Cargar los detalles del usuario
@@ -154,15 +161,15 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> {
                 log.error("✗ Usuario no encontrado: {}", request.getEmail());
-                auditLogger.logLoginFailure(request.getEmail(), ipAddress, "Usuario no encontrado");
-                return new RuntimeException("Usuario no encontrado");
+                auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_NO_ENCONTRADO);
+                return new ResourceNotFoundException("Usuario", "email", request.getEmail());
             });
 
         // Verificar si el usuario está activo
-        if (!usuario.getActivo()) {
+        if (Boolean.FALSE.equals(usuario.getActivo())) {
             log.warn("✗ Intento de login de usuario inactivo: {}", request.getEmail());
-            auditLogger.logLoginFailure(request.getEmail(), ipAddress, "Usuario inactivo");
-            throw new RuntimeException("Usuario inactivo");
+            auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_INACTIVO);
+            throw new BusinessException(MSG_USUARIO_INACTIVO);
         }
 
         // Agregar información adicional al token (rol, etc.)
@@ -210,10 +217,10 @@ public class AuthService {
             HttpServletRequest request = attributes.getRequest();
             
             String ip = request.getHeader("X-Forwarded-For");
-            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            if (ip == null || ip.isEmpty() || UNKNOWN_IP.equalsIgnoreCase(ip)) {
                 ip = request.getHeader("X-Real-IP");
             }
-            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            if (ip == null || ip.isEmpty() || UNKNOWN_IP.equalsIgnoreCase(ip)) {
                 ip = request.getRemoteAddr();
             }
             
@@ -222,10 +229,10 @@ public class AuthService {
                 ip = ip.split(",")[0].trim();
             }
             
-            return ip != null ? ip : "unknown";
+            return ip != null ? ip : UNKNOWN_IP;
         } catch (Exception e) {
             log.debug("No se pudo obtener la IP del cliente", e);
-            return "unknown";
+            return UNKNOWN_IP;
         }
     }
 
@@ -268,7 +275,7 @@ public class AuthService {
     public UsuarioDTO getUserFromToken(@NonNull String token) {
         String email = jwtUtil.extractUsername(token);
         Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario", "email", email));
         return UsuarioDTO.fromEntity(usuario);
     }
 }

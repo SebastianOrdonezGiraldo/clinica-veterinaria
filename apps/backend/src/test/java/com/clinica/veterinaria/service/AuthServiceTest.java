@@ -4,6 +4,8 @@ import com.clinica.veterinaria.dto.LoginRequestDTO;
 import com.clinica.veterinaria.dto.LoginResponseDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
 import com.clinica.veterinaria.entity.Usuario;
+import com.clinica.veterinaria.exception.domain.BusinessException;
+import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.logging.IAuditLogger;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import com.clinica.veterinaria.security.JwtUtil;
@@ -136,7 +138,7 @@ class AuthServiceTest {
         doNothing().when(auditLogger).logLoginFailure(anyString(), anyString(), anyString());
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> authService.login(loginRequest));
+        assertThrows(BadCredentialsException.class, () -> authService.login(loginRequest));
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(auditLogger, times(1)).logLoginFailure(anyString(), anyString(), anyString());
         verify(jwtUtil, never()).generateToken(any());
@@ -158,7 +160,7 @@ class AuthServiceTest {
         doNothing().when(auditLogger).logLoginFailure(anyString(), anyString(), anyString());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> authService.login(loginRequest));
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> authService.login(loginRequest));
         assertTrue(exception.getMessage().contains("Usuario no encontrado"));
         verify(usuarioRepository, times(1)).findByEmail(loginRequest.getEmail());
         verify(jwtUtil, never()).generateToken(any());
@@ -194,7 +196,7 @@ class AuthServiceTest {
         doNothing().when(auditLogger).logLoginFailure(anyString(), anyString(), anyString());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, 
+        BusinessException exception = assertThrows(BusinessException.class, 
             () -> authService.login(loginRequestInactivo));
         assertTrue(exception.getMessage().contains("inactivo") || exception.getMessage().contains("deshabilitado"));
         verify(jwtUtil, never()).generateToken(any());
@@ -270,7 +272,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, 
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, 
             () -> authService.getUserFromToken(token));
         assertTrue(exception.getMessage().contains("Usuario no encontrado"));
         verify(usuarioRepository, times(1)).findByEmail(email);
@@ -322,7 +324,7 @@ class AuthServiceTest {
         doNothing().when(auditLogger).logLoginFailure(anyString(), anyString(), anyString());
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> authService.login(loginRequest));
+        assertThrows(BadCredentialsException.class, () -> authService.login(loginRequest));
         
         // Verificar que se registró el intento fallido
         verify(auditLogger, times(1)).logLoginFailure(
