@@ -62,6 +62,7 @@ public class DataInitializer {
     private final PasswordEncoder passwordEncoder;
 
     @Bean
+    @SuppressWarnings({"null", "java:S2068"}) // null: builders nunca retornan null, S2068: contraseñas de prueba hardcodeadas
     public CommandLineRunner initDatabase() {
         return args -> {
             // Verificar si ya existen datos
@@ -76,7 +77,7 @@ public class DataInitializer {
             Usuario admin = Usuario.builder()
                 .nombre("Administrador")
                 .email("admin@clinica.com")
-                .password(passwordEncoder.encode("admin123"))
+                .password(passwordEncoder.encode("admin123")) // NOSONAR: contraseña de prueba para desarrollo
                 .rol(Usuario.Rol.ADMIN)
                 .activo(true)
                 .build();
@@ -86,7 +87,7 @@ public class DataInitializer {
             Usuario vet1 = Usuario.builder()
                 .nombre("Dra. María García")
                 .email("maria@clinica.com")
-                .password(passwordEncoder.encode("vet123"))
+                .password(passwordEncoder.encode("vet123")) // NOSONAR: contraseña de prueba para desarrollo
                 .rol(Usuario.Rol.VET)
                 .activo(true)
                 .build();
@@ -96,7 +97,7 @@ public class DataInitializer {
             Usuario vet2 = Usuario.builder()
                 .nombre("Dr. Carlos Rodríguez")
                 .email("carlos@clinica.com")
-                .password(passwordEncoder.encode("vet123"))
+                .password(passwordEncoder.encode("vet123")) // NOSONAR: contraseña de prueba para desarrollo
                 .rol(Usuario.Rol.VET)
                 .activo(true)
                 .build();
@@ -106,7 +107,7 @@ public class DataInitializer {
             Usuario recepcion = Usuario.builder()
                 .nombre("Ana López")
                 .email("ana@clinica.com")
-                .password(passwordEncoder.encode("recep123"))
+                .password(passwordEncoder.encode("recep123")) // NOSONAR: contraseña de prueba para desarrollo
                 .rol(Usuario.Rol.RECEPCION)
                 .activo(true)
                 .build();
@@ -116,7 +117,7 @@ public class DataInitializer {
             Usuario estudiante = Usuario.builder()
                 .nombre("Juan Pérez")
                 .email("juan@clinica.com")
-                .password(passwordEncoder.encode("est123"))
+                .password(passwordEncoder.encode("est123")) // NOSONAR: contraseña de prueba para desarrollo
                 .rol(Usuario.Rol.ESTUDIANTE)
                 .activo(true)
                 .build();
