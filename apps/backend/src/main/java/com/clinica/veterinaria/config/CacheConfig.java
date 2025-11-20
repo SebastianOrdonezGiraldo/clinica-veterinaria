@@ -7,6 +7,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 
 import java.util.concurrent.TimeUnit;
 
@@ -166,7 +167,9 @@ public class CacheConfig {
         
         CaffeineCacheManager cacheManager = new CaffeineCacheManager() {
             @Override
-            protected com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(String name) {
+            @NonNull
+            @SuppressWarnings("null")
+            protected com.github.benmanes.caffeine.cache.Cache<Object, Object> createNativeCaffeineCache(@NonNull String name) {
                 // Configuración específica por cada caché
                 return switch (name) {
                     case VETERINARIOS_ACTIVOS_CACHE -> 
