@@ -184,7 +184,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation errors: {} errors found", ex.getBindingResult().getErrorCount());
         
         Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
+        ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
@@ -243,8 +243,9 @@ public class GlobalExceptionHandler {
         
         String mensaje = "Valor inválido para el parámetro '" + ex.getName() + "': " + ex.getValue();
         String detalle = null;
-        if (ex.getRequiredType() != null && ex.getRequiredType().isEnum()) {
-            detalle = "Valores válidos: " + java.util.Arrays.toString(ex.getRequiredType().getEnumConstants());
+        Class<?> requiredType = ex.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            detalle = "Valores válidos: " + java.util.Arrays.toString(requiredType.getEnumConstants());
         }
         
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()

@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -36,16 +38,18 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
     private static final String MDC_USERNAME_KEY = "username";
     private static final String RESPONSE_LOG_FORMAT = "← Response {} {} | Status: {} | Duration: {}ms";
     private static final String RESPONSE_ERROR_LOG_FORMAT = "← Response {} {} | Status: 500 | Duration: {}ms | Error: {}";
+    private static final String UNKNOWN_IP = "unknown";
     
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         // Registrar tiempo de inicio
         request.setAttribute(START_TIME_ATTRIBUTE, System.currentTimeMillis());
         
         // Añadir información del request al MDC
+        String clientIp = getClientIp(request);
         MDC.put("requestUri", request.getRequestURI());
         MDC.put("requestMethod", request.getMethod());
-        MDC.put("clientIp", getClientIp(request));
+        MDC.put("clientIp", clientIp);
         MDC.put("userAgent", request.getHeader("User-Agent"));
         
         // Añadir información del usuario si está autenticado
@@ -58,12 +62,14 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
         }
         
         // Log del request entrante
+        String username = MDC.get(MDC_USERNAME_KEY);
+        String correlationId = MDC.get("correlationId");
         logger.info("→ Incoming {} {} from {} | User: {} | Correlation-ID: {}", 
                 request.getMethod(),
                 request.getRequestURI(),
-                getClientIp(request),
-                MDC.get(MDC_USERNAME_KEY) != null ? MDC.get(MDC_USERNAME_KEY) : "anonymous",
-                MDC.get("correlationId"));
+                clientIp,
+                username != null ? username : "anonymous",
+                correlationId);
         
         // Log de query parameters si existen
         if (request.getQueryString() != null) {
@@ -82,15 +88,15 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
     }
     
     @Override
-    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
-                          ModelAndView modelAndView) {
+    public void postHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler,
+                          @Nullable ModelAndView modelAndView) {
         // Este método se ejecuta después del controller pero antes de renderizar la vista
         // No lo usamos por ahora, pero está disponible si se necesita
     }
     
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
-                               Exception ex) {
+    public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler,
+                               @Nullable Exception ex) {
         // Calcular duración del request
         Long startTime = (Long) request.getAttribute(START_TIME_ATTRIBUTE);
         long duration = 0;
@@ -136,13 +142,15 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
         
         // Log de performance para requests lentos
         if (duration > SLOW_REQUEST_THRESHOLD_MS) {
+            String username = MDC.get(MDC_USERNAME_KEY);
+            String correlationId = MDC.get("correlationId");
             performanceLogger.warn("⚠️ SLOW REQUEST: {} {} took {}ms (threshold: {}ms) | User: {} | Correlation-ID: {}", 
                     request.getMethod(),
                     request.getRequestURI(),
                     duration,
                     SLOW_REQUEST_THRESHOLD_MS,
-                    MDC.get(MDC_USERNAME_KEY) != null ? MDC.get(MDC_USERNAME_KEY) : "anonymous",
-                    MDC.get("correlationId"));
+                    username != null ? username : "anonymous",
+                    correlationId);
         }
         
         // También registrar todas las requests en el log de performance
@@ -156,19 +164,21 @@ public class RequestResponseLoggingInterceptor implements HandlerInterceptor {
     /**
      * Obtiene la IP real del cliente, considerando proxies y load balancers
      */
-    private String getClientIp(HttpServletRequest request) {
+    @NonNull
+    private String getClientIp(@NonNull HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || UNKNOWN_IP.equalsIgnoreCase(ip)) {
             ip = request.getHeader("X-Real-IP");
         }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || UNKNOWN_IP.equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         // Si hay múltiples IPs en X-Forwarded-For, tomar la primera
         if (ip != null && ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }
-        return ip;
+        // Asegurar que siempre retornamos un valor no nulo
+        return ip != null ? ip : UNKNOWN_IP;
     }
     
     /**
