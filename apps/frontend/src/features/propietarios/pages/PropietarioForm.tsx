@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,6 +27,7 @@ type PropietarioFormData = z.infer<typeof propietarioSchema>;
 export default function PropietarioForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEdit = !!id;
 
   const { register, handleSubmit, formState: { errors, isDirty }, reset } = useForm<PropietarioFormData>({
@@ -94,12 +95,21 @@ export default function PropietarioForm() {
       if (isEdit && id) {
         await propietarioService.update(id, propietarioData);
         toast.success('Propietario actualizado exitosamente');
+        navigate('/propietarios');
       } else {
-        await propietarioService.create(propietarioData);
+        const nuevoPropietario = await propietarioService.create(propietarioData);
         toast.success('Propietario registrado exitosamente');
+        
+        // Si viene de otra página (ej: formulario de cita), regresar allí con el ID del propietario
+        const state = location.state as { returnTo?: string } | null;
+        if (state?.returnTo) {
+          navigate(state.returnTo, {
+            state: { propietarioId: nuevoPropietario.id }
+          });
+        } else {
+          navigate('/propietarios');
+        }
       }
-      
-      navigate('/propietarios');
     } catch (error: any) {
       console.error('Error al guardar propietario:', error);
       toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el propietario`);

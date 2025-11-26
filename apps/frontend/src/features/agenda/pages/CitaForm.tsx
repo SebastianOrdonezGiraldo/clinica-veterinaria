@@ -71,9 +71,9 @@ export default function CitaForm() {
     loadInitialData();
   }, [id]);
 
-  // Si hay un pacienteId en el state (viene de crear paciente), recargar pacientes y seleccionarlo
+  // Si hay un pacienteId o propietarioId en el state (viene de crear paciente/propietario), recargar y seleccionarlo
   useEffect(() => {
-    const state = location.state as { pacienteId?: string } | null;
+    const state = location.state as { pacienteId?: string; propietarioId?: string } | null;
     if (state?.pacienteId) {
       // Recargar pacientes para asegurar que el nuevo esté disponible
       pacienteService.getAll().then(pacientesData => {
@@ -88,6 +88,20 @@ export default function CitaForm() {
         window.history.replaceState({}, document.title);
       }).catch(error => {
         console.error('Error al recargar pacientes:', error);
+      });
+    } else if (state?.propietarioId) {
+      // Si viene de crear propietario, recargar propietarios y seleccionarlo
+      propietarioService.getAll().then(propietariosData => {
+        setPropietarios(propietariosData);
+        const propietario = propietariosData.find(p => p.id === state.propietarioId);
+        if (propietario) {
+          setValue('propietarioId', propietario.id);
+          toast.success(`Propietario "${propietario.nombre}" seleccionado`);
+        }
+        // Limpiar el state para evitar seleccionarlo de nuevo
+        window.history.replaceState({}, document.title);
+      }).catch(error => {
+        console.error('Error al recargar propietarios:', error);
       });
     }
   }, [location.state, setValue]);
@@ -394,7 +408,21 @@ export default function CitaForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="propietarioId">Propietario *</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="propietarioId">Propietario *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => navigate('/propietarios/nuevo', { 
+                      state: { returnTo: location.pathname } 
+                    })}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Nuevo
+                  </Button>
+                </div>
                 <Select 
                   value={watch('propietarioId')} 
                   onValueChange={(value) => setValue('propietarioId', value)}
