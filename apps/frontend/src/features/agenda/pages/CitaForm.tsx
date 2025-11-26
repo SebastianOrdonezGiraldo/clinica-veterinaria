@@ -104,16 +104,21 @@ export default function CitaForm() {
   const loadInitialData = async () => {
     try {
       setIsLoadingData(true);
-      const [pacientesData, propietariosData, usuariosData] = await Promise.all([
+      // Usar getVeterinarios() en lugar de getAll() para evitar problemas de permisos
+      // Los veterinarios no tienen acceso a getAll() que requiere rol ADMIN
+      // El endpoint /api/usuarios/veterinarios está disponible para todos los usuarios autenticados
+      const [pacientesData, propietariosData, veterinariosData] = await Promise.all([
         pacienteService.getAll(),
         propietarioService.getAll(),
-        usuarioService.getAll(),
+        usuarioService.getVeterinarios(),
       ]);
       setPacientes(pacientesData);
       setPropietarios(propietariosData);
       
-      // Filtrar veterinarios y administradores (que también pueden atender)
-      const vets = usuariosData.filter(u => (u.rol === 'VET' || u.rol === 'ADMIN') && u.activo !== false);
+      // Los veterinarios ya vienen filtrados del backend (solo VET activos)
+      // Nota: Si en el futuro necesitas incluir ADMIN como profesionales, 
+      // se requeriría crear un nuevo endpoint en el backend
+      const vets = veterinariosData.filter(u => u.activo !== false);
       setVeterinarios(vets);
 
       // Si es edición, cargar datos de la cita
