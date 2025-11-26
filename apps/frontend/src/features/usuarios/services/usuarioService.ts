@@ -70,6 +70,15 @@ export const usuarioService = {
     return normalizeUsuario(response.data);
   },
 
+  /**
+   * Obtiene la lista de veterinarios activos
+   * Disponible para todos los usuarios autenticados (no requiere rol ADMIN)
+   */
+  async getVeterinarios(): Promise<Usuario[]> {
+    const response = await axios.get<any[]>('/usuarios/veterinarios');
+    return response.data.map(normalizeUsuario);
+  },
+
   async search(email: string): Promise<Usuario | null> {
     try {
       const response = await axios.get<any>(`/usuarios/email/${email}`);

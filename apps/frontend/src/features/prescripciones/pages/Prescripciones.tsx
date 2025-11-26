@@ -37,9 +37,12 @@ export default function Prescripciones() {
     staleTime: 60000,
   });
 
+  // Usar getVeterinarios() en lugar de getAll() para evitar problemas de permisos
+  // Los veterinarios no tienen acceso a getAll() que requiere rol ADMIN
+  // Nota: Si hay profesionales ADMIN en las consultas, no aparecerán en esta lista
   const { data: usuarios = [] } = useQuery<Usuario[]>({
-    queryKey: ['usuarios', 'all'],
-    queryFn: () => usuarioService.getAll(),
+    queryKey: ['usuarios', 'veterinarios'],
+    queryFn: () => usuarioService.getVeterinarios(),
     staleTime: 60000,
   });
 

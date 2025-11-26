@@ -73,8 +73,9 @@ export default function Agenda() {
    */
   const loadVeterinarios = async () => {
     try {
-      const usuarios = await usuarioService.getAll();
-      setVeterinarios(usuarios.filter(u => u.rol === 'VET'));
+      // Usar getVeterinarios() en lugar de getAll() para evitar problemas de permisos
+      const veterinariosData = await usuarioService.getVeterinarios();
+      setVeterinarios(veterinariosData);
     } catch (error) {
       console.error('Error al cargar veterinarios:', error);
       // No es crítico, solo afecta el filtro
