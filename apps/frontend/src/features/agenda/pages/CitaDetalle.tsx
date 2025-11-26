@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2, FileText } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
@@ -10,6 +10,7 @@ import { citaService } from '@features/agenda/services/citaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
+import { useAuth } from '@core/auth/AuthContext';
 import { Cita, Paciente, Propietario, Usuario } from '@core/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -32,6 +33,7 @@ const statusLabels = {
 export default function CitaDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [cita, setCita] = useState<Cita | null>(null);
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [propietario, setPropietario] = useState<Propietario | null>(null);
@@ -132,8 +134,11 @@ export default function CitaDetalle() {
 
   const fechaCita = new Date(cita.fecha);
   const puedeConfirmar = cita.estado === 'PENDIENTE';
-  const puedeCancelar = cita.estado !== 'CANCELADA' && cita.estado !== 'ATENDIDA' && cita.estado !== 'COMPLETADA';
+  const puedeCancelar = cita.estado !== 'CANCELADA' && cita.estado !== 'ATENDIDA';
   const puedeAtender = cita.estado === 'CONFIRMADA' || cita.estado === 'PENDIENTE';
+  const puedeIniciarConsulta = (user?.rol === 'VET' || user?.rol === 'ADMIN') && 
+                                cita.estado !== 'CANCELADA' && 
+                                cita.estado !== 'ATENDIDA';
 
   return (
     <div className="space-y-6">
@@ -294,6 +299,17 @@ export default function CitaDetalle() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
+            {puedeIniciarConsulta && (
+              <Button
+                onClick={() => navigate(`/agenda/${cita.id}/consulta`)}
+                disabled={isUpdating}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Iniciar Consulta
+              </Button>
+            )}
+
             {puedeConfirmar && (
               <Button
                 onClick={() => setShowConfirmDialog(true)}
