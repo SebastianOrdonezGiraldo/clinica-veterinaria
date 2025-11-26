@@ -47,6 +47,9 @@ public class EmailService {
     @Value("${app.mail.from-name:Clínica Veterinaria}")
     private String fromName;
 
+    @Value("${app.mail.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     @Value("${app.mail.logo.url:}")
     private String logoUrl;
 
@@ -166,7 +169,11 @@ public class EmailService {
             context.setVariable("motivo", motivo);
             context.setVariable("profesionalNombre", profesionalNombre);
             context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
-            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
+            // Construir URL del logo: usar la configurada o construir desde baseUrl
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
 
             String subject = String.format("Confirmación de cita - %s", pacienteNombre);
             
@@ -202,7 +209,11 @@ public class EmailService {
             context.setVariable("profesionalNombre", profesionalNombre);
             context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
             context.setVariable("razonCancelacion", razonCancelacion);
-            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
+            // Construir URL del logo: usar la configurada o construir desde baseUrl
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
 
             String subject = String.format("Cancelación de cita - %s", pacienteNombre);
             
@@ -238,7 +249,11 @@ public class EmailService {
             context.setVariable("profesionalNombre", profesionalNombre);
             context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
             context.setVariable("nuevoEstado", nuevoEstado);
-            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
+            // Construir URL del logo: usar la configurada o construir desde baseUrl
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
 
             String subject;
             if ("CONFIRMADA".equals(nuevoEstado)) {
