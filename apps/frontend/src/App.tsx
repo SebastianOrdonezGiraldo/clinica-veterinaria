@@ -4,7 +4,9 @@ import { TooltipProvider } from "@shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@core/auth/AuthContext";
+import { ClienteAuthProvider } from "@core/auth/ClienteAuthContext";
 import { ProtectedRoute } from "@shared/components/common/ProtectedRoute";
+import { ClienteProtectedRoute } from "@shared/components/common/ClienteProtectedRoute";
 import { AppLayout } from "@shared/components/layout/AppLayout";
 
 // Pages
@@ -21,6 +23,8 @@ import Agenda from "@features/agenda/pages/Agenda";
 import CitaForm from "@features/agenda/pages/CitaForm";
 import CitaDetalle from "@features/agenda/pages/CitaDetalle";
 import AgendarCitaPublica from "@features/agenda/pages/AgendarCitaPublica";
+import ClienteLogin from "@features/clientes/pages/ClienteLogin";
+import ClienteDashboard from "@features/clientes/pages/ClienteDashboard";
 import HistoriasClinicas from "@features/historias/pages/HistoriasClinicas";
 import HistoriaDetalle from "@features/historias/pages/HistoriaDetalle";
 import ConsultaForm from "@features/historias/pages/ConsultaForm";
@@ -64,10 +68,22 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<HomeRoute />} />
-            <Route path="/login" element={<AppRoutes />} />
-            <Route path="/agendar-cita" element={<AgendarCitaPublica />} />
+          <ClienteAuthProvider>
+            <Routes>
+              <Route path="/" element={<HomeRoute />} />
+              <Route path="/login" element={<AppRoutes />} />
+              <Route path="/agendar-cita" element={<AgendarCitaPublica />} />
+              
+              {/* Rutas del portal del cliente */}
+              <Route path="/cliente/login" element={<ClienteLogin />} />
+              <Route
+                path="/cliente/dashboard"
+                element={
+                  <ClienteProtectedRoute>
+                    <ClienteDashboard />
+                  </ClienteProtectedRoute>
+                }
+              />
             
             <Route element={
               <ProtectedRoute>
@@ -135,6 +151,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ClienteAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

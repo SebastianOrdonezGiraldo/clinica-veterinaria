@@ -19,6 +19,7 @@ export interface CitaPublicaRequestDTO {
     email: string;
     telefono?: string;
     direccion?: string;
+    password?: string;
   };
   pacienteNuevo?: {
     nombre: string;

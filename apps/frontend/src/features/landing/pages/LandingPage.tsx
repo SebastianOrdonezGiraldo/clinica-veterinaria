@@ -24,9 +24,8 @@ import {
   MessageSquare,
   Award,
   CheckCircle2,
-  Crosshair,
-  Eye,
   PawPrint,
+  LogIn,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -142,6 +141,15 @@ export default function LandingPage() {
               }
             >
               Ver Servicios
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              className="text-lg px-8 py-6"
+              onClick={() => navigate('/cliente/login')}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Portal del Cliente
             </Button>
           </div>
         </div>

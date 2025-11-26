@@ -22,8 +22,8 @@ axiosInstance.interceptors.request.use(
     const correlationId = config.headers['X-Correlation-ID'] as string || generateCorrelationId();
     config.headers['X-Correlation-ID'] = correlationId;
     
-    // Agregar token JWT si existe
-    const token = localStorage.getItem('token');
+    // Agregar token JWT si existe (prioridad: token de usuario del sistema, luego token de cliente)
+    const token = localStorage.getItem('token') || localStorage.getItem('clienteToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -106,9 +106,18 @@ axiosInstance.interceptors.response.use(
           correlationId,
           url: config?.url
         });
+        // Limpiar tokens de usuario del sistema
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Limpiar tokens de cliente
+        localStorage.removeItem('clienteToken');
+        localStorage.removeItem('cliente');
+        // Redirigir según el tipo de usuario
+        if (config?.url?.includes('/clientes/')) {
+          window.location.href = '/cliente/login';
+        } else {
+          window.location.href = '/login';
+        }
       } else if (error.response.status === 403) {
         loggerService.warn('Access forbidden', {
           correlationId,

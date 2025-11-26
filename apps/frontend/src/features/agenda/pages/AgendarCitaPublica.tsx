@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2, Lock, LogIn } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Input } from '@shared/components/ui/input';
@@ -32,6 +32,7 @@ const citaPublicaSchema = z.object({
   propietarioTelefono: z.string().optional(),
   propietarioDocumento: z.string().optional(),
   propietarioDireccion: z.string().optional(),
+  propietarioPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').optional().or(z.literal('')),
   // Datos nuevos de paciente
   pacienteNombre: z.string().optional(),
   pacienteEspecie: z.string().optional(),
@@ -191,6 +192,9 @@ export default function AgendarCitaPublica() {
             telefono: data.propietarioTelefono || undefined,
             documento: data.propietarioDocumento || undefined,
             direccion: data.propietarioDireccion || undefined,
+            password: data.propietarioPassword && data.propietarioPassword.length >= 6 
+              ? data.propietarioPassword 
+              : undefined,
           },
           pacienteNuevo: {
             nombre: data.pacienteNombre!,
@@ -407,7 +411,7 @@ export default function AgendarCitaPublica() {
               ¿Ya está registrado en nuestro sistema o es su primera vez?
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <RadioGroup
               value={tipoRegistro}
               onValueChange={(value) => setValue('tipoRegistro', value as 'existente' | 'nuevo')}
@@ -425,6 +429,20 @@ export default function AgendarCitaPublica() {
                 </Label>
               </div>
             </RadioGroup>
+            {tipoRegistro === 'existente' && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 mb-2">
+                  Si ya tienes una cuenta con contraseña, puedes iniciar sesión para ver tus citas y mascotas.
+                </p>
+                <a
+                  href="/cliente/login"
+                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Iniciar sesión
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -502,6 +520,25 @@ export default function AgendarCitaPublica() {
                     placeholder="Calle Principal 123"
                     {...register('propietarioDireccion')}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="propietarioPassword">
+                    <Lock className="inline h-4 w-4 mr-1" />
+                    Contraseña (opcional)
+                  </Label>
+                  <Input
+                    id="propietarioPassword"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    {...register('propietarioPassword')}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Si proporcionas una contraseña, podrás iniciar sesión después para ver tus citas y mascotas.
+                  </p>
+                  {errors.propietarioPassword && (
+                    <p className="text-sm text-destructive">{errors.propietarioPassword.message}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
