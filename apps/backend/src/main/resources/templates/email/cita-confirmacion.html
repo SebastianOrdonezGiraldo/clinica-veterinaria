@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Cita</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .info-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-row {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            width: 120px;
+        }
+        .value {
+            color: #333;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .highlight {
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:if="${logoUrl != null and logoUrl != ''}" th:src="${logoUrl}" alt="Logo" class="logo" />
+            <h1>Confirmación de Cita</h1>
+        </div>
+
+        <p>Estimado/a <span class="highlight" th:text="${propietarioNombre}">Propietario</span>,</p>
+
+        <p>Le confirmamos que su cita ha sido agendada exitosamente. A continuación encontrará los detalles:</p>
+
+        <div class="info-box">
+            <div class="info-row">
+                <span class="label">Mascota:</span>
+                <span class="value" th:text="${pacienteNombre}">Nombre de la mascota</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Fecha:</span>
+                <span class="value" th:text="${#temporals.format(fecha, 'dd/MM/yyyy')}">Fecha</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Hora:</span>
+                <span class="value" th:text="${#temporals.format(hora, 'HH:mm')}">Hora</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Veterinario:</span>
+                <span class="value" th:text="${profesionalNombre}">Nombre del veterinario</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Motivo:</span>
+                <span class="value" th:text="${motivo}">Motivo de la cita</span>
+            </div>
+        </div>
+
+        <p><strong>Importante:</strong></p>
+        <ul>
+            <li>Por favor, llegue 10 minutos antes de la hora programada.</li>
+            <li>Traiga el carnet de vacunación de su mascota si está disponible.</li>
+            <li>Si necesita cancelar o reprogramar, hágalo con al menos 24 horas de anticipación.</li>
+        </ul>
+
+        <p>Estamos a su disposición para cualquier consulta.</p>
+
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria</strong></p>
+            <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>
+
