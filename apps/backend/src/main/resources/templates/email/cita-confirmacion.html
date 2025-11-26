@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Cita</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4CAF50;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #4CAF50;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .reminder {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐾 Confirmación de Cita</h1>
+        </div>
+        
+        <div class="content">
+            <p>Estimado/a <strong th:text="${propietarioNombre}">Nombre del Propietario</strong>,</p>
+            
+            <p>Nos complace confirmar que su cita ha sido programada exitosamente:</p>
+            
+            <div class="info-box">
+                <strong>Mascota:</strong>
+                <span th:text="${pacienteNombre}">Nombre de la Mascota</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Fecha:</strong>
+                <span th:text="${#temporals.format(fecha, 'dd/MM/yyyy')}">DD/MM/YYYY</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Hora:</strong>
+                <span th:text="${#temporals.format(hora, 'HH:mm')}">HH:MM</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Veterinario:</strong>
+                <span th:text="${profesionalNombre}">Nombre del Veterinario</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Motivo:</strong>
+                <span th:text="${motivo}">Motivo de la consulta</span>
+            </div>
+            
+            <div class="reminder">
+                <strong>📌 Recordatorio importante:</strong>
+                <ul>
+                    <li>Por favor, llegue 10 minutos antes de la hora programada</li>
+                    <li>Traiga el carnet de vacunación de su mascota si lo tiene</li>
+                    <li>Si necesita cancelar o reprogramar, contáctenos con al menos 24 horas de anticipación</li>
+                </ul>
+            </div>
+            
+            <p>Estamos comprometidos con el bienestar de <strong th:text="${pacienteNombre}">su mascota</strong> y esperamos poder ayudarle.</p>
+            
+            <p>Si tiene alguna pregunta o necesita modificar su cita, no dude en contactarnos.</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria</strong></p>
+            <p>Gracias por confiar en nosotros para el cuidado de su mascota.</p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                Este es un correo automático, por favor no responda a este mensaje.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

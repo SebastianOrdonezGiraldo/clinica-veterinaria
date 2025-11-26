@@ -17,7 +17,7 @@ import { propietarioService } from '@features/propietarios/services/propietarioS
 const propietarioSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
   documento: z.string().max(20).optional(),
-  email: z.string().email('Email inválido').max(100).optional().or(z.literal('')),
+  email: z.string().email('Email inválido').min(1, 'El email es requerido').max(100),
   telefono: z.string().max(20).optional(),
   direccion: z.string().max(200).optional(),
 });
@@ -86,7 +86,7 @@ export default function PropietarioForm() {
       const propietarioData = {
         nombre: data.nombre,
         documento: data.documento || undefined,
-        email: data.email || undefined,
+        email: data.email, // Email es requerido
         telefono: data.telefono || undefined,
         direccion: data.direccion || undefined,
       };
@@ -201,12 +201,13 @@ export default function PropietarioForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   {...register('email')}
                   placeholder="correo@ejemplo.com"
+                  required
                 />
                 {errors.email && (
                   <p className="text-sm text-destructive">{errors.email.message}</p>

@@ -110,6 +110,13 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
+        <!-- Dotenv Java - Para leer archivos .env -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
         <!-- Dev Tools (para hot reload en desarrollo) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
