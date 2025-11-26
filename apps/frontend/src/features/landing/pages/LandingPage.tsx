@@ -306,7 +306,7 @@ export default function LandingPage() {
 
           <div>
             <h4 className="font-semibold mb-3">Contacto</h4>
-            <p className="text-gray-300 text-sm">+57 XXX XXX XXXX</p>
+            <p className="text-gray-300 text-sm">+573186160630</p>
             <p className="text-gray-300 text-sm">contacto@vetclinic.com</p>
           </div>
 
