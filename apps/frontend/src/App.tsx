@@ -9,6 +9,7 @@ import { AppLayout } from "@shared/components/layout/AppLayout";
 
 // Pages
 import Login from "@features/auth/pages/Login";
+import LandingPage from "@features/landing/pages/LandingPage";
 import Dashboard from "@features/dashboard/pages/Dashboard";
 import Pacientes from "@features/pacientes/pages/Pacientes";
 import PacienteDetalle from "@features/pacientes/pages/PacienteDetalle";
@@ -19,6 +20,7 @@ import PropietarioForm from "@features/propietarios/pages/PropietarioForm";
 import Agenda from "@features/agenda/pages/Agenda";
 import CitaForm from "@features/agenda/pages/CitaForm";
 import CitaDetalle from "@features/agenda/pages/CitaDetalle";
+import AgendarCitaPublica from "@features/agenda/pages/AgendarCitaPublica";
 import HistoriasClinicas from "@features/historias/pages/HistoriasClinicas";
 import HistoriaDetalle from "@features/historias/pages/HistoriaDetalle";
 import ConsultaForm from "@features/historias/pages/ConsultaForm";
@@ -39,10 +41,20 @@ function AppRoutes() {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Login />;
+}
+
+function HomeRoute() {
+  const { user } = useAuth();
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <LandingPage />;
 }
 
 const App = () => (
@@ -53,14 +65,16 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<AppRoutes />} />
+            <Route path="/agendar-cita" element={<AgendarCitaPublica />} />
             
             <Route element={
               <ProtectedRoute>
                 <AppLayout />
               </ProtectedRoute>
             }>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/pacientes" element={<Pacientes />} />
               <Route path="/pacientes/nuevo" element={<PacienteForm />} />
               <Route path="/pacientes/:id" element={<PacienteDetalle />} />

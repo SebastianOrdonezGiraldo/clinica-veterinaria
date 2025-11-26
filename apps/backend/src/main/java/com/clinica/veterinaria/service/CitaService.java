@@ -74,9 +74,11 @@ public class CitaService {
     private final SMSService smsService;
     
     // Configuración de horarios de atención
-    private static final LocalTime HORARIO_INICIO = LocalTime.of(8, 0);  // 8:00 AM
-    private static final LocalTime HORARIO_FIN = LocalTime.of(17, 0);     // 5:00 PM
-    private static final int DURACION_CITA_MINUTOS = 30;                  // Duración estándar
+    private static final LocalTime HORARIO_INICIO_MANANA = LocalTime.of(8, 0);   // 8:00 AM
+    private static final LocalTime HORARIO_FIN_MANANA = LocalTime.of(12, 0);     // 12:00 PM (mediodía)
+    private static final LocalTime HORARIO_INICIO_TARDE = LocalTime.of(14, 0);   // 2:00 PM
+    private static final LocalTime HORARIO_FIN_TARDE = LocalTime.of(18, 0);     // 6:00 PM
+    private static final int DURACION_CITA_MINUTOS = 30;                         // Duración estándar
     
     // Mensajes de log constantes
     private static final String MSG_CITA_NO_ENCONTRADA = "✗ Cita no encontrada con ID: {}";
@@ -226,20 +228,46 @@ public class CitaService {
                 "No se puede agendar una cita en el pasado. Fecha proporcionada: " + fecha);
         }
         
-        // 2. Validar horario de atención (lunes a viernes, 8 AM - 6 PM)
+        // 2. Validar horario de atención
+        // Lunes a viernes: 8am-12m y 2pm-6pm
+        // Sábados: 8am-12m
+        // Domingos: cerrado
         DayOfWeek diaSemana = fecha.getDayOfWeek();
-        if (diaSemana == DayOfWeek.SATURDAY || diaSemana == DayOfWeek.SUNDAY) {
-            log.error("✗ No se atiende los fines de semana: {}", fecha);
+        LocalTime hora = fecha.toLocalTime();
+        
+        // Validar domingos (cerrado)
+        if (diaSemana == DayOfWeek.SUNDAY) {
+            log.error("✗ No se atiende los domingos: {}", fecha);
             throw new BusinessException(
-                "La clínica no atiende los fines de semana. Por favor, seleccione un día hábil.");
+                "La clínica no atiende los domingos. Por favor, seleccione otro día.");
         }
         
-        LocalTime hora = fecha.toLocalTime();
-        if (hora.isBefore(HORARIO_INICIO) || hora.isAfter(HORARIO_FIN)) {
-            log.error("✗ Horario fuera de atención: {}", hora);
-            throw new BusinessException(
-                String.format("La cita debe estar dentro del horario de atención (%s - %s). Hora seleccionada: %s",
-                    HORARIO_INICIO, HORARIO_FIN, hora));
+        // Validar horarios según el día
+        boolean horarioValido = false;
+        
+        if (diaSemana == DayOfWeek.SATURDAY) {
+            // Sábados: solo 8am-12m
+            horarioValido = !hora.isBefore(HORARIO_INICIO_MANANA) && !hora.isAfter(HORARIO_FIN_MANANA);
+            if (!horarioValido) {
+                log.error("✗ Horario inválido para sábado: {}. Horario permitido: {} - {}", 
+                    hora, HORARIO_INICIO_MANANA, HORARIO_FIN_MANANA);
+                throw new BusinessException(
+                    String.format("Los sábados solo se atiende de %s a %s. Hora seleccionada: %s",
+                        HORARIO_INICIO_MANANA, HORARIO_FIN_MANANA, hora));
+            }
+        } else {
+            // Lunes a viernes: 8am-12m o 2pm-6pm
+            boolean enHorarioManana = !hora.isBefore(HORARIO_INICIO_MANANA) && !hora.isAfter(HORARIO_FIN_MANANA);
+            boolean enHorarioTarde = !hora.isBefore(HORARIO_INICIO_TARDE) && !hora.isAfter(HORARIO_FIN_TARDE);
+            horarioValido = enHorarioManana || enHorarioTarde;
+            
+            if (!horarioValido) {
+                log.error("✗ Horario fuera de atención: {}. Horarios permitidos: {} - {} o {} - {}", 
+                    hora, HORARIO_INICIO_MANANA, HORARIO_FIN_MANANA, HORARIO_INICIO_TARDE, HORARIO_FIN_TARDE);
+                throw new BusinessException(
+                    String.format("La cita debe estar dentro del horario de atención: %s - %s o %s - %s. Hora seleccionada: %s",
+                        HORARIO_INICIO_MANANA, HORARIO_FIN_MANANA, HORARIO_INICIO_TARDE, HORARIO_FIN_TARDE, hora));
+            }
         }
         
         // 3. Validar que no haya solapamiento de citas para el mismo profesional

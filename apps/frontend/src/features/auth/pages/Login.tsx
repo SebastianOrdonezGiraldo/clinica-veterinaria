@@ -22,7 +22,7 @@ export default function Login() {
     try {
       await login(email, password);
       toast.success('Sesión iniciada correctamente');
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       toast.error('Credenciales inválidas. Revisa los usuarios de prueba.');
     } finally {

@@ -236,34 +236,87 @@ class CitaServiceTest {
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción al crear cita en fin de semana")
-    void testCreateFinDeSemana() {
-        // Arrange - Calcular próximo sábado
+    @DisplayName("Debe lanzar excepción al crear cita en domingo")
+    void testCreateDomingo() {
+        // Arrange - Calcular próximo domingo
+        LocalDateTime ahora = LocalDateTime.now();
+        int diasHastaDomingo = DayOfWeek.SUNDAY.getValue() - ahora.getDayOfWeek().getValue();
+        if (diasHastaDomingo <= 0) {
+            diasHastaDomingo += 7; // Si ya pasó el domingo, usar el próximo
+        }
+        LocalDateTime fechaDomingo = ahora.plusDays(diasHastaDomingo).withHour(10).withMinute(0);
+
+        CitaDTO citaDTO = CitaDTO.builder()
+            .fecha(fechaDomingo)
+            .motivo("Consulta")
+            .pacienteId(1L)
+            .propietarioId(1L)
+            .profesionalId(1L)
+            .build();
+
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+        when(propietarioRepository.findById(1L)).thenReturn(Optional.of(propietario));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(profesional));
+
+        // Act & Assert
+        assertThrows(BusinessException.class, () -> citaService.create(citaDTO));
+        verify(citaRepository, never()).save(any(Cita.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear cita en sábado fuera del horario permitido")
+    void testCreateSabadoFueraHorario() {
+        // Arrange - Calcular próximo sábado a las 2pm (fuera del horario permitido)
         LocalDateTime ahora = LocalDateTime.now();
         int diasHastaSabado = DayOfWeek.SATURDAY.getValue() - ahora.getDayOfWeek().getValue();
         if (diasHastaSabado <= 0) {
             diasHastaSabado += 7; // Si ya pasó el sábado, usar el próximo
         }
-        LocalDateTime fechaSabado = ahora.plusDays(diasHastaSabado).withHour(10).withMinute(0);
+        LocalDateTime fechaSabado = ahora.plusDays(diasHastaSabado).withHour(14).withMinute(0);
 
-        // Solo ejecutar si realmente es fin de semana
-        if (fechaSabado.getDayOfWeek() == DayOfWeek.SATURDAY || fechaSabado.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            CitaDTO citaDTO = CitaDTO.builder()
-                .fecha(fechaSabado)
-                .motivo("Consulta")
-                .pacienteId(1L)
-                .propietarioId(1L)
-                .profesionalId(1L)
-                .build();
+        CitaDTO citaDTO = CitaDTO.builder()
+            .fecha(fechaSabado)
+            .motivo("Consulta")
+            .pacienteId(1L)
+            .propietarioId(1L)
+            .profesionalId(1L)
+            .build();
 
-            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
-            when(propietarioRepository.findById(1L)).thenReturn(Optional.of(propietario));
-            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(profesional));
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+        when(propietarioRepository.findById(1L)).thenReturn(Optional.of(propietario));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(profesional));
 
-            // Act & Assert
-            assertThrows(BusinessException.class, () -> citaService.create(citaDTO));
-            verify(citaRepository, never()).save(any(Cita.class));
+        // Act & Assert
+        assertThrows(BusinessException.class, () -> citaService.create(citaDTO));
+        verify(citaRepository, never()).save(any(Cita.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear cita en día hábil fuera del horario permitido")
+    void testCreateDiaHabilFueraHorario() {
+        // Arrange - Calcular próximo lunes a las 1pm (fuera del horario permitido)
+        LocalDateTime ahora = LocalDateTime.now();
+        int diasHastaLunes = DayOfWeek.MONDAY.getValue() - ahora.getDayOfWeek().getValue();
+        if (diasHastaLunes <= 0) {
+            diasHastaLunes += 7; // Si ya pasó el lunes, usar el próximo
         }
+        LocalDateTime fechaLunes = ahora.plusDays(diasHastaLunes).withHour(13).withMinute(0);
+
+        CitaDTO citaDTO = CitaDTO.builder()
+            .fecha(fechaLunes)
+            .motivo("Consulta")
+            .pacienteId(1L)
+            .propietarioId(1L)
+            .profesionalId(1L)
+            .build();
+
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+        when(propietarioRepository.findById(1L)).thenReturn(Optional.of(propietario));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(profesional));
+
+        // Act & Assert
+        assertThrows(BusinessException.class, () -> citaService.create(citaDTO));
+        verify(citaRepository, never()).save(any(Cita.class));
     }
 
     @Test
