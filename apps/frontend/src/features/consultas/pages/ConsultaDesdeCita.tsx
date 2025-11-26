@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,7 @@ import { SignosVitalesForm } from '../components/SignosVitalesForm';
 import { InfoPacientePanel } from '../components/InfoPacientePanel';
 import { HistorialRapido } from '../components/HistorialRapido';
 import { Cita, Paciente, Propietario } from '@core/types';
+import { AxiosError } from 'axios';
 
 const consultaSchema = z.object({
   frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
@@ -101,10 +102,11 @@ export default function ConsultaDesdeCita() {
       if (propietarioData.status === 'fulfilled') {
         setPropietario(propietarioData.value);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error al cargar datos de la cita:', error);
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message || 'Error al cargar los datos de la cita';
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const statusCode = axiosError?.response?.status;
+      const errorMessage = axiosError?.response?.data?.message || 'Error al cargar los datos de la cita';
 
       if (statusCode === 404) {
         setError('Cita no encontrada');
@@ -168,7 +170,7 @@ export default function ConsultaDesdeCita() {
         try {
           await citaService.updateEstado(cita.id, 'ATENDIDA');
           toast.success('Cita marcada como atendida');
-        } catch (error: any) {
+        } catch (error) {
           console.error('Error al marcar cita como atendida:', error);
           // No mostramos error porque la consulta ya se guardó exitosamente
         }
@@ -176,10 +178,11 @@ export default function ConsultaDesdeCita() {
 
       // Navegar de vuelta al detalle de la cita
       navigate(`/agenda/${citaId}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error al guardar consulta:', error);
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const statusCode = axiosError?.response?.status;
+      const errorMessage = axiosError?.response?.data?.message;
 
       if (statusCode === 400) {
         toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');

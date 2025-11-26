@@ -22,6 +22,7 @@ import CitaDetalle from "@features/agenda/pages/CitaDetalle";
 import HistoriasClinicas from "@features/historias/pages/HistoriasClinicas";
 import HistoriaDetalle from "@features/historias/pages/HistoriaDetalle";
 import ConsultaForm from "@features/historias/pages/ConsultaForm";
+import Consultas from "@features/consultas/pages/Consultas";
 import ConsultaDesdeCita from "@features/consultas/pages/ConsultaDesdeCita";
 import Prescripciones from "@features/prescripciones/pages/Prescripciones";
 import PrescripcionDetalle from "@features/prescripciones/pages/PrescripcionDetalle";
@@ -77,6 +78,11 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/agenda/:id" element={<CitaDetalle />} />
+              <Route path="/consultas" element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'VET']}>
+                  <Consultas />
+                </ProtectedRoute>
+              } />
               <Route path="/historias" element={<HistoriasClinicas />} />
               <Route path="/historias/:id" element={<HistoriaDetalle />} />
               <Route path="/historias/:pacienteId/nueva-consulta" element={<ConsultaForm />} />

@@ -9,12 +9,12 @@ export interface SignosVitalesData {
   pesoKg?: number;
 }
 
-interface SignosVitalesFormProps {
-  register: UseFormRegister<any>;
-  errors: FieldErrors<any>;
+interface SignosVitalesFormProps<T extends SignosVitalesData> {
+  register: UseFormRegister<T>;
+  errors: FieldErrors<T>;
 }
 
-export function SignosVitalesForm({ register, errors }: SignosVitalesFormProps) {
+export function SignosVitalesForm<T extends SignosVitalesData>({ register, errors }: SignosVitalesFormProps<T>) {
   return (
     <div className="grid gap-4 md:grid-cols-4">
       <div className="space-y-2">
