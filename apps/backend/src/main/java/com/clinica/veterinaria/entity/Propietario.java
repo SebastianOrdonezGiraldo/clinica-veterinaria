@@ -79,6 +79,11 @@ public class Propietario {
     @Column(nullable = false, length = 100)
     private String email;
 
+    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Column(nullable = true)
+    @ToString.Exclude // No mostrar en logs por seguridad
+    private String password;
+
     @Size(max = 20, message = "El teléfono no puede exceder 20 caracteres")
     @Column(length = 20)
     private String telefono;

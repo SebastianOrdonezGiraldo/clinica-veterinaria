@@ -9,6 +9,7 @@ import com.clinica.veterinaria.repository.PacienteRepository;
 import com.clinica.veterinaria.repository.PropietarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ public class CitaPublicaService {
     private final PacienteService pacienteService;
     private final PropietarioRepository propietarioRepository;
     private final PacienteRepository pacienteRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Crea una cita pública con registro opcional de propietario y paciente.
@@ -114,8 +116,17 @@ public class CitaPublicaService {
             if (propietario != null) {
                 log.info("Propietario encontrado por email - ID: {}", propietario.getId());
                 propietarioId = propietario.getId();
+                
+                // Si el propietario existe pero no tiene contraseña y se proporciona una, actualizarla
+                if ((propietario.getPassword() == null || propietario.getPassword().trim().isEmpty()) 
+                    && request.getPropietarioNuevo().getPassword() != null 
+                    && !request.getPropietarioNuevo().getPassword().trim().isEmpty()) {
+                    propietario.setPassword(passwordEncoder.encode(request.getPropietarioNuevo().getPassword()));
+                    propietarioRepository.save(propietario);
+                    log.info("✓ Contraseña agregada al propietario existente - ID: {}", propietarioId);
+                }
             } else {
-                // Crear nuevo propietario
+                // Crear nuevo propietario con contraseña si se proporciona
                 PropietarioDTO propietarioDTO = PropietarioDTO.builder()
                     .nombre(request.getPropietarioNuevo().getNombre())
                     .documento(request.getPropietarioNuevo().getDocumento())
@@ -124,9 +135,16 @@ public class CitaPublicaService {
                     .direccion(request.getPropietarioNuevo().getDireccion())
                     .build();
                 
-                PropietarioDTO creado = propietarioService.create(propietarioDTO);
+                PropietarioDTO creado;
+                if (request.getPropietarioNuevo().getPassword() != null 
+                    && !request.getPropietarioNuevo().getPassword().trim().isEmpty()) {
+                    creado = propietarioService.createWithPassword(propietarioDTO, request.getPropietarioNuevo().getPassword());
+                    log.info("✓ Propietario creado con contraseña - ID: {}", creado.getId());
+                } else {
+                    creado = propietarioService.create(propietarioDTO);
+                    log.info("✓ Propietario creado sin contraseña - ID: {}", creado.getId());
+                }
                 propietarioId = creado.getId();
-                log.info("✓ Propietario creado - ID: {}", propietarioId);
             }
             
             // Crear nuevo paciente asociado al propietario

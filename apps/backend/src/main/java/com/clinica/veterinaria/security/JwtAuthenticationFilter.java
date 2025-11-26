@@ -9,6 +9,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final ClienteUserDetailsService clienteUserDetailsService;
 
     /**
      * Filtra cada request para validar el token JWT
@@ -54,11 +56,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Si tenemos username y no hay autenticación en el contexto
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             
-            // Cargar los detalles del usuario
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = null;
+            
+            try {
+                // Intentar extraer el rol del token
+                String rol = jwtUtil.extractRole(jwt);
+                
+                // Cargar los detalles según el tipo de usuario
+                if ("CLIENTE".equals(rol)) {
+                    userDetails = this.clienteUserDetailsService.loadUserByUsername(username);
+                } else {
+                    userDetails = this.userDetailsService.loadUserByUsername(username);
+                }
+            } catch (Exception e) {
+                // Si no se puede extraer el rol, intentar como usuario del sistema
+                try {
+                    userDetails = this.userDetailsService.loadUserByUsername(username);
+                } catch (UsernameNotFoundException ex) {
+                    // Si falla, intentar como cliente
+                    try {
+                        userDetails = this.clienteUserDetailsService.loadUserByUsername(username);
+                    } catch (UsernameNotFoundException ex2) {
+                        logger.error("Usuario no encontrado: " + username);
+                    }
+                }
+            }
 
-            // Validar el token
-            if (Boolean.TRUE.equals(jwtUtil.validateToken(jwt, userDetails))) {
+            // Validar el token si tenemos userDetails
+            if (userDetails != null && Boolean.TRUE.equals(jwtUtil.validateToken(jwt, userDetails))) {
                 
                 // Crear el objeto de autenticación
                 UsernamePasswordAuthenticationToken authenticationToken = 

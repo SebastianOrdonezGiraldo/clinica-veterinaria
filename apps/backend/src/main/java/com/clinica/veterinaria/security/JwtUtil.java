@@ -103,6 +103,13 @@ public class JwtUtil {
     }
 
     /**
+     * Extrae el rol del token
+     */
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("rol", String.class));
+    }
+
+    /**
      * Extrae un claim específico del token
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

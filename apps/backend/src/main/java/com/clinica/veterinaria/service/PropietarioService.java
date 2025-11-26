@@ -12,6 +12,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,7 @@ import java.util.stream.Collectors;
 public class PropietarioService {
 
     private final PropietarioRepository propietarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Obtiene todos los propietarios registrados.
@@ -119,6 +121,21 @@ public class PropietarioService {
     }
 
     /**
+     * Busca un propietario por su email.
+     * 
+     * @param email Email del propietario. No puede ser null.
+     * @return DTO con la información del propietario.
+     * @throws ResourceNotFoundException si el propietario no existe.
+     */
+    @Transactional(readOnly = true)
+    public PropietarioDTO findByEmail(@NonNull String email) {
+        log.debug("Buscando propietario con email: {}", email);
+        Propietario propietario = propietarioRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("Propietario", "email", email));
+        return PropietarioDTO.fromEntity(propietario, true);
+    }
+
+    /**
      * Registra un nuevo propietario en el sistema.
      * 
      * <p>Valida que el documento sea único antes de crear el registro.</p>
@@ -154,6 +171,46 @@ public class PropietarioService {
         propietario = propietarioRepository.save(propietario);
         log.info("✓ Propietario creado exitosamente con ID: {} | Nombre: {}", 
                 propietario.getId(), propietario.getNombre());
+        
+        return PropietarioDTO.fromEntity(propietario);
+    }
+
+    /**
+     * Crea un nuevo propietario con contraseña (para registro de clientes).
+     * 
+     * @param dto Datos del nuevo propietario. No puede ser null.
+     * @param password Contraseña en texto plano (se hasheará antes de guardar). Puede ser null.
+     * @return DTO con los datos del propietario creado.
+     */
+    @CacheEvict(value = "propietarios", allEntries = true)
+    @SuppressWarnings("null")
+    public PropietarioDTO createWithPassword(@NonNull PropietarioDTO dto, String password) {
+        log.info("→ Creando nuevo propietario con contraseña: {}", dto.getNombre());
+        
+        // VALIDACIÓN: Documento único si se proporciona
+        if (dto.getDocumento() != null && !dto.getDocumento().trim().isEmpty()) {
+            if (propietarioRepository.existsByDocumento(dto.getDocumento())) {
+                log.error("✗ Documento duplicado: {}", dto.getDocumento());
+                throw new DuplicateResourceException("Propietario", "documento", dto.getDocumento());
+            }
+        }
+
+        Propietario.PropietarioBuilder builder = Propietario.builder()
+            .nombre(dto.getNombre())
+            .documento(dto.getDocumento())
+            .email(dto.getEmail())
+            .telefono(dto.getTelefono())
+            .direccion(dto.getDireccion())
+            .activo(true);
+
+        // Hashear contraseña si se proporciona
+        if (password != null && !password.trim().isEmpty()) {
+            builder.password(passwordEncoder.encode(password));
+        }
+
+        Propietario propietario = builder.build();
+        propietario = propietarioRepository.save(propietario);
+        log.info("✓ Propietario creado con contraseña - ID: {}", propietario.getId());
         
         return PropietarioDTO.fromEntity(propietario);
     }

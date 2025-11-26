@@ -94,6 +94,9 @@ public class CitaPublicaRequestDTO {
 
         @Size(max = 200, message = "La dirección no puede exceder 200 caracteres")
         private String direccion;
+
+        @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+        private String password; // Opcional: solo si el cliente quiere crear cuenta
     }
 
     /**

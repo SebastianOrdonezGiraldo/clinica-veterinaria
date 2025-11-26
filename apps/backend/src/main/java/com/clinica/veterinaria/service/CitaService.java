@@ -153,6 +153,23 @@ public class CitaService {
     }
 
     /**
+     * Obtiene todas las citas de un propietario específico.
+     * 
+     * <p>Este método es útil para que los clientes vean todas sus citas.
+     * Incluye citas de todos los estados.</p>
+     * 
+     * @param propietarioId ID del propietario. No puede ser null.
+     * @return Lista de citas del propietario. Puede estar vacía.
+     */
+    @Transactional(readOnly = true)
+    public List<CitaDTO> findByPropietario(@NonNull Long propietarioId) {
+        log.debug("Buscando citas del propietario con ID: {}", propietarioId);
+        return citaRepository.findByPropietarioId(propietarioId).stream()
+            .map(c -> CitaDTO.fromEntity(c, true))
+            .toList();
+    }
+
+    /**
      * Filtra citas por su estado actual.
      * 
      * <p>Estados disponibles:</p>
