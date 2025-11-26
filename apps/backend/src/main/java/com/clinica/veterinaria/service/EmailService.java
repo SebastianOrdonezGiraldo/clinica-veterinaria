@@ -47,6 +47,9 @@ public class EmailService {
     @Value("${app.mail.from-name:Clínica Veterinaria}")
     private String fromName;
 
+    @Value("${app.mail.logo.url:}")
+    private String logoUrl;
+
     /**
      * Envía un email simple en texto plano.
      * 
@@ -162,7 +165,8 @@ public class EmailService {
             context.setVariable("hora", fecha.toLocalTime());
             context.setVariable("motivo", motivo);
             context.setVariable("profesionalNombre", profesionalNombre);
-            context.setVariable("clinicaNombre", "Clínica Veterinaria");
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
 
             String subject = String.format("Confirmación de cita - %s", pacienteNombre);
             
@@ -196,8 +200,9 @@ public class EmailService {
             context.setVariable("hora", fecha.toLocalTime());
             context.setVariable("motivo", motivo);
             context.setVariable("profesionalNombre", profesionalNombre);
-            context.setVariable("clinicaNombre", "Clínica Veterinaria");
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
             context.setVariable("razonCancelacion", razonCancelacion);
+            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
 
             String subject = String.format("Cancelación de cita - %s", pacienteNombre);
             
@@ -231,8 +236,9 @@ public class EmailService {
             context.setVariable("hora", fecha.toLocalTime());
             context.setVariable("motivo", motivo);
             context.setVariable("profesionalNombre", profesionalNombre);
-            context.setVariable("clinicaNombre", "Clínica Veterinaria");
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
             context.setVariable("nuevoEstado", nuevoEstado);
+            context.setVariable("logoUrl", logoUrl != null && !logoUrl.isEmpty() ? logoUrl : "");
 
             String subject;
             if ("CONFIRMADA".equals(nuevoEstado)) {
