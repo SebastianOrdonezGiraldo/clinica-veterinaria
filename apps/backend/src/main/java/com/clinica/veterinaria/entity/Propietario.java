@@ -73,9 +73,10 @@ public class Propietario {
     @Column(length = 20)
     private String documento;
 
+    @NotBlank(message = "El email es requerido")
     @Email(message = "Email debe ser válido")
     @Size(max = 100, message = "El email no puede exceder 100 caracteres")
-    @Column(length = 100)
+    @Column(nullable = false, length = 100)
     private String email;
 
     @Size(max = 20, message = "El teléfono no puede exceder 20 caracteres")

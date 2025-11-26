@@ -12,7 +12,7 @@ export interface Propietario {
   id: string;
   nombre: string;
   documento?: string;
-  email?: string;
+  email: string; // Requerido para poder enviar confirmaciones de citas
   telefono?: string;
   direccion?: string;
   activo?: boolean;

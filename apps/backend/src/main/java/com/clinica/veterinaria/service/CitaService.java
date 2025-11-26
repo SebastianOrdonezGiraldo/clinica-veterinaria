@@ -70,6 +70,8 @@ public class CitaService {
     private final PropietarioRepository propietarioRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
+    private final EmailService emailService;
+    private final SMSService smsService;
     
     // Configuración de horarios de atención
     private static final LocalTime HORARIO_INICIO = LocalTime.of(8, 0);  // 8:00 AM
@@ -376,6 +378,54 @@ public class CitaService {
             );
         } catch (Exception e) {
             log.warn("No se pudo crear notificación para la cita: {}", e.getMessage());
+        }
+        
+        // Enviar email de confirmación al propietario
+        if (propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.sendCitaConfirmacionEmail(
+                        propietario.getEmail(),
+                        propietario.getNombre(),
+                        paciente.getNombre(),
+                        dto.getFecha(),
+                        dto.getMotivo(),
+                        profesional.getNombre()
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de confirmación enviado a: {}", propietario.getEmail());
+                } else {
+                    log.warn("No se pudo enviar email de confirmación a: {}", propietario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("Error al enviar email de confirmación: {}", e.getMessage());
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        } else {
+            log.debug("Propietario sin email, no se envía confirmación por correo");
+        }
+        
+        // Enviar SMS de confirmación al propietario (si está habilitado)
+        if (propietario.getTelefono() != null && !propietario.getTelefono().trim().isEmpty()) {
+            try {
+                String telefonoNormalizado = smsService.normalizePhoneNumber(propietario.getTelefono());
+                boolean smsEnviado = smsService.sendCitaConfirmacionSMS(
+                        telefonoNormalizado,
+                        propietario.getNombre(),
+                        paciente.getNombre(),
+                        dto.getFecha(),
+                        dto.getMotivo()
+                );
+                if (smsEnviado) {
+                    log.info("✓ SMS de confirmación enviado a: {}", telefonoNormalizado);
+                } else {
+                    log.debug("SMS no enviado (puede estar deshabilitado o sin configuración)");
+                }
+            } catch (Exception e) {
+                log.error("Error al enviar SMS de confirmación: {}", e.getMessage());
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        } else {
+            log.debug("Propietario sin teléfono, no se envía confirmación por SMS");
         }
         
         return CitaDTO.fromEntity(cita, true);

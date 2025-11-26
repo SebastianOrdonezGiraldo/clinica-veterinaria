@@ -108,6 +108,18 @@ public interface PropietarioRepository extends JpaRepository<Propietario, Long> 
     Page<Propietario> findByTelefonoContaining(String telefono, Pageable pageable);
     
     /**
+     * Busca propietarios por email con paginación.
+     * 
+     * <p>Busca coincidencias parciales en el email.
+     * Útil para búsquedas cuando se conoce el email del cliente.</p>
+     * 
+     * @param email Email o parte del email a buscar
+     * @param pageable Configuración de paginación y ordenamiento
+     * @return Página de propietarios que coinciden con el email
+     */
+    Page<Propietario> findByEmailContainingIgnoreCase(String email, Pageable pageable);
+    
+    /**
      * Busca propietarios por nombre y documento con paginación.
      * 
      * <p>Permite búsqueda combinada por nombre y documento.

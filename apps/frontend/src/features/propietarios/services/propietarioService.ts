@@ -7,7 +7,7 @@ import { Propietario, PageResponse, PageParams } from '@core/types';
 export interface PropietarioDTO {
   nombre: string;
   documento?: string;
-  email?: string;
+  email: string; // Requerido para poder enviar confirmaciones de citas
   telefono?: string;
   direccion?: string;
 }
@@ -19,6 +19,7 @@ export interface PropietarioSearchParams extends PageParams {
   nombre?: string;
   documento?: string;
   telefono?: string;
+  email?: string;
 }
 
 /**
@@ -108,6 +109,7 @@ export const propietarioService = {
         nombre: params.nombre || undefined,
         documento: params.documento || undefined,
         telefono: params.telefono || undefined,
+        email: params.email || undefined,
         page: params.page ?? 0,
         size: params.size ?? 20,
         sort: params.sort || 'nombre,asc',

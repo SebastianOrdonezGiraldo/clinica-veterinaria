@@ -256,6 +256,7 @@ public class PropietarioService {
      *   <li><b>Por nombre:</b> Búsqueda parcial case-insensitive</li>
      *   <li><b>Por documento:</b> Búsqueda parcial en documento de identidad</li>
      *   <li><b>Por teléfono:</b> Búsqueda parcial en número telefónico</li>
+     *   <li><b>Por email:</b> Búsqueda parcial en email (case-insensitive)</li>
      *   <li><b>Nombre + documento:</b> Búsqueda combinada para mayor precisión</li>
      * </ul>
      * 
@@ -263,19 +264,22 @@ public class PropietarioService {
      * <pre>
      * // Caso 1: Buscar por nombre
      * Pageable pageable = PageRequest.of(0, 20, Sort.by("nombre"));
-     * Page&lt;PropietarioDTO&gt; result = service.searchWithFilters("Juan", null, null, pageable);
+     * Page&lt;PropietarioDTO&gt; result = service.searchWithFilters("Juan", null, null, null, pageable);
      * 
      * // Caso 2: Buscar por documento
-     * result = service.searchWithFilters(null, "12345", null, pageable);
+     * result = service.searchWithFilters(null, "12345", null, null, pageable);
      * 
      * // Caso 3: Buscar por nombre y documento (más preciso)
-     * result = service.searchWithFilters("Juan", "12345", null, pageable);
+     * result = service.searchWithFilters("Juan", "12345", null, null, pageable);
      * 
      * // Caso 4: Buscar por teléfono
-     * result = service.searchWithFilters(null, null, "555", pageable);
+     * result = service.searchWithFilters(null, null, "555", null, pageable);
      * 
-     * // Caso 5: Todos los propietarios (sin filtros)
-     * result = service.searchWithFilters(null, null, null, pageable);
+     * // Caso 5: Buscar por email
+     * result = service.searchWithFilters(null, null, null, "gmail", pageable);
+     * 
+     * // Caso 6: Todos los propietarios (sin filtros)
+     * result = service.searchWithFilters(null, null, null, null, pageable);
      * </pre>
      * 
      * <p><strong>Ventajas del enfoque Strategy:</strong></p>
@@ -289,6 +293,7 @@ public class PropietarioService {
      * @param nombre Texto a buscar en el nombre (opcional, null = sin filtro)
      * @param documento Texto a buscar en el documento (opcional, null = sin filtro)
      * @param telefono Texto a buscar en el teléfono (opcional, null = sin filtro)
+     * @param email Texto a buscar en el email (opcional, null = sin filtro)
      * @param pageable Configuración de paginación y ordenamiento. No puede ser null.
      * @return Página de propietarios que cumplen los criterios de búsqueda
      */
@@ -297,10 +302,11 @@ public class PropietarioService {
             String nombre, 
             String documento, 
             String telefono,
+            String email,
             Pageable pageable) {
         
-        log.debug("Buscando propietarios con filtros - nombre: {}, documento: {}, telefono: {}, page: {}", 
-            nombre, documento, telefono, pageable.getPageNumber());
+        log.debug("Buscando propietarios con filtros - nombre: {}, documento: {}, telefono: {}, email: {}, page: {}", 
+            nombre, documento, telefono, email, pageable.getPageNumber());
         
         Page<Propietario> propietarios;
         
@@ -330,7 +336,13 @@ public class PropietarioService {
             propietarios = propietarioRepository
                 .findByTelefonoContaining(telefono, pageable);
         }
-        // Estrategia 5: Sin filtros, todos los propietarios
+        // Estrategia 5: Búsqueda solo por email
+        else if (isNotEmpty(email)) {
+            log.debug("Estrategia: Búsqueda solo por email");
+            propietarios = propietarioRepository
+                .findByEmailContainingIgnoreCase(email, pageable);
+        }
+        // Estrategia 6: Sin filtros, todos los propietarios
         else {
             log.debug("Estrategia: Sin filtros, retornar todos");
             propietarios = propietarioRepository.findAll(pageable);

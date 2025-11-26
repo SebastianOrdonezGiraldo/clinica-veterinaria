@@ -151,13 +151,14 @@ public class PropietarioController {
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String documento,
             @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String email,
             Pageable pageable) {
         
-        log.info("GET /api/propietarios/search - nombre: {}, documento: {}, telefono: {}, page: {}, size: {}", 
-            nombre, documento, telefono, pageable.getPageNumber(), pageable.getPageSize());
+        log.info("GET /api/propietarios/search - nombre: {}, documento: {}, telefono: {}, email: {}, page: {}, size: {}", 
+            nombre, documento, telefono, email, pageable.getPageNumber(), pageable.getPageSize());
         
         Page<PropietarioDTO> result = propietarioService.searchWithFilters(
-            nombre, documento, telefono, pageable);
+            nombre, documento, telefono, email, pageable);
         
         log.info("✓ Encontrados {} propietarios | Página {}/{} | Total: {}", 
             result.getNumberOfElements(), 

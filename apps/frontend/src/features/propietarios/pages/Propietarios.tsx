@@ -36,7 +36,7 @@ export default function Propietarios() {
   // ESTADO: Búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<'nombre' | 'documento' | 'telefono'>('nombre');
+  const [searchType, setSearchType] = useState<'nombre' | 'documento' | 'telefono' | 'email'>('nombre');
   const [orderBy, setOrderBy] = useState<'nombre,asc' | 'nombre,desc' | 'documento,asc'>('nombre,asc');
   
   // ESTADO: UI
@@ -76,14 +76,24 @@ export default function Propietarios() {
       setIsLoading(true);
       
       // Construir parámetros de búsqueda según el tipo seleccionado
-      const searchParams = {
+      const searchParams: any = {
         page: currentPage,
         size: itemsPerPage,
         sort: orderBy,
-        ...(debouncedSearchTerm && {
-          [searchType]: debouncedSearchTerm, // Búsqueda dinámica por tipo
-        }),
       };
+      
+      // Agregar el filtro correspondiente según el tipo de búsqueda
+      if (debouncedSearchTerm) {
+        if (searchType === 'nombre') {
+          searchParams.nombre = debouncedSearchTerm;
+        } else if (searchType === 'documento') {
+          searchParams.documento = debouncedSearchTerm;
+        } else if (searchType === 'telefono') {
+          searchParams.telefono = debouncedSearchTerm;
+        } else if (searchType === 'email') {
+          searchParams.email = debouncedSearchTerm;
+        }
+      }
       
       const result = await propietarioService.searchWithFilters(searchParams);
       setPropietariosPage(result);
@@ -145,7 +155,7 @@ export default function Propietarios() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Select value={searchType} onValueChange={(v) => setSearchType(v as 'nombre' | 'documento' | 'telefono')}>
+        <Select value={searchType} onValueChange={(v) => setSearchType(v as 'nombre' | 'documento' | 'telefono' | 'email')}>
           <SelectTrigger>
             <SelectValue placeholder="Buscar por" />
           </SelectTrigger>
@@ -153,6 +163,7 @@ export default function Propietarios() {
             <SelectItem value="nombre">Buscar por Nombre</SelectItem>
             <SelectItem value="documento">Buscar por Documento</SelectItem>
             <SelectItem value="telefono">Buscar por Teléfono</SelectItem>
+            <SelectItem value="email">Buscar por Email</SelectItem>
           </SelectContent>
         </Select>
         <Select value={orderBy} onValueChange={(v) => setOrderBy(v as any)}>

@@ -55,6 +55,7 @@ public class PropietarioDTO {
     @Size(max = 20, message = "El documento no puede exceder 20 caracteres")
     private String documento;
 
+    @NotBlank(message = "El email es requerido")
     @Email(message = "Email debe ser válido")
     @Size(max = 100, message = "El email no puede exceder 100 caracteres")
     private String email;
