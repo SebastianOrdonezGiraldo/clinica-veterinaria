@@ -335,6 +335,15 @@ public class CitaService {
                 return new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId());
             });
         
+        // Validar que el propietario tenga email (requerido para enviar confirmaciones)
+        if (propietario.getEmail() == null || propietario.getEmail().trim().isEmpty()) {
+            log.error("✗ El propietario {} no tiene email registrado", propietario.getId());
+            throw new BusinessException(
+                String.format("El propietario '%s' no tiene un email registrado. " +
+                    "Por favor, actualice los datos del propietario con un email válido antes de crear la cita.",
+                    propietario.getNombre()));
+        }
+        
         Usuario profesional = usuarioRepository.findById(dto.getProfesionalId())
             .orElseThrow(() -> {
                 log.error("✗ Profesional no encontrado con ID: {}", dto.getProfesionalId());
