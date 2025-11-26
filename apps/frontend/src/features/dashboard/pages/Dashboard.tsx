@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
 import { Calendar, Dog, Users, Activity, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
+import { Skeleton } from '@shared/components/ui/skeleton';
 import { useAuth } from '@core/auth/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { dashboardService, DashboardStats } from '@features/dashboard/services/dashboardService';
+import { useDashboard } from '../hooks/useDashboard';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed',
@@ -17,29 +17,36 @@ const statusColors = {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { stats, isLoading } = useDashboard();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-9 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      const data = await dashboardService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Error al cargar estadísticas:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading || !stats) {
+  if (!stats) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Cargando estadísticas...</p>
+        <p className="text-muted-foreground">No se pudieron cargar las estadísticas</p>
       </div>
     );
   }

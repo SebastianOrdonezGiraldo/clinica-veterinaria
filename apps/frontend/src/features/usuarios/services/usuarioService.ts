@@ -1,5 +1,5 @@
 import axios from '@core/api/axios';
-import { Usuario } from '@core/types';
+import { Usuario, PageResponse, PageParams } from '@core/types';
 
 export interface UsuarioCreateDTO {
   nombre: string;
@@ -21,6 +21,12 @@ export interface ResetPasswordDTO {
   password: string;
 }
 
+export interface UsuarioSearchParams extends PageParams {
+  nombre?: string;
+  rol?: 'ADMIN' | 'VET' | 'RECEPCION' | 'ESTUDIANTE';
+  activo?: boolean;
+}
+
 // Función helper para normalizar IDs (convertir números a strings)
 const normalizeUsuario = (usuario: any): Usuario => ({
   ...usuario,
@@ -28,9 +34,35 @@ const normalizeUsuario = (usuario: any): Usuario => ({
 });
 
 export const usuarioService = {
+  /**
+   * Obtiene todos los usuarios sin paginación
+   * @deprecated Usar searchWithFilters para mejor rendimiento
+   */
   async getAll(): Promise<Usuario[]> {
     const response = await axios.get<any[]>('/usuarios');
     return response.data.map(normalizeUsuario);
+  },
+
+  /**
+   * Busca usuarios con filtros y paginación del lado del servidor.
+   * Este es el método recomendado para listados.
+   */
+  async searchWithFilters(params: UsuarioSearchParams = {}): Promise<PageResponse<Usuario>> {
+    const response = await axios.get<PageResponse<any>>('/usuarios/search', {
+      params: {
+        nombre: params.nombre || undefined,
+        rol: params.rol || undefined,
+        activo: params.activo !== undefined ? params.activo : undefined,
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort || 'nombre,asc',
+      },
+    });
+    
+    return {
+      ...response.data,
+      content: response.data.content.map(normalizeUsuario),
+    };
   },
 
   async getById(id: string): Promise<Usuario> {

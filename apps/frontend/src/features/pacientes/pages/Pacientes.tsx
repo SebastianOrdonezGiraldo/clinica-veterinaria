@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Dog, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
@@ -10,107 +10,61 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@shared/components/ui/alert-dialog';
 import { LoadingCards } from '@shared/components/common/LoadingCards';
 import { Pagination } from '@shared/components/common/Pagination';
-import { toast } from 'sonner';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
-import { propietarioService } from '@features/propietarios/services/propietarioService';
-import { Paciente, Propietario, PageResponse } from '@core/types';
+import { useDebounce } from '@shared/hooks/useDebounce';
+import { usePacientes } from '../hooks/usePacientes';
+import { useAllPropietarios } from '@features/propietarios/hooks/usePropietarios';
 
 export default function Pacientes() {
   const navigate = useNavigate();
-  const [pacientesPage, setPacientesPage] = useState<PageResponse<Paciente> | null>(null);
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [especieFiltro, setEspecieFiltro] = useState('todos');
   const [orderBy, setOrderBy] = useState<'nombre' | 'especie' | 'edad'>('nombre');
-  const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(0); // 0-indexed para backend
+  const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 9;
 
-  // Debounce para búsqueda (esperar 500ms después de que el usuario deje de escribir)
+  // Debounce del término de búsqueda
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Cargar propietarios con React Query usando hook personalizado
+  const { propietarios = [] } = useAllPropietarios();
+
+  // Mapear orderBy a formato Spring
+  const sortParam = useMemo(() => {
+    if (orderBy === 'especie') return 'especie,asc';
+    if (orderBy === 'edad') return 'edadMeses,desc';
+    return 'nombre,asc';
+  }, [orderBy]);
+
+  // Usar hook personalizado con React Query
+  const {
+    pacientesPage,
+    pacientes,
+    isLoading,
+    deletePaciente,
+    isDeleting,
+  } = usePacientes({
+    nombre: debouncedSearchTerm || undefined,
+    especie: especieFiltro !== 'todos' ? especieFiltro : undefined,
+    page: currentPage,
+    size: itemsPerPage,
+    sort: sortParam,
+  });
+
+  // Resetear página cuando cambia la búsqueda
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(0); // Reset a página 1 cuando cambia la búsqueda
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // Cargar propietarios una sola vez
-  useEffect(() => {
-    loadPropietarios();
-  }, []);
-
-  // Cargar pacientes cuando cambian los filtros o la página
-  useEffect(() => {
-    loadPacientes();
-  }, [debouncedSearchTerm, especieFiltro, orderBy, currentPage]);
-
-  const loadPropietarios = async () => {
-    try {
-      const propietariosData = await propietarioService.getAll();
-      setPropietarios(propietariosData);
-    } catch (error) {
-      console.error('Error al cargar propietarios:', error);
-      toast.error('Error al cargar los propietarios');
-    }
-  };
-
-  const loadPacientes = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Mapear especie normalizada a especie real para el backend
-      let especieParam: string | undefined;
-      if (especieFiltro !== 'todos') {
-        especieParam = especieFiltro;
-      }
-      
-      // Mapear orderBy a formato Spring (campo,dirección)
-      let sortParam = 'nombre,asc';
-      if (orderBy === 'especie') {
-        sortParam = 'especie,asc';
-      } else if (orderBy === 'edad') {
-        sortParam = 'edadMeses,desc';
-      }
-      
-      const response = await pacienteService.searchWithFilters({
-        nombre: debouncedSearchTerm || undefined,
-        especie: especieParam,
-        page: currentPage,
-        size: itemsPerPage,
-        sort: sortParam,
-      });
-      
-      setPacientesPage(response);
-    } catch (error) {
-      console.error('Error al cargar pacientes:', error);
-      toast.error('Error al cargar los pacientes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setCurrentPage(0);
+  }, [debouncedSearchTerm]);
 
   const getPropietario = (id: string) => propietarios.find(p => p.id === id);
   
-  const pacientes = pacientesPage?.content || [];
   const totalPages = pacientesPage?.totalPages || 0;
   const totalElements = pacientesPage?.totalElements || 0;
 
   const handleDelete = async () => {
     if (!deleteId) return;
-
-    try {
-      await pacienteService.delete(deleteId);
-      toast.success('Paciente eliminado exitosamente');
-      setDeleteId(null);
-      await loadPacientes(); // Recargar los pacientes
-    } catch (error: any) {
-      console.error('Error al eliminar paciente:', error);
-      toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al eliminar el paciente');
-    }
+    deletePaciente(deleteId);
+    setDeleteId(null);
   };
 
   return (

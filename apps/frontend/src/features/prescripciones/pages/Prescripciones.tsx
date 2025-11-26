@@ -1,89 +1,92 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pill, FileText, Calendar, User, Plus, AlertCircle } from 'lucide-react';
+import { Pill, FileText, Calendar, User, Plus, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
-import { Skeleton } from '@shared/components/ui/skeleton';
-import { toast } from 'sonner';
-import { prescripcionService } from '@features/prescripciones/services/prescripcionService';
+import { Input } from '@shared/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
+import { LoadingCards } from '@shared/components/common/LoadingCards';
+import { Pagination } from '@shared/components/common/Pagination';
+import { EmptyState } from '@shared/components/common/EmptyState';
+import { ErrorState } from '@shared/components/common/ErrorState';
+import { useDebounce } from '@shared/hooks/useDebounce';
+import { usePrescripciones } from '../hooks/usePrescripciones';
+import { useAllPacientes } from '@features/pacientes/hooks/usePacientes';
+import { useQuery } from '@tanstack/react-query';
 import { consultaService } from '@features/historias/services/consultaService';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
-import { Prescripcion, Consulta, Paciente, Usuario } from '@core/types';
+import { Consulta, Usuario } from '@core/types';
 
 export default function Prescripciones() {
   const navigate = useNavigate();
-  const [prescripciones, setPrescripciones] = useState<Prescripcion[]>([]);
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filtroPaciente, setFiltroPaciente] = useState<string>('todos');
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Cargar datos en paralelo
-      const results = await Promise.allSettled([
-        prescripcionService.getAll(),
-        consultaService.getAll(),
-        pacienteService.getAll(),
-        usuarioService.getAll(),
-      ]);
+  // Cargar pacientes para el filtro
+  const { pacientes = [] } = useAllPacientes();
 
-      if (results[0].status === 'fulfilled') {
-        setPrescripciones(results[0].value);
-      } else {
-        console.error('Error al cargar prescripciones:', results[0].reason);
-        const errorMessage = results[0].reason?.response?.data?.message || 'Error al cargar prescripciones';
-        toast.error(errorMessage);
-        setError(errorMessage);
-      }
-
-      if (results[1].status === 'fulfilled') {
-        setConsultas(results[1].value);
-      }
-
-      if (results[2].status === 'fulfilled') {
-        setPacientes(results[2].value);
-      }
-
-      if (results[3].status === 'fulfilled') {
-        setUsuarios(results[3].value);
-      }
-
-      if (results.every(r => r.status === 'rejected')) {
-        setError('No se pudieron cargar los datos. Por favor, intenta recargar la página.');
-      }
-    } catch (error: any) {
-      console.error('Error inesperado al cargar datos:', error);
-      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar las prescripciones';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const prescripcionesConDetalles = prescripciones.map(presc => {
-    const consulta = consultas.find(c => c.id === presc.consultaId);
-    const paciente = consulta ? pacientes.find(p => p.id === consulta.pacienteId) : undefined;
-    const profesional = consulta ? usuarios.find(u => u.id === consulta.profesionalId) : undefined;
-    
-    return {
-      ...presc,
-      consulta,
-      paciente,
-      profesional,
-    };
+  // Cargar consultas y usuarios con React Query (cache)
+  const { data: consultas = [] } = useQuery<Consulta[]>({
+    queryKey: ['consultas', 'all'],
+    queryFn: () => consultaService.getAll(),
+    staleTime: 60000,
   });
+
+  const { data: usuarios = [] } = useQuery<Usuario[]>({
+    queryKey: ['usuarios', 'all'],
+    queryFn: () => usuarioService.getAll(),
+    staleTime: 60000,
+  });
+
+  // Usar hook personalizado con React Query y paginación
+  const {
+    prescripcionesPage,
+    prescripciones,
+    isLoading,
+    error,
+    refetch,
+  } = usePrescripciones({
+    pacienteId: filtroPaciente !== 'todos' ? filtroPaciente : undefined,
+    page: currentPage,
+    size: itemsPerPage,
+    sort: 'fechaEmision,desc',
+  });
+
+  // Enriquecer prescripciones con datos relacionados
+  const prescripcionesConDetalles = useMemo(() => {
+    return prescripciones.map(presc => {
+      const consulta = consultas.find(c => c.id === presc.consultaId);
+      const paciente = consulta ? pacientes.find(p => p.id === consulta.pacienteId) : undefined;
+      const profesional = consulta ? usuarios.find(u => u.id === consulta.profesionalId) : undefined;
+      
+      return {
+        ...presc,
+        consulta,
+        paciente,
+        profesional,
+      };
+    });
+  }, [prescripciones, consultas, pacientes, usuarios]);
+
+  // Filtrar por término de búsqueda (si se implementa búsqueda en backend)
+  const filteredPrescripciones = useMemo(() => {
+    if (!debouncedSearchTerm) return prescripcionesConDetalles;
+    
+    const searchLower = debouncedSearchTerm.toLowerCase();
+    return prescripcionesConDetalles.filter(presc => 
+      presc.paciente?.nombre.toLowerCase().includes(searchLower) ||
+      presc.profesional?.nombre.toLowerCase().includes(searchLower) ||
+      presc.items.some(item => item.medicamento.toLowerCase().includes(searchLower))
+    );
+  }, [prescripcionesConDetalles, debouncedSearchTerm]);
+
+  const totalPages = prescripcionesPage?.totalPages || 0;
+  const totalElements = prescripcionesPage?.totalElements || 0;
 
   return (
     <div className="space-y-6">
@@ -98,36 +101,59 @@ export default function Prescripciones() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="grid gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-32 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
-          ))}
+      {/* Filtros */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por paciente, profesional o medicamento..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+        <Select value={filtroPaciente} onValueChange={(value) => {
+          setFiltroPaciente(value);
+          setCurrentPage(0);
+        }}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filtrar por paciente" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos los pacientes</SelectItem>
+            {pacientes.map(paciente => (
+              <SelectItem key={paciente.id} value={paciente.id}>
+                {paciente.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <LoadingCards count={5} />
       ) : error ? (
-        <Card className="border-destructive">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-destructive/10 p-4 mb-4">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar datos</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">{error}</p>
-            <Button onClick={loadData} variant="outline">
-              Reintentar
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Error al cargar prescripciones"
+          message={error instanceof Error ? error.message : 'Ocurrió un error inesperado'}
+          onRetry={() => refetch()}
+        />
+      ) : filteredPrescripciones.length === 0 ? (
+        <EmptyState
+          icon={Pill}
+          title="No hay prescripciones"
+          description={
+            filtroPaciente !== 'todos' || searchTerm
+              ? 'No se encontraron prescripciones con los filtros aplicados'
+              : 'Las prescripciones aparecerán aquí cuando se registren'
+          }
+          actionLabel="Nueva Prescripción"
+          onAction={() => navigate('/prescripciones/nuevo')}
+        />
       ) : (
-        <div className="grid gap-4">
-          {prescripcionesConDetalles.map((prescripcion) => (
+        <>
+          <div className="grid gap-4">
+            {filteredPrescripciones.map((prescripcion) => (
           <Card key={prescripcion.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -208,19 +234,20 @@ export default function Prescripciones() {
                 )}
               </div>
             </CardContent>
-          </Card>
-          ))}
-        </div>
-      )}
+            </Card>
+            ))}
+          </div>
 
-      {!isLoading && !error && prescripcionesConDetalles.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Pill className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground">No hay prescripciones</h3>
-            <p className="text-muted-foreground mt-1">Las prescripciones aparecerán aquí</p>
-          </CardContent>
-        </Card>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage + 1}
+              totalPages={totalPages}
+              onPageChange={(page) => setCurrentPage(page - 1)}
+              itemsPerPage={itemsPerPage}
+              totalItems={totalElements}
+            />
+          )}
+        </>
       )}
     </div>
   );
