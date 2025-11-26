@@ -53,6 +53,15 @@ public class EmailService {
     @Value("${app.mail.logo.url:}")
     private String logoUrl;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
+
+    @Value("${spring.mail.host:}")
+    private String mailHost;
+
     /**
      * Envía un email simple en texto plano.
      * 
@@ -102,10 +111,17 @@ public class EmailService {
             // Validar configuración antes de intentar enviar
             if (fromEmail == null || fromEmail.trim().isEmpty()) {
                 log.error("✗ No se puede enviar email: app.mail.from no está configurado");
+                log.error("⚠ Configura las variables de entorno:");
+                log.error("   - MAIL_FROM (ej: noreply@clinica-veterinaria.com)");
+                log.error("   - MAIL_USERNAME (ej: tu-email@gmail.com)");
+                log.error("   - MAIL_PASSWORD (contraseña de aplicación para Gmail)");
+                log.error("   Ver: apps/backend/env.example para más detalles");
                 return false;
             }
 
-            log.debug("Enviando email HTML a: {} desde: {} ({})", to, fromEmail, fromName);
+            // Validar que mailSender esté configurado (verificar username y password)
+            // Esto se hace intentando crear un mensaje, pero primero verificamos logs
+            log.info("📧 Intentando enviar email a: {} desde: {} ({})", to, fromEmail, fromName);
 
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -127,23 +143,111 @@ public class EmailService {
             log.info("✓ Email HTML enviado exitosamente a: {}", to);
             return true;
         } catch (MessagingException e) {
-            log.error("✗ Error al crear mensaje HTML para {}: {}", to, e.getMessage(), e);
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+            log.error("✗ Error al crear mensaje HTML para {}: {}", to, errorMsg, e);
             return false;
         } catch (MailException e) {
-            log.error("✗ Error al enviar email HTML a {}: {}", to, e.getMessage(), e);
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+            log.error("✗ Error al enviar email HTML a {}: {}", to, errorMessage, e);
             // Log adicional para errores de autenticación
-            if (e.getMessage() != null && e.getMessage().contains("Authentication failed")) {
-                log.error("⚠ Problema de autenticación con Gmail. Verifica:");
+            String errorMsg = errorMessage.toLowerCase();
+            if (errorMsg.contains("authentication failed") || errorMsg.contains("535") || errorMsg.contains("authentication")) {
+                log.error("⚠ Problema de autenticación con el servidor de correo. Verifica:");
                 log.error("   1. Que MAIL_USERNAME y MAIL_PASSWORD estén configurados en .env");
                 log.error("   2. Que uses una contraseña de aplicación de Gmail (no tu contraseña normal)");
                 log.error("   3. Que la verificación en 2 pasos esté activada en tu cuenta de Gmail");
                 log.error("   4. Que hayas generado una contraseña de aplicación en: https://myaccount.google.com/apppasswords");
+                log.error("   5. Verifica que el archivo .env esté en apps/backend/.env");
+            } else if (errorMsg.contains("connection") || errorMsg.contains("timeout") || errorMsg.contains("could not connect")) {
+                log.error("⚠ Problema de conexión con el servidor de correo. Verifica:");
+                log.error("   1. Que MAIL_HOST esté configurado correctamente (ej: smtp.gmail.com)");
+                log.error("   2. Que MAIL_PORT sea correcto (587 para Gmail con STARTTLS)");
+                log.error("   3. Que tu conexión a internet esté funcionando");
+            } else if (errorMsg.contains("username") || errorMsg.contains("password") || errorMsg.isEmpty()) {
+                log.error("⚠ Configuración de email incompleta. Verifica:");
+                log.error("   1. Que todas las variables estén en apps/backend/.env:");
+                log.error("      MAIL_HOST=smtp.gmail.com");
+                log.error("      MAIL_PORT=587");
+                log.error("      MAIL_USERNAME=tu-email@gmail.com");
+                log.error("      MAIL_PASSWORD=tu-contraseña-de-aplicacion");
+                log.error("      MAIL_FROM=tu-email@gmail.com");
+                log.error("   2. Reinicia la aplicación después de configurar las variables");
             }
             return false;
         } catch (Exception e) {
             log.error("✗ Error inesperado al enviar email HTML a {}: {}", to, e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     * Verifica la configuración de email y registra el estado.
+     * Útil para diagnóstico de problemas de configuración.
+     * 
+     * @return true si la configuración parece estar completa, false en caso contrario
+     */
+    public boolean verificarConfiguracion() {
+        log.info("=== Verificación de Configuración de Email ===");
+        
+        boolean configOk = true;
+        
+        if (mailHost == null || mailHost.trim().isEmpty()) {
+            log.warn("⚠ MAIL_HOST no está configurado (valor actual: '{}')", mailHost);
+            configOk = false;
+        } else {
+            log.info("✓ MAIL_HOST: {}", mailHost);
+        }
+        
+        if (mailUsername == null || mailUsername.trim().isEmpty()) {
+            log.warn("⚠ MAIL_USERNAME no está configurado (valor actual: '{}')", mailUsername);
+            configOk = false;
+        } else {
+            log.info("✓ MAIL_USERNAME: {} (oculto)", mailUsername.substring(0, Math.min(3, mailUsername.length())) + "***");
+        }
+        
+        if (mailPassword == null || mailPassword.trim().isEmpty()) {
+            log.warn("⚠ MAIL_PASSWORD no está configurado");
+            configOk = false;
+        } else {
+            log.info("✓ MAIL_PASSWORD: configurado (oculto)");
+        }
+        
+        if (fromEmail == null || fromEmail.trim().isEmpty()) {
+            log.warn("⚠ MAIL_FROM no está configurado (valor actual: '{}')", fromEmail);
+            configOk = false;
+        } else {
+            log.info("✓ MAIL_FROM: {}", fromEmail);
+        }
+        
+        if (fromName == null || fromName.trim().isEmpty()) {
+            log.warn("⚠ MAIL_FROM_NAME no está configurado (usando valor por defecto)");
+        } else {
+            log.info("✓ MAIL_FROM_NAME: {}", fromName);
+        }
+        
+        if (mailSender == null) {
+            log.error("✗ JavaMailSender no está inicializado");
+            configOk = false;
+        } else {
+            log.info("✓ JavaMailSender: inicializado");
+        }
+        
+        if (templateEngine == null) {
+            log.error("✗ TemplateEngine no está inicializado");
+            configOk = false;
+        } else {
+            log.info("✓ TemplateEngine: inicializado");
+        }
+        
+        if (!configOk) {
+            log.error("=== Configuración incompleta ===");
+            log.error("Por favor, configura las variables de entorno en apps/backend/.env");
+            log.error("Ver apps/backend/env.example para un ejemplo");
+        } else {
+            log.info("=== Configuración de email OK ===");
+        }
+        
+        return configOk;
     }
 
     /**

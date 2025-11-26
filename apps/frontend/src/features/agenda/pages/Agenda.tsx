@@ -291,13 +291,10 @@ export default function Agenda() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-foreground">{cita.paciente?.nombre || 'N/A'}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {cita.paciente?.especie || 'N/A'}
-                      </Badge>
+                      <h4 className="font-semibold text-foreground">{cita.pacienteNombre || 'N/A'}</h4>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      Propietario: {cita.propietario?.nombre || 'N/A'}
+                      Propietario: {cita.propietarioNombre || 'N/A'}
                     </p>
                     {cita.motivo && (
                       <p className="text-sm text-muted-foreground mt-1">{cita.motivo}</p>
