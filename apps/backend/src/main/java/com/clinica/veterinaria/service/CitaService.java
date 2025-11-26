@@ -778,7 +778,7 @@ public class CitaService {
                     log.warn("No se pudo enviar email de confirmación a: {}", propietarioEmail);
                 }
             } else {
-                // Otros cambios de estado (EN_PROCESO, COMPLETADA, etc.)
+                // Otros cambios de estado (ATENDIDA, etc.)
                 // Solo enviar si el estado anterior no era el mismo
                 if (estadoAnterior != nuevoEstado) {
                     emailEnviado = emailService.sendCitaEstadoActualizadoEmail(

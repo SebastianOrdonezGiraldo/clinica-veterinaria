@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cancelación de Cita</title>
+    <meta http-equiv="Content-Language" content="es">
+    <title>Cancelación de Cita - Clínica Veterinaria</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 600px;
@@ -17,69 +18,110 @@
         .container {
             background-color: #ffffff;
             border-radius: 8px;
-            padding: 30px;
+            padding: 0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
-        .header {
+        .header-banner {
+            background: linear-gradient(135deg, #721c24 0%, #c82333 50%, #721c24 100%);
+            padding: 30px 20px;
             text-align: center;
-            border-bottom: 3px solid #dc3545;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            position: relative;
         }
-        .header h1 {
-            color: #dc3545;
+        .logo-container {
+            margin-bottom: 15px;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            display: inline-block;
+        }
+        .header-title {
+            color: #ffffff;
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         .content {
-            margin-bottom: 30px;
+            padding: 30px;
+            margin-bottom: 0;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
         }
         .info-box {
-            background-color: #f9f9f9;
-            border-left: 4px solid #dc3545;
+            background-color: #f8f9fa;
+            border-left: 4px solid #c82333;
             padding: 15px;
             margin: 15px 0;
             border-radius: 4px;
         }
         .info-box strong {
-            color: #dc3545;
+            color: #c82333;
             display: block;
             margin-bottom: 5px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            color: #666;
             font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #4CAF50;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-top: 20px;
+        .info-box span {
+            color: #333;
+            font-size: 15px;
         }
         .warning {
             background-color: #fff3cd;
             border-left: 4px solid #ffc107;
             padding: 15px;
-            margin: 15px 0;
+            margin: 20px 0;
             border-radius: 4px;
+        }
+        .warning strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            text-align: center;
+            padding: 25px 30px;
+            border-top: 1px solid #dee2e6;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer-logo {
+            margin-bottom: 15px;
+        }
+        .footer-logo img {
+            max-width: 150px;
+            height: auto;
+            opacity: 0.7;
+        }
+        .footer-text {
+            margin: 10px 0;
+        }
+        .footer-disclaimer {
+            font-size: 11px;
+            color: #999;
+            margin-top: 15px;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚫 Cancelación de Cita</h1>
+        <div class="header-banner">
+            <div class="logo-container">
+                <!-- Logo de la clínica -->
+                <img th:if="${logoUrl != null && logoUrl != ''}" th:src="${logoUrl}" alt="Clínica Veterinaria Universitaria Humboldt" class="logo" />
+                <img th:if="${logoUrl == null || logoUrl == ''}" src="https://via.placeholder.com/200x80/ffffff/c82333?text=Clínica+Veterinaria+Universitaria+Humboldt" alt="Clínica Veterinaria Universitaria Humboldt" class="logo" />
+            </div>
+            <h1 class="header-title">Cancelación de Cita</h1>
         </div>
         
         <div class="content">
-            <p>Estimado/a <strong th:text="${propietarioNombre}">Nombre del Propietario</strong>,</p>
+            <p class="greeting">Estimado/a <strong th:text="${propietarioNombre}">Nombre del Propietario</strong>,</p>
             
             <p>Le informamos que su cita ha sido cancelada:</p>
             
@@ -110,7 +152,7 @@
             
             <div class="warning" th:if="${razonCancelacion}">
                 <strong>📌 Razón de la cancelación:</strong>
-                <p th:text="${razonCancelacion}">Razón de cancelación</p>
+                <p th:text="${razonCancelacion}" style="margin: 5px 0; color: #856404;">Razón de cancelación</p>
             </div>
             
             <p>Si desea reagendar su cita, por favor contáctenos y con gusto le ayudaremos a encontrar un nuevo horario disponible.</p>
@@ -119,13 +161,29 @@
         </div>
         
         <div class="footer">
-            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria</strong></p>
-            <p>Gracias por su comprensión.</p>
-            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+            <div class="footer-logo">
+                <img th:if="${logoUrl != null && logoUrl != ''}" th:src="${logoUrl}" alt="Clínica Veterinaria Universitaria Humboldt" style="max-width: 150px; height: auto; opacity: 0.7;" />
+                <img th:if="${logoUrl == null || logoUrl == ''}" src="https://via.placeholder.com/150x60/c82333/ffffff?text=CV+Humboldt" alt="Clínica Veterinaria Universitaria Humboldt" style="max-width: 150px; height: auto; opacity: 0.7;" />
+            </div>
+            <p class="footer-text"><strong th:text="${clinicaNombre}">Clínica Veterinaria Universitaria Humboldt</strong></p>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #e9ecef; border-radius: 4px;">
+                <p style="margin: 8px 0; color: #333; font-size: 14px;">
+                    <strong style="color: #c82333;">📍 Ubicación:</strong><br>
+                    Calle 6 Norte # 14 - 26
+                </p>
+                <p style="margin: 8px 0; color: #333; font-size: 14px;">
+                    <strong style="color: #c82333;">🕐 Horarios de atención:</strong><br>
+                    <strong>Lunes a Viernes:</strong> 8:00 a.m. a 12:00 m. y de 2:00 p.m. a 6:00 p.m.<br>
+                    <strong>Sábados:</strong> 8:00 a.m. hasta las 12:00 m.
+                </p>
+            </div>
+            
+            <p class="footer-text">Gracias por su comprensión.</p>
+            <p class="footer-disclaimer">
                 Este es un correo automático, por favor no responda a este mensaje.
             </p>
         </div>
     </div>
 </body>
 </html>
-
