@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Search, Mail, Shield, X, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Users, Plus, Search, Mail, Shield, X, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -9,11 +9,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@shared/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Switch } from '@shared/components/ui/switch';
-import { Skeleton } from '@shared/components/ui/skeleton';
+import { LoadingCards } from '@shared/components/common/LoadingCards';
+import { EmptyState } from '@shared/components/common/EmptyState';
+import { ErrorState } from '@shared/components/common/ErrorState';
+import { Pagination } from '@shared/components/common/Pagination';
+import { useDebounce } from '@shared/hooks/useDebounce';
 import { Usuario, Rol } from '@core/types';
-import { usuarioService, UsuarioCreateDTO, UsuarioUpdateDTO } from '@features/usuarios/services/usuarioService';
+import { UsuarioCreateDTO, UsuarioUpdateDTO } from '@features/usuarios/services/usuarioService';
+import { useUsuarios } from '@features/usuarios/hooks/useUsuarios';
 import { useAuth } from '@core/auth/AuthContext';
-import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -53,25 +57,50 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 export default function SeguridadUsuarios() {
   const { user, isLoading: isLoadingAuth } = useAuth();
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [filtroRol, setFiltroRol] = useState<string>('todos');
+  const [filtroActivo, setFiltroActivo] = useState<string>('todos');
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 12;
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
   const [resettingUser, setResettingUser] = useState<Usuario | null>(null);
   const [deletingUser, setDeletingUser] = useState<Usuario | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Verificar si el usuario tiene permisos de ADMIN
-  // Como la ruta está protegida con allowedRoles={['ADMIN']}, si el usuario puede acceder, es ADMIN
-  // Mostramos los botones siempre que el usuario esté cargado (la ruta ya valida permisos)
   const canManageUsers = !isLoadingAuth && user !== null;
+
+  // Usar hook con React Query y paginación
+  const {
+    usuariosPage,
+    usuarios,
+    isLoading,
+    error,
+    refetch,
+    createUsuario,
+    updateUsuario,
+    deleteUsuario,
+    resetPassword,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    isResettingPassword,
+  } = useUsuarios({
+    nombre: debouncedSearchTerm || undefined,
+    rol: filtroRol !== 'todos' ? (filtroRol as Rol) : undefined,
+    activo: filtroActivo !== 'todos' ? filtroActivo === 'activo' : undefined,
+    page: currentPage,
+    size: itemsPerPage,
+    sort: 'nombre,asc',
+  });
+
+  const totalPages = usuariosPage?.totalPages || 0;
+  const totalElements = usuariosPage?.totalElements || 0;
 
   // Form para crear/editar usuario
   // El schema se valida dinámicamente en onSubmit
@@ -95,35 +124,6 @@ export default function SeguridadUsuarios() {
   });
 
   const activo = watch('activo');
-
-  // Debounce para búsqueda
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // Cargar usuarios
-  useEffect(() => {
-    loadUsuarios();
-  }, []);
-
-  const loadUsuarios = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await usuarioService.getAll();
-      setUsuarios(data);
-    } catch (error: any) {
-      console.error('Error al cargar usuarios:', error);
-      const errorMessage = error?.response?.data?.message || 'Error al cargar los usuarios';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const openCreateDialog = () => {
     setEditingUser(null);
@@ -161,145 +161,61 @@ export default function SeguridadUsuarios() {
   };
 
   const onSubmit = async (data: UsuarioFormData) => {
-    try {
-      setIsSubmitting(true);
-      
-      // Validaciones adicionales
-      if (!data.nombre || !data.nombre.trim()) {
-        toast.error('El nombre es requerido');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (!data.email || !data.email.trim()) {
-        toast.error('El email es requerido');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Validar contraseña para nuevos usuarios
-      if (!editingUser) {
-        if (!data.password || !data.password.trim() || data.password.trim().length < 6) {
-          toast.error('La contraseña es requerida y debe tener al menos 6 caracteres');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      if (editingUser) {
-        const usuarioUpdateData: UsuarioUpdateDTO = {
-          nombre: data.nombre.trim(),
-          email: data.email.trim().toLowerCase(),
-          rol: data.rol,
-          activo: data.activo,
-          // Solo incluir password si se proporcionó una nueva (mínimo 6 caracteres)
-          password: data.password && data.password.trim().length >= 6 ? data.password.trim() : undefined,
-        };
-        await usuarioService.update(editingUser.id, usuarioUpdateData);
-        toast.success('Usuario actualizado exitosamente');
-      } else {
-        const usuarioCreateData: UsuarioCreateDTO = {
-          nombre: data.nombre.trim(),
-          email: data.email.trim().toLowerCase(),
-          rol: data.rol,
-          activo: data.activo,
-          password: data.password.trim(),
-        };
-        await usuarioService.create(usuarioCreateData);
-        toast.success('Usuario creado exitosamente');
-      }
-
-      setIsDialogOpen(false);
-      await loadUsuarios();
-    } catch (error: any) {
-      console.error('Error al guardar usuario:', error);
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para realizar esta acción');
-      } else if (statusCode === 409 || errorMessage?.includes('ya está registrado')) {
-        toast.error('El email ya está registrado en el sistema');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al guardar el usuario. Por favor, intenta nuevamente');
-      }
-    } finally {
-      setIsSubmitting(false);
+    // Validaciones adicionales
+    if (!data.nombre || !data.nombre.trim()) {
+      return;
     }
+    
+    if (!data.email || !data.email.trim()) {
+      return;
+    }
+    
+    // Validar contraseña para nuevos usuarios
+    if (!editingUser) {
+      if (!data.password || !data.password.trim() || data.password.trim().length < 6) {
+        return;
+      }
+    }
+
+    if (editingUser) {
+      const usuarioUpdateData: UsuarioUpdateDTO = {
+        nombre: data.nombre.trim(),
+        email: data.email.trim().toLowerCase(),
+        rol: data.rol,
+        activo: data.activo,
+        password: data.password && data.password.trim().length >= 6 ? data.password.trim() : undefined,
+      };
+      updateUsuario({ id: editingUser.id, data: usuarioUpdateData });
+    } else {
+      const usuarioCreateData: UsuarioCreateDTO = {
+        nombre: data.nombre.trim(),
+        email: data.email.trim().toLowerCase(),
+        rol: data.rol,
+        activo: data.activo,
+        password: data.password.trim(),
+      };
+      createUsuario(usuarioCreateData);
+    }
+
+    setIsDialogOpen(false);
   };
 
   const onResetPassword = async (data: ResetPasswordFormData) => {
     if (!resettingUser) return;
     
-    try {
-      setIsResetting(true);
-      await usuarioService.resetPassword(resettingUser.id, data.password);
-      toast.success(`Contraseña de ${resettingUser.nombre} reiniciada exitosamente`);
-      setIsResetDialogOpen(false);
-      resetResetForm({ password: '' });
-      setResettingUser(null);
-    } catch (error: any) {
-      console.error('Error al resetear contraseña:', error);
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: La contraseña debe tener al menos 6 caracteres');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para resetear contraseñas');
-      } else if (statusCode === 404) {
-        toast.error('Usuario no encontrado');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al resetear la contraseña. Por favor, intenta nuevamente');
-      }
-    } finally {
-      setIsResetting(false);
-    }
+    resetPassword({ id: resettingUser.id, password: data.password });
+    setIsResetDialogOpen(false);
+    resetResetForm({ password: '' });
+    setResettingUser(null);
   };
 
   const handleDelete = async () => {
     if (!deletingUser) return;
     
-    try {
-      setIsDeleting(true);
-      await usuarioService.delete(deletingUser.id);
-      toast.success('Usuario desactivado exitosamente');
-      setIsDeleteDialogOpen(false);
-      setDeletingUser(null);
-      await loadUsuarios();
-    } catch (error: any) {
-      console.error('Error al eliminar usuario:', error);
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 403) {
-        toast.error('No tienes permisos para eliminar usuarios');
-      } else if (statusCode === 404) {
-        toast.error('Usuario no encontrado');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al eliminar el usuario. Por favor, intenta nuevamente');
-      }
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteUsuario(deletingUser.id);
+    setIsDeleteDialogOpen(false);
+    setDeletingUser(null);
   };
-
-  const filteredUsuarios = useMemo(() => {
-    if (!debouncedSearchTerm) return usuarios;
-    const term = debouncedSearchTerm.toLowerCase();
-    return usuarios.filter(u =>
-      u.nombre.toLowerCase().includes(term) ||
-      u.email.toLowerCase().includes(term)
-    );
-  }, [usuarios, debouncedSearchTerm]);
 
   return (
     <div className="space-y-6">
@@ -316,46 +232,72 @@ export default function SeguridadUsuarios() {
         )}
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nombre o email..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Filtros */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o email..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(0);
+            }}
+          />
+        </div>
+        <Select value={filtroRol} onValueChange={(value) => {
+          setFiltroRol(value);
+          setCurrentPage(0);
+        }}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filtrar por rol" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos los roles</SelectItem>
+            <SelectItem value="ADMIN">Administrador</SelectItem>
+            <SelectItem value="VET">Veterinario</SelectItem>
+            <SelectItem value="RECEPCION">Recepcionista</SelectItem>
+            <SelectItem value="ESTUDIANTE">Estudiante</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filtroActivo} onValueChange={(value) => {
+          setFiltroActivo(value);
+          setCurrentPage(0);
+        }}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filtrar por estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="activo">Activos</SelectItem>
+            <SelectItem value="inactivo">Inactivos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-48 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <LoadingCards count={6} />
       ) : error ? (
-        <Card className="border-destructive">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-destructive/10 p-4 mb-4">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar usuarios</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">{error}</p>
-            <Button onClick={loadUsuarios} variant="outline">
-              Reintentar
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Error al cargar usuarios"
+          message={error instanceof Error ? error.message : 'Ocurrió un error inesperado'}
+          onRetry={() => refetch()}
+        />
+      ) : usuarios.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No se encontraron usuarios"
+          description={
+            searchTerm || filtroRol !== 'todos' || filtroActivo !== 'todos'
+              ? 'No se encontraron usuarios con los filtros aplicados'
+              : 'No hay usuarios registrados en el sistema'
+          }
+        />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredUsuarios.map((usuario) => (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {usuarios.map((usuario) => (
           <Card key={usuario.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -418,17 +360,20 @@ export default function SeguridadUsuarios() {
                 </div>
               )}
             </CardContent>
-          </Card>
-          ))}
-        </div>
-      )}
+            </Card>
+            ))}
+          </div>
 
-      {!isLoading && !error && filteredUsuarios.length === 0 && (
-        <div className="text-center py-12">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground">No se encontraron usuarios</h3>
-          <p className="text-muted-foreground mt-1">Intenta con otros términos de búsqueda</p>
-        </div>
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage + 1}
+              totalPages={totalPages}
+              onPageChange={(page) => setCurrentPage(page - 1)}
+              itemsPerPage={itemsPerPage}
+              totalItems={totalElements}
+            />
+          )}
+        </>
       )}
 
       {/* Dialog para crear/editar usuario */}
@@ -452,7 +397,7 @@ export default function SeguridadUsuarios() {
                 id="nombre"
                 {...register('nombre')}
                 placeholder="Nombre del usuario"
-                disabled={isSubmitting}
+                disabled={isCreating || isUpdating}
               />
               {errors.nombre && (
                 <p className="text-sm text-destructive">{errors.nombre.message}</p>
@@ -466,7 +411,7 @@ export default function SeguridadUsuarios() {
                 type="email"
                 {...register('email')}
                 placeholder="correo@ejemplo.com"
-                disabled={isSubmitting}
+                disabled={isCreating || isUpdating}
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -478,7 +423,7 @@ export default function SeguridadUsuarios() {
               <Select 
                 value={watch('rol')} 
                 onValueChange={(value: Rol) => setValue('rol', value)}
-                disabled={isSubmitting}
+                disabled={isCreating || isUpdating}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -503,7 +448,7 @@ export default function SeguridadUsuarios() {
                   type="password"
                   {...register('password')}
                   placeholder="Mínimo 6 caracteres"
-                  disabled={isSubmitting}
+                  disabled={isCreating || isUpdating}
                 />
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -519,7 +464,7 @@ export default function SeguridadUsuarios() {
                   type="password"
                   {...register('password')}
                   placeholder="Dejar vacío para mantener la actual"
-                  disabled={isSubmitting}
+                  disabled={isCreating || isUpdating}
                 />
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -536,7 +481,7 @@ export default function SeguridadUsuarios() {
                 id="activo"
                 checked={activo}
                 onCheckedChange={(checked) => setValue('activo', checked)}
-                disabled={isSubmitting}
+                disabled={isCreating || isUpdating}
               />
             </div>
 
@@ -545,12 +490,12 @@ export default function SeguridadUsuarios() {
                 type="button"
                 variant="outline" 
                 onClick={() => setIsDialogOpen(false)}
-                disabled={isSubmitting}
+                disabled={isCreating || isUpdating}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isCreating || isUpdating}>
+                {(isCreating || isUpdating) ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {editingUser ? 'Actualizando...' : 'Creando...'}
@@ -582,7 +527,7 @@ export default function SeguridadUsuarios() {
                 type="password"
                 {...registerReset('password')}
                 placeholder="Mínimo 6 caracteres"
-                disabled={isResetting}
+                disabled={isResettingPassword}
               />
               {errorsReset.password && (
                 <p className="text-sm text-destructive">{errorsReset.password.message}</p>
@@ -598,12 +543,12 @@ export default function SeguridadUsuarios() {
                   resetResetForm({ password: '' });
                   setResettingUser(null);
                 }}
-                disabled={isResetting}
+                disabled={isResettingPassword}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isResetting}>
-                {isResetting ? (
+              <Button type="submit" disabled={isResettingPassword}>
+                {isResettingPassword ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Reseteando...

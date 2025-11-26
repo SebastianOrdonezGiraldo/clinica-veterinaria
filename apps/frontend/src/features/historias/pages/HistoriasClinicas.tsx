@@ -1,85 +1,58 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Search, Dog } from 'lucide-react';
 import { Input } from '@shared/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { LoadingCards } from '@shared/components/common/LoadingCards';
-import { toast } from 'sonner';
-import { pacienteService } from '@features/pacientes/services/pacienteService';
-import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { EmptyState } from '@shared/components/common/EmptyState';
+import { ErrorState } from '@shared/components/common/ErrorState';
+import { useDebounce } from '@shared/hooks/useDebounce';
+import { usePacientes } from '@features/pacientes/hooks/usePacientes';
+import { usePropietarios } from '@features/propietarios/hooks/usePropietarios';
+import { useConsultas } from '@features/historias/hooks/useConsultas';
+import { useQuery } from '@tanstack/react-query';
 import { consultaService } from '@features/historias/services/consultaService';
-import { Paciente, Propietario, Consulta } from '@core/types';
 
 export default function HistoriasClinicas() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Cargar pacientes con paginación (cargar todos para esta vista)
+  const { pacientes = [], isLoading: isLoadingPacientes, error: errorPacientes, refetch: refetchPacientes } = usePacientes({
+    page: 0,
+    size: 1000, // Cargar muchos pacientes para esta vista
+    sort: 'nombre,asc',
+  });
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Cargar datos en paralelo, pero manejar errores individualmente
-      const results = await Promise.allSettled([
-        pacienteService.getAll(),
-        propietarioService.getAll(),
-        consultaService.getAll(),
-      ]);
+  // Cargar propietarios con paginación
+  const { propietarios = [], isLoading: isLoadingPropietarios } = usePropietarios({
+    page: 0,
+    size: 1000,
+    sort: 'nombre,asc',
+  });
 
-      // Procesar resultados
-      if (results[0].status === 'fulfilled') {
-        setPacientes(results[0].value);
-      } else {
-        console.error('Error al cargar pacientes:', results[0].reason);
-        const errorMessage = results[0].reason?.response?.data?.message || 'Error al cargar pacientes';
-        toast.error(errorMessage);
-      }
+  // Cargar todas las consultas para contar por paciente
+  // Usamos React Query directamente para cachear
+  const { data: consultas = [], isLoading: isLoadingConsultas } = useQuery({
+    queryKey: ['consultas', 'all'],
+    queryFn: () => consultaService.getAll(),
+    staleTime: 60000, // Cache por 1 minuto
+  });
 
-      if (results[1].status === 'fulfilled') {
-        setPropietarios(results[1].value);
-      } else {
-        console.error('Error al cargar propietarios:', results[1].reason);
-        // No mostrar toast para propietarios, solo log
-      }
-
-      if (results[2].status === 'fulfilled') {
-        setConsultas(results[2].value);
-      } else {
-        console.error('Error al cargar consultas:', results[2].reason);
-        // No mostrar toast para consultas, solo log
-      }
-
-      // Si todos fallaron, mostrar error general
-      if (results.every(r => r.status === 'rejected')) {
-        setError('No se pudieron cargar los datos. Por favor, intenta recargar la página.');
-        toast.error('Error al cargar las historias clínicas');
-      }
-    } catch (error: any) {
-      console.error('Error inesperado al cargar datos:', error);
-      const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar las historias clínicas';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isLoading = isLoadingPacientes || isLoadingPropietarios || isLoadingConsultas;
+  const error = errorPacientes;
 
   const filteredPacientes = useMemo(() => {
+    if (!debouncedSearchTerm) return pacientes;
+    
+    const searchLower = debouncedSearchTerm.toLowerCase();
     return pacientes.filter(p =>
-      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      propietarios.find(pr => pr.id === p.propietarioId)?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      p.nombre.toLowerCase().includes(searchLower) ||
+      propietarios.find(pr => pr.id === p.propietarioId)?.nombre.toLowerCase().includes(searchLower)
     );
-  }, [pacientes, propietarios, searchTerm]);
+  }, [pacientes, propietarios, debouncedSearchTerm]);
 
   const getConsultasCount = (pacienteId: string) => 
     consultas.filter(c => c.pacienteId === pacienteId).length;
@@ -104,18 +77,11 @@ export default function HistoriasClinicas() {
       {isLoading ? (
         <LoadingCards count={6} />
       ) : error ? (
-        <Card className="border-destructive">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="rounded-full bg-destructive/10 p-4 mb-4">
-              <FileText className="h-8 w-8 text-destructive" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Error al cargar datos</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">{error}</p>
-            <Button onClick={loadData} variant="outline">
-              Reintentar
-            </Button>
-          </CardContent>
-        </Card>
+        <ErrorState
+          title="Error al cargar historias clínicas"
+          message={error instanceof Error ? error.message : 'Ocurrió un error inesperado'}
+          onRetry={() => refetchPacientes()}
+        />
       ) : (
         <>
           {filteredPacientes.length > 0 ? (
@@ -161,21 +127,15 @@ export default function HistoriasClinicas() {
               })}
             </div>
           ) : (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <Search className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {searchTerm ? 'No se encontraron resultados' : 'No hay pacientes registrados'}
-                </h3>
-                <p className="text-sm text-muted-foreground text-center max-w-sm">
-                  {searchTerm 
-                    ? `No se encontraron pacientes que coincidan con "${searchTerm}".`
-                    : 'No hay pacientes registrados en el sistema.'}
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Search}
+              title={searchTerm ? 'No se encontraron resultados' : 'No hay pacientes registrados'}
+              description={
+                searchTerm 
+                  ? `No se encontraron pacientes que coincidan con "${searchTerm}".`
+                  : 'No hay pacientes registrados en el sistema.'
+              }
+            />
           )}
         </>
       )}
