@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Skeleton } from '@shared/components/ui/skeleton';
@@ -19,11 +19,7 @@ export function HistorialRapido({ pacienteId, limit = 5 }: HistorialRapidoProps)
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadHistorial();
-  }, [pacienteId]);
-
-  const loadHistorial = async () => {
+  const loadHistorial = useCallback(async () => {
     try {
       setIsLoading(true);
       const result = await consultaService.searchWithFilters({
@@ -38,7 +34,11 @@ export function HistorialRapido({ pacienteId, limit = 5 }: HistorialRapidoProps)
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [pacienteId, limit]);
+
+  useEffect(() => {
+    loadHistorial();
+  }, [loadHistorial]);
 
   if (isLoading) {
     return (

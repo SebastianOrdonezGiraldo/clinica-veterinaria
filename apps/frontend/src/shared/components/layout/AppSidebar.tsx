@@ -9,6 +9,7 @@ import {
   Shield,
   ChevronRight,
   UserCog,
+  Stethoscope,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@core/auth/AuthContext';
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { title: 'Pacientes', url: '/pacientes', icon: Dog, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
   { title: 'Propietarios', url: '/propietarios', icon: Users, roles: ['ADMIN', 'VET', 'RECEPCION'] },
   { title: 'Agenda', url: '/agenda', icon: Calendar, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
+  { title: 'Consultas', url: '/consultas', icon: Stethoscope, roles: ['ADMIN', 'VET'] },
   { title: 'Historias', url: '/historias', icon: FileText, roles: ['ADMIN', 'VET', 'ESTUDIANTE'] },
   { title: 'Prescripciones', url: '/prescripciones', icon: Pill, roles: ['ADMIN', 'VET'] },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, roles: ['ADMIN', 'VET'] },
