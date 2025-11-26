@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualización de Estado de Cita</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header.confirmada {
+            border-bottom-color: #28a745;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header.confirmada h1 {
+            color: #28a745;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-box.confirmada {
+            border-left-color: #28a745;
+        }
+        .info-box strong {
+            color: #007bff;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-box.confirmada strong {
+            color: #28a745;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+        .reminder {
+            background-color: #d1ecf1;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .reminder.confirmada {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+            <h1 th:if="${nuevoEstado == 'CONFIRMADA'}">✅ Cita Confirmada</h1>
+            <h1 th:if="${nuevoEstado != 'CONFIRMADA'}">📋 Actualización de Cita</h1>
+        </div>
+        
+        <div class="content">
+            <p>Estimado/a <strong th:text="${propietarioNombre}">Nombre del Propietario</strong>,</p>
+            
+            <p th:if="${nuevoEstado == 'CONFIRMADA'}">
+                Nos complace informarle que su cita ha sido <strong>confirmada</strong>:
+            </p>
+            <p th:if="${nuevoEstado != 'CONFIRMADA'}">
+                Le informamos que el estado de su cita ha sido actualizado a: <strong th:text="${nuevoEstado}">Estado</strong>
+            </p>
+            
+            <div class="info-box" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+                <strong>Mascota:</strong>
+                <span th:text="${pacienteNombre}">Nombre de la Mascota</span>
+            </div>
+            
+            <div class="info-box" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+                <strong>Fecha:</strong>
+                <span th:text="${#temporals.format(fecha, 'dd/MM/yyyy')}">DD/MM/YYYY</span>
+            </div>
+            
+            <div class="info-box" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+                <strong>Hora:</strong>
+                <span th:text="${#temporals.format(hora, 'HH:mm')}">HH:MM</span>
+            </div>
+            
+            <div class="info-box" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+                <strong>Veterinario:</strong>
+                <span th:text="${profesionalNombre}">Nombre del Veterinario</span>
+            </div>
+            
+            <div class="info-box" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''">
+                <strong>Motivo:</strong>
+                <span th:text="${motivo}">Motivo de la consulta</span>
+            </div>
+            
+            <div class="reminder" th:classappend="${nuevoEstado == 'CONFIRMADA'} ? 'confirmada' : ''" th:if="${nuevoEstado == 'CONFIRMADA'}">
+                <strong>📌 Recordatorio importante:</strong>
+                <ul>
+                    <li>Por favor, llegue 10 minutos antes de la hora programada</li>
+                    <li>Traiga el carnet de vacunación de su mascota si lo tiene</li>
+                    <li>Si necesita cancelar o reprogramar, contáctenos con al menos 24 horas de anticipación</li>
+                </ul>
+            </div>
+            
+            <p th:if="${nuevoEstado == 'CONFIRMADA'}">
+                Estamos comprometidos con el bienestar de <strong th:text="${pacienteNombre}">su mascota</strong> y esperamos poder ayudarle.
+            </p>
+            
+            <p>Si tiene alguna pregunta o necesita modificar su cita, no dude en contactarnos.</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria</strong></p>
+            <p>Gracias por confiar en nosotros para el cuidado de su mascota.</p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                Este es un correo automático, por favor no responda a este mensaje.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
