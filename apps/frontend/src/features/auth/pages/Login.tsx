@@ -73,7 +73,6 @@ export default function Login() {
             <p className="text-sm font-medium mb-2">Usuarios de prueba:</p>
             <div className="text-xs space-y-1 text-muted-foreground">
               <p>• admin@clinica.com (Admin) - Contraseña: <span className="font-medium">admin123</span></p>
-              <p>• maria@clinica.com (Veterinario) - Contraseña: <span className="font-medium">vet123</span></p>
               <p>• carlos@clinica.com (Veterinario) - Contraseña: <span className="font-medium">vet123</span></p>
               <p>• ana@clinica.com (Recepción) - Contraseña: <span className="font-medium">recep123</span></p>
               <p>• juan@clinica.com (Estudiante) - Contraseña: <span className="font-medium">est123</span></p>
