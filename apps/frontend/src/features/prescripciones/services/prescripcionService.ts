@@ -132,5 +132,15 @@ export const prescripcionService = {
   async delete(id: string): Promise<void> {
     await axios.delete(`/prescripciones/${id}`);
   },
+
+  /**
+   * Descarga el PDF de una prescripción médica
+   */
+  async downloadPdf(id: string): Promise<Blob> {
+    const response = await axios.get(`/prescripciones/${id}/pdf`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 

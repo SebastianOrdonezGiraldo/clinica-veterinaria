@@ -1,14 +1,25 @@
 package com.clinica.veterinaria.controller;
 
+import com.clinica.veterinaria.dto.ConsultaDTO;
+import com.clinica.veterinaria.dto.PacienteDTO;
 import com.clinica.veterinaria.dto.PrescripcionDTO;
+import com.clinica.veterinaria.dto.PropietarioDTO;
+import com.clinica.veterinaria.dto.UsuarioDTO;
+import com.clinica.veterinaria.service.ConsultaService;
+import com.clinica.veterinaria.service.PacienteService;
+import com.clinica.veterinaria.service.PdfReportService;
 import com.clinica.veterinaria.service.PrescripcionService;
+import com.clinica.veterinaria.service.PropietarioService;
+import com.clinica.veterinaria.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -64,6 +75,11 @@ import java.util.List;
 public class PrescripcionController {
 
     private final PrescripcionService prescripcionService;
+    private final ConsultaService consultaService;
+    private final PacienteService pacienteService;
+    private final PropietarioService propietarioService;
+    private final UsuarioService usuarioService;
+    private final PdfReportService pdfReportService;
 
     /**
      * Obtener todas las prescripciones
@@ -191,6 +207,77 @@ public class PrescripcionController {
         log.info("DELETE /api/prescripciones/{}", id);
         prescripcionService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Descargar PDF de una prescripción médica (receta veterinaria)
+     * 
+     * @param id ID de la prescripción
+     * @return PDF como array de bytes con headers apropiados para descarga
+     */
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> descargarPdf(@PathVariable Long id) {
+        log.info("GET /api/prescripciones/{}/pdf", id);
+        
+        try {
+            // Obtener prescripción
+            PrescripcionDTO prescripcion = prescripcionService.findById(id);
+            
+            // Obtener consulta
+            ConsultaDTO consulta = consultaService.findById(prescripcion.getConsultaId());
+            
+            // Obtener paciente
+            PacienteDTO paciente = pacienteService.findById(consulta.getPacienteId());
+            
+            // Obtener propietario (puede ser null)
+            String propietarioNombre = null;
+            if (paciente.getPropietarioId() != null) {
+                try {
+                    PropietarioDTO propietario = propietarioService.findById(paciente.getPropietarioId());
+                    propietarioNombre = propietario.getNombre();
+                } catch (Exception e) {
+                    log.warn("No se pudo obtener propietario para paciente {}: {}", paciente.getId(), e.getMessage());
+                }
+            }
+            
+            // Obtener profesional (puede ser null)
+            String profesionalNombre = null;
+            if (consulta.getProfesionalId() != null) {
+                try {
+                    UsuarioDTO profesional = usuarioService.findById(consulta.getProfesionalId());
+                    profesionalNombre = profesional.getNombre();
+                } catch (Exception e) {
+                    log.warn("No se pudo obtener profesional para consulta {}: {}", consulta.getId(), e.getMessage());
+                }
+            }
+            
+            // Generar PDF
+            byte[] pdfBytes = pdfReportService.generarPrescripcionPdf(
+                prescripcion,
+                paciente.getNombre(),
+                paciente.getEspecie(),
+                paciente.getRaza(),
+                propietarioNombre,
+                consulta.getFecha(),
+                profesionalNombre
+            );
+            
+            // Configurar headers para descarga
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", 
+                String.format("receta-medica-%d.pdf", prescripcion.getId()));
+            headers.setContentLength(pdfBytes.length);
+            
+            log.info("✓ PDF de prescripción {} generado exitosamente. Tamaño: {} bytes", id, pdfBytes.length);
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+                
+        } catch (Exception e) {
+            log.error("✗ Error al generar PDF de prescripción {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
 

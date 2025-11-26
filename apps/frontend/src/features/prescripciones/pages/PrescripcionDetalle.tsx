@@ -141,8 +141,34 @@ export default function PrescripcionDetalle() {
     );
   }
 
-  const handleGeneratePDF = () => {
-    toast.success('PDF generado exitosamente (simulado)');
+  const handleGeneratePDF = async () => {
+    if (!id) return;
+    
+    try {
+      toast.loading('Generando PDF...', { id: 'pdf-generation' });
+      
+      const blob = await prescripcionService.downloadPdf(id);
+      
+      // Crear URL temporal para el blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crear elemento <a> para descargar
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `receta-medica-${prescripcion?.id || id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('PDF descargado exitosamente', { id: 'pdf-generation' });
+    } catch (error: any) {
+      console.error('Error al descargar PDF:', error);
+      const errorMessage = error?.response?.data?.message || 'Error al generar el PDF';
+      toast.error(errorMessage, { id: 'pdf-generation' });
+    }
   };
 
   const handlePrint = () => {
