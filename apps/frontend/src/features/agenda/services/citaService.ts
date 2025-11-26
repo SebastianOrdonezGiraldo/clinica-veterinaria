@@ -1,7 +1,7 @@
 import axios from '@core/api/axios';
 import { Cita, PageResponse, PageParams } from '@core/types';
 
-export type EstadoCita = 'PENDIENTE' | 'CONFIRMADA' | 'EN_PROCESO' | 'COMPLETADA' | 'CANCELADA';
+export type EstadoCita = 'PENDIENTE' | 'CONFIRMADA' | 'ATENDIDA' | 'CANCELADA';
 
 /**
  * DTO para crear/actualizar citas

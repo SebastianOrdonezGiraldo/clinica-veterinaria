@@ -1,9 +1,10 @@
 {
 	"info": {
-		"_postman_id": "veterinaria-api-2025",
-		"name": "Clínica Veterinaria API",
-		"description": "API completa para gestión de clínica veterinaria",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"_postman_id": "clinica-veterinaria-api-2025",
+		"name": "Clínica Veterinaria API - Colección Completa",
+		"description": "API completa para gestión de clínica veterinaria. Incluye todos los endpoints disponibles con autenticación JWT automática.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "clinica-veterinaria"
 	},
 	"item": [
 		{
@@ -20,6 +21,7 @@
 									"if (jsonData.token) {",
 									"    pm.collectionVariables.set('jwt_token', jsonData.token);",
 									"    console.log('✅ Token guardado correctamente');",
+									"    console.log('Token:', jsonData.token);",
 									"}"
 								],
 								"type": "text/javascript"
@@ -51,7 +53,8 @@
 								"auth",
 								"login"
 							]
-						}
+						},
+						"description": "Autentica un usuario y obtiene un token JWT. El token se guarda automáticamente en la variable de colección 'jwt_token'."
 					},
 					"response": []
 				},
@@ -79,17 +82,19 @@
 									"value": "{{jwt_token}}"
 								}
 							]
-						}
+						},
+						"description": "Valida si un token JWT es válido y no ha expirado."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Endpoints públicos para autenticación. No requieren token JWT."
 		},
 		{
 			"name": "2. Usuarios",
 			"item": [
 				{
-					"name": "Listar Usuarios",
+					"name": "Listar Usuarios (Deprecated)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -102,7 +107,60 @@
 								"api",
 								"usuarios"
 							]
-						}
+						},
+						"description": "Obtiene todos los usuarios. Requiere rol ADMIN. Deprecated: usar /search en su lugar."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Usuarios (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/search?nombre=&rol=&activo=&page=0&size=20&sort=nombre,asc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "",
+									"description": "Filtro por nombre (búsqueda parcial)"
+								},
+								{
+									"key": "rol",
+									"value": "",
+									"description": "Filtro por rol: ADMIN, VET, RECEPCION, ESTUDIANTE"
+								},
+								{
+									"key": "activo",
+									"value": "",
+									"description": "Filtro por estado: true/false"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Número de página (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Elementos por página"
+								},
+								{
+									"key": "sort",
+									"value": "nombre,asc",
+									"description": "Ordenamiento: campo,dirección"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de usuarios con filtros y paginación. Requiere rol ADMIN."
 					},
 					"response": []
 				},
@@ -121,7 +179,49 @@
 								"usuarios",
 								"1"
 							]
-						}
+						},
+						"description": "Obtiene un usuario específico por su ID. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Usuario por Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/email/admin@clinica.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"email",
+								"admin@clinica.com"
+							]
+						},
+						"description": "Busca un usuario por su email. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Veterinarios Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/veterinarios",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"veterinarios"
+							]
+						},
+						"description": "Obtiene la lista de veterinarios activos. Accesible para todos los usuarios autenticados."
 					},
 					"response": []
 				},
@@ -148,11 +248,121 @@
 								"api",
 								"usuarios"
 							]
-						}
+						},
+						"description": "Crea un nuevo usuario. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Usuario",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Dr. Luis Torres Actualizado\",\n    \"email\": \"luis@clinica.com\",\n    \"rol\": \"VET\",\n    \"activo\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"1"
+							]
+						},
+						"description": "Actualiza un usuario existente. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Mi Perfil",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Mi Nombre Actualizado\",\n    \"email\": \"miemail@clinica.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"me"
+							]
+						},
+						"description": "Actualiza el perfil del usuario autenticado. Cualquier usuario puede actualizar su propio perfil."
+					},
+					"response": []
+				},
+				{
+					"name": "Resetear Contraseña",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"nuevaPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/1/reset-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"1",
+								"reset-password"
+							]
+						},
+						"description": "Resetea la contraseña de un usuario. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Usuario",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/usuarios/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"usuarios",
+								"1"
+							]
+						},
+						"description": "Elimina (desactiva) un usuario. Requiere rol ADMIN."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Gestión de usuarios del sistema. La mayoría de operaciones requieren rol ADMIN."
 		},
 		{
 			"name": "3. Propietarios",
@@ -171,7 +381,62 @@
 								"api",
 								"propietarios"
 							]
-						}
+						},
+						"description": "Obtiene todos los propietarios."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Propietarios (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/propietarios/search?nombre=&documento=&telefono=&email=&page=0&size=20&sort=nombre,asc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"propietarios",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "",
+									"description": "Búsqueda parcial en nombre"
+								},
+								{
+									"key": "documento",
+									"value": "",
+									"description": "Búsqueda parcial en documento"
+								},
+								{
+									"key": "telefono",
+									"value": "",
+									"description": "Búsqueda parcial en teléfono"
+								},
+								{
+									"key": "email",
+									"value": "",
+									"description": "Búsqueda parcial en email"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "nombre,asc"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de propietarios con filtros combinados y paginación."
 					},
 					"response": []
 				},
@@ -190,7 +455,34 @@
 								"propietarios",
 								"1"
 							]
-						}
+						},
+						"description": "Obtiene un propietario específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Propietarios por Nombre (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/propietarios/buscar?nombre=Pedro",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"propietarios",
+								"buscar"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Pedro"
+								}
+							]
+						},
+						"description": "Busca propietarios por nombre. Deprecated: usar /search en su lugar."
 					},
 					"response": []
 				},
@@ -206,7 +498,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"nombre\": \"Carlos Ramírez\",\n    \"documento\": \"98765432\",\n    \"email\": \"carlos@email.com\",\n    \"telefono\": \"555-1234\",\n    \"direccion\": \"Calle 123, Ciudad\"\n}"
+							"raw": "{\n    \"nombre\": \"Carlos Ramírez\",\n    \"documento\": \"12345678\",\n    \"email\": \"carlos@email.com\",\n    \"telefono\": \"555-1234\",\n    \"direccion\": \"Calle 123, Ciudad\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/propietarios",
@@ -217,36 +509,62 @@
 								"api",
 								"propietarios"
 							]
-						}
+						},
+						"description": "Crea un nuevo propietario. Requiere roles ADMIN o RECEPCION."
 					},
 					"response": []
 				},
 				{
-					"name": "Buscar Propietarios",
+					"name": "Actualizar Propietario",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Carlos Ramírez Actualizado\",\n    \"documento\": \"12345678\",\n    \"email\": \"carlos.nuevo@email.com\",\n    \"telefono\": \"555-9999\",\n    \"direccion\": \"Nueva Dirección 456\",\n    \"activo\": true\n}"
+						},
 						"url": {
-							"raw": "{{base_url}}/api/propietarios/buscar?q=Pedro",
+							"raw": "{{base_url}}/api/propietarios/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"propietarios",
-								"buscar"
-							],
-							"query": [
-								{
-									"key": "q",
-									"value": "Pedro"
-								}
+								"1"
 							]
-						}
+						},
+						"description": "Actualiza un propietario existente. Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Propietario",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/propietarios/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"propietarios",
+								"1"
+							]
+						},
+						"description": "Elimina (desactiva) un propietario. Requiere rol ADMIN."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Gestión de propietarios (clientes) de las mascotas."
 		},
 		{
 			"name": "4. Pacientes",
@@ -265,7 +583,52 @@
 								"api",
 								"pacientes"
 							]
-						}
+						},
+						"description": "Obtiene todos los pacientes (mascotas)."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Pacientes (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pacientes/search?nombre=&especie=&page=0&size=20&sort=nombre,asc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pacientes",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "",
+									"description": "Búsqueda parcial en nombre"
+								},
+								{
+									"key": "especie",
+									"value": "",
+									"description": "Filtro por especie (Canino, Felino, etc.)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "nombre,asc"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de pacientes con filtros y paginación."
 					},
 					"response": []
 				},
@@ -284,7 +647,76 @@
 								"pacientes",
 								"1"
 							]
-						}
+						},
+						"description": "Obtiene un paciente específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Pacientes por Propietario",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pacientes/propietario/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pacientes",
+								"propietario",
+								"1"
+							]
+						},
+						"description": "Obtiene todos los pacientes de un propietario específico."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Pacientes por Nombre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pacientes/buscar?nombre=Max",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pacientes",
+								"buscar"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Max"
+								}
+							]
+						},
+						"description": "Busca pacientes por nombre (búsqueda parcial)."
+					},
+					"response": []
+				},
+				{
+					"name": "Pacientes por Especie",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pacientes/especie/Canino",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pacientes",
+								"especie",
+								"Canino"
+							]
+						},
+						"description": "Filtra pacientes por especie (Canino, Felino, etc.)."
 					},
 					"response": []
 				},
@@ -311,62 +743,68 @@
 								"api",
 								"pacientes"
 							]
-						}
+						},
+						"description": "Crea un nuevo paciente (mascota). Requiere roles ADMIN, RECEPCION o VET."
 					},
 					"response": []
 				},
 				{
-					"name": "Buscar Pacientes",
+					"name": "Actualizar Paciente",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Firulais\",\n    \"especie\": \"Perro\",\n    \"raza\": \"Golden Retriever\",\n    \"sexo\": \"M\",\n    \"edadMeses\": 25,\n    \"pesoKg\": 29.0,\n    \"microchip\": \"123456789012345\",\n    \"notas\": \"Muy amigable y juguetón\",\n    \"propietarioId\": 1,\n    \"activo\": true\n}"
+						},
 						"url": {
-							"raw": "{{base_url}}/api/pacientes/buscar?q=Max",
+							"raw": "{{base_url}}/api/pacientes/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"pacientes",
-								"buscar"
-							],
-							"query": [
-								{
-									"key": "q",
-									"value": "Max"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Pacientes por Propietario",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/pacientes/propietario/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"pacientes",
-								"propietario",
 								"1"
 							]
-						}
+						},
+						"description": "Actualiza un paciente existente. Requiere roles ADMIN, RECEPCION o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Paciente",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pacientes/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pacientes",
+								"1"
+							]
+						},
+						"description": "Elimina (desactiva) un paciente. Requiere rol ADMIN."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Gestión de pacientes (mascotas)."
 		},
 		{
 			"name": "5. Citas",
 			"item": [
 				{
-					"name": "Listar Citas",
+					"name": "Listar Citas (Deprecated)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -379,7 +817,67 @@
 								"api",
 								"citas"
 							]
-						}
+						},
+						"description": "Obtiene todas las citas. Deprecated: usar /search en su lugar."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Citas (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/search?estado=&profesionalId=&pacienteId=&fechaInicio=&fechaFin=&page=0&size=20&sort=fecha,asc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"search"
+							],
+							"query": [
+								{
+									"key": "estado",
+									"value": "",
+									"description": "Estado: PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA"
+								},
+								{
+									"key": "profesionalId",
+									"value": "",
+									"description": "ID del veterinario"
+								},
+								{
+									"key": "pacienteId",
+									"value": "",
+									"description": "ID del paciente"
+								},
+								{
+									"key": "fechaInicio",
+									"value": "",
+									"description": "Fecha inicial (ISO 8601): 2025-01-01T00:00:00"
+								},
+								{
+									"key": "fechaFin",
+									"value": "",
+									"description": "Fecha final (ISO 8601): 2025-01-31T23:59:59"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "fecha,asc"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de citas con filtros combinados y paginación."
 					},
 					"response": []
 				},
@@ -398,7 +896,101 @@
 								"citas",
 								"1"
 							]
-						}
+						},
+						"description": "Obtiene una cita específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Citas por Paciente (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/paciente/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"paciente",
+								"1"
+							]
+						},
+						"description": "Obtiene las citas de un paciente. Deprecated: usar /search con pacienteId."
+					},
+					"response": []
+				},
+				{
+					"name": "Citas por Profesional (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/profesional/2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"profesional",
+								"2"
+							]
+						},
+						"description": "Obtiene las citas de un profesional. Deprecated: usar /search con profesionalId."
+					},
+					"response": []
+				},
+				{
+					"name": "Citas por Estado (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/estado/PENDIENTE",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"estado",
+								"PENDIENTE"
+							]
+						},
+						"description": "Filtra citas por estado. Deprecated: usar /search con estado."
+					},
+					"response": []
+				},
+				{
+					"name": "Citas por Rango de Fechas (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/rango?inicio=2025-01-01T00:00:00&fin=2025-01-31T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"rango"
+							],
+							"query": [
+								{
+									"key": "inicio",
+									"value": "2025-01-01T00:00:00"
+								},
+								{
+									"key": "fin",
+									"value": "2025-01-31T23:59:59"
+								}
+							]
+						},
+						"description": "Filtra citas por rango de fechas. Deprecated: usar /search con fechaInicio y fechaFin."
 					},
 					"response": []
 				},
@@ -425,57 +1017,98 @@
 								"api",
 								"citas"
 							]
-						}
+						},
+						"description": "Crea una nueva cita médica. Requiere roles ADMIN, RECEPCION o VET."
 					},
 					"response": []
 				},
 				{
-					"name": "Citas por Estado",
+					"name": "Actualizar Cita",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha\": \"2025-11-10T11:00:00\",\n    \"motivo\": \"Vacunación y desparasitación\",\n    \"estado\": \"CONFIRMADA\",\n    \"observaciones\": \"Cliente confirmó asistencia\",\n    \"pacienteId\": 1,\n    \"propietarioId\": 1,\n    \"profesionalId\": 2\n}"
+						},
 						"url": {
-							"raw": "{{base_url}}/api/citas/estado/PENDIENTE",
+							"raw": "{{base_url}}/api/citas/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"citas",
-								"estado",
-								"PENDIENTE"
+								"1"
 							]
-						}
+						},
+						"description": "Actualiza una cita existente. Requiere roles ADMIN, RECEPCION o VET."
 					},
 					"response": []
 				},
 				{
-					"name": "Citas por Profesional",
+					"name": "Cambiar Estado de Cita",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"estado\": \"CONFIRMADA\"\n}"
+						},
 						"url": {
-							"raw": "{{base_url}}/api/citas/profesional/2",
+							"raw": "{{base_url}}/api/citas/1/estado",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"citas",
-								"profesional",
-								"2"
+								"1",
+								"estado"
 							]
-						}
+						},
+						"description": "Cambia el estado de una cita. Estados válidos: PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA. Requiere roles ADMIN, RECEPCION o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Cita",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"1"
+							]
+						},
+						"description": "Elimina una cita. Requiere roles ADMIN o RECEPCION."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Gestión de citas médicas veterinarias."
 		},
 		{
 			"name": "6. Consultas",
 			"item": [
 				{
-					"name": "Listar Consultas",
+					"name": "Listar Consultas (Deprecated)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -488,7 +1121,62 @@
 								"api",
 								"consultas"
 							]
-						}
+						},
+						"description": "Obtiene todas las consultas. Requiere roles ADMIN o VET. Deprecated: usar /search en su lugar."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Consultas (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/consultas/search?pacienteId=&profesionalId=&fechaInicio=&fechaFin=&page=0&size=20&sort=fecha,desc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"consultas",
+								"search"
+							],
+							"query": [
+								{
+									"key": "pacienteId",
+									"value": "",
+									"description": "ID del paciente (historia clínica)"
+								},
+								{
+									"key": "profesionalId",
+									"value": "",
+									"description": "ID del veterinario"
+								},
+								{
+									"key": "fechaInicio",
+									"value": "",
+									"description": "Fecha inicial (ISO 8601)"
+								},
+								{
+									"key": "fechaFin",
+									"value": "",
+									"description": "Fecha final (ISO 8601)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "fecha,desc"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de consultas (historia clínica) con filtros y paginación. Requiere roles ADMIN o VET."
 					},
 					"response": []
 				},
@@ -507,7 +1195,80 @@
 								"consultas",
 								"1"
 							]
-						}
+						},
+						"description": "Obtiene una consulta específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultas por Paciente (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/consultas/paciente/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"consultas",
+								"paciente",
+								"1"
+							]
+						},
+						"description": "Obtiene la historia clínica completa de un paciente. Deprecated: usar /search con pacienteId."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultas por Profesional (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/consultas/profesional/2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"consultas",
+								"profesional",
+								"2"
+							]
+						},
+						"description": "Obtiene las consultas de un veterinario. Requiere roles ADMIN o VET. Deprecated: usar /search con profesionalId."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultas por Rango de Fechas (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/consultas/rango?inicio=2025-01-01T00:00:00&fin=2025-01-31T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"consultas",
+								"rango"
+							],
+							"query": [
+								{
+									"key": "inicio",
+									"value": "2025-01-01T00:00:00"
+								},
+								{
+									"key": "fin",
+									"value": "2025-01-31T23:59:59"
+								}
+							]
+						},
+						"description": "Filtra consultas por rango de fechas. Requiere roles ADMIN o VET. Deprecated: usar /search con fechaInicio y fechaFin."
 					},
 					"response": []
 				},
@@ -534,31 +1295,549 @@
 								"api",
 								"consultas"
 							]
-						}
+						},
+						"description": "Crea una nueva consulta médica (historia clínica). Requiere roles ADMIN o VET."
 					},
 					"response": []
 				},
 				{
-					"name": "Consultas por Paciente",
+					"name": "Actualizar Consulta",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha\": \"2025-11-06T14:30:00\",\n    \"frecuenciaCardiaca\": 125,\n    \"frecuenciaRespiratoria\": 30,\n    \"temperatura\": 38.7,\n    \"pesoKg\": 30.5,\n    \"examenFisico\": \"Paciente alerta y activo. Mucosas rosadas. Hidratación normal.\",\n    \"diagnostico\": \"Estado general bueno. Vacunas al día.\",\n    \"tratamiento\": \"Continuar con alimentación balanceada. Próximo control en 6 meses.\",\n    \"observaciones\": \"Propietario reporta buen apetito y actividad normal\",\n    \"pacienteId\": 1,\n    \"profesionalId\": 2\n}"
+						},
 						"url": {
-							"raw": "{{base_url}}/api/consultas/paciente/1",
+							"raw": "{{base_url}}/api/consultas/1",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
 								"consultas",
-								"paciente",
 								"1"
 							]
-						}
+						},
+						"description": "Actualiza una consulta existente. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Consulta",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/consultas/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"consultas",
+								"1"
+							]
+						},
+						"description": "Elimina una consulta. Requiere rol ADMIN."
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Gestión de consultas médicas (historia clínica)."
+		},
+		{
+			"name": "7. Prescripciones",
+			"item": [
+				{
+					"name": "Listar Prescripciones (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones"
+							]
+						},
+						"description": "Obtiene todas las prescripciones. Requiere roles ADMIN o VET. Deprecated: usar /search en su lugar."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Prescripciones (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/search?pacienteId=&consultaId=&fechaInicio=&fechaFin=&page=0&size=20&sort=fecha,desc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"search"
+							],
+							"query": [
+								{
+									"key": "pacienteId",
+									"value": "",
+									"description": "ID del paciente"
+								},
+								{
+									"key": "consultaId",
+									"value": "",
+									"description": "ID de la consulta"
+								},
+								{
+									"key": "fechaInicio",
+									"value": "",
+									"description": "Fecha inicial (ISO 8601)"
+								},
+								{
+									"key": "fechaFin",
+									"value": "",
+									"description": "Fecha final (ISO 8601)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "fecha,desc"
+								}
+							]
+						},
+						"description": "Búsqueda avanzada de prescripciones con filtros y paginación. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Prescripción por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"1"
+							]
+						},
+						"description": "Obtiene una prescripción específica por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Prescripciones por Consulta (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/consulta/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"consulta",
+								"1"
+							]
+						},
+						"description": "Obtiene las prescripciones de una consulta. Deprecated: usar /search con consultaId."
+					},
+					"response": []
+				},
+				{
+					"name": "Prescripciones por Paciente (Deprecated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/paciente/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"paciente",
+								"1"
+							]
+						},
+						"description": "Obtiene las prescripciones de un paciente. Deprecated: usar /search con pacienteId."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Prescripción",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha\": \"2025-11-06T14:30:00\",\n    \"indicaciones\": \"Administrar con alimentos. Completar el tratamiento.\",\n    \"consultaId\": 1,\n    \"pacienteId\": 1,\n    \"items\": [\n        {\n            \"medicamento\": \"Amoxicilina 500mg\",\n            \"dosis\": \"1 tableta\",\n            \"frecuencia\": \"Cada 12 horas\",\n            \"duracion\": \"7 días\",\n            \"via\": \"Oral\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones"
+							]
+						},
+						"description": "Crea una nueva prescripción médica (receta). Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Prescripción",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fecha\": \"2025-11-06T14:30:00\",\n    \"indicaciones\": \"Administrar con alimentos. Completar el tratamiento completo.\",\n    \"consultaId\": 1,\n    \"pacienteId\": 1,\n    \"items\": [\n        {\n            \"medicamento\": \"Amoxicilina 500mg\",\n            \"dosis\": \"1 tableta\",\n            \"frecuencia\": \"Cada 12 horas\",\n            \"duracion\": \"10 días\",\n            \"via\": \"Oral\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"1"
+							]
+						},
+						"description": "Actualiza una prescripción existente. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Prescripción",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/prescripciones/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"prescripciones",
+								"1"
+							]
+						},
+						"description": "Elimina una prescripción. Requiere rol ADMIN."
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de prescripciones médicas (recetas veterinarias)."
+		},
+		{
+			"name": "8. Dashboard",
+			"item": [
+				{
+					"name": "Obtener Estadísticas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/dashboard/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dashboard",
+								"stats"
+							]
+						},
+						"description": "Obtiene todas las estadísticas del dashboard: contadores, próximas citas, consultas por día, distribución por especie, etc."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para obtener estadísticas y datos del dashboard principal."
+		},
+		{
+			"name": "9. Notificaciones",
+			"item": [
+				{
+					"name": "Obtener Mis Notificaciones",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones"
+							]
+						},
+						"description": "Obtiene todas las notificaciones del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Notificaciones No Leídas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones/no-leidas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones",
+								"no-leidas"
+							]
+						},
+						"description": "Obtiene las notificaciones no leídas del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Contar Notificaciones No Leídas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones/no-leidas/count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones",
+								"no-leidas",
+								"count"
+							]
+						},
+						"description": "Cuenta las notificaciones no leídas del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Notificación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"usuarioId\": 1,\n    \"titulo\": \"Nueva cita programada\",\n    \"mensaje\": \"Tienes una nueva cita el día de mañana\",\n    \"tipo\": \"CITA\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones"
+							]
+						},
+						"description": "Crea una nueva notificación para un usuario. Tipos válidos: CITA, CONSULTA, PACIENTE, SISTEMA, PRESCRIPCION, RECORDATORIO"
+					},
+					"response": []
+				},
+				{
+					"name": "Marcar Notificación como Leída",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones/1/leer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones",
+								"1",
+								"leer"
+							]
+						},
+						"description": "Marca una notificación específica como leída."
+					},
+					"response": []
+				},
+				{
+					"name": "Marcar Todas como Leídas",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones/leer-todas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones",
+								"leer-todas"
+							]
+						},
+						"description": "Marca todas las notificaciones del usuario autenticado como leídas."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Notificación",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notificaciones/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notificaciones",
+								"1"
+							]
+						},
+						"description": "Elimina una notificación del usuario autenticado."
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de notificaciones del sistema. Tipos de notificación válidos: CITA, CONSULTA, PACIENTE, SISTEMA, PRESCRIPCION, RECORDATORIO"
+		},
+		{
+			"name": "10. Reportes",
+			"item": [
+				{
+					"name": "Generar Reporte",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/reportes?periodo=mes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"reportes"
+							],
+							"query": [
+								{
+									"key": "periodo",
+									"value": "mes",
+									"description": "Periodo: hoy, semana, mes, año (default: mes)"
+								}
+							]
+						},
+						"description": "Genera un reporte completo con estadísticas. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				}
+			],
+			"description": "Generación de reportes y estadísticas operativas."
+		},
+		{
+			"name": "11. Diagnóstico",
+			"item": [
+				{
+					"name": "Verificar Configuración de Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/diagnostico/email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"diagnostico",
+								"email"
+							]
+						},
+						"description": "Verifica la configuración del servicio de email. Endpoint público para diagnóstico."
+					},
+					"response": []
+				},
+				{
+					"name": "Enviar Email de Prueba",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/diagnostico/email/test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"diagnostico",
+								"email",
+								"test"
+							]
+						},
+						"description": "Envía un email de prueba para verificar que el servicio de correo funciona correctamente."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de diagnóstico para verificar configuración del sistema."
 		}
 	],
 	"auth": {
@@ -595,13 +1874,14 @@
 		{
 			"key": "base_url",
 			"value": "http://localhost:8080",
-			"type": "string"
+			"type": "string",
+			"description": "URL base de la API. Por defecto usa el puerto 8080, pero puede cambiarse según la configuración del servidor."
 		},
 		{
 			"key": "jwt_token",
 			"value": "",
-			"type": "string"
+			"type": "string",
+			"description": "Token JWT obtenido del login. Se actualiza automáticamente después de hacer login."
 		}
 	]
 }
-
