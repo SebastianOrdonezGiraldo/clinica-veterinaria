@@ -70,6 +70,7 @@ public class CitaService {
     private final PropietarioRepository propietarioRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
+    private final EmailService emailService;
     private final SMSService smsService;
     
     // Configuración de horarios de atención
@@ -379,6 +380,30 @@ public class CitaService {
             log.warn("No se pudo crear notificación para la cita: {}", e.getMessage());
         }
         
+        // Enviar email de confirmación al propietario
+        if (propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.enviarEmailConfirmacionCita(
+                        propietario.getEmail(),
+                        propietario.getNombre(),
+                        paciente.getNombre(),
+                        dto.getFecha(),
+                        dto.getMotivo(),
+                        profesional.getNombre()
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de confirmación enviado exitosamente a: {}", propietario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de confirmación a: {}", propietario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de confirmación: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        } else {
+            log.debug("Propietario sin email, no se envía confirmación por correo");
+        }
+        
         // Enviar SMS de confirmación al propietario (si está habilitado)
         if (propietario.getTelefono() != null && !propietario.getTelefono().trim().isEmpty()) {
             try {
@@ -494,6 +519,34 @@ public class CitaService {
         log.info("📊 Cambios detectados en cita ID {}: Estado={}, Fecha={}, Motivo={}", 
             id, estadoCambio, fechaCambio, motivoCambio);
         
+        // Enviar correos según los cambios
+        if (estadoCambio) {
+            // Cambio de estado: enviar email de actualización de estado
+            enviarEmailPorCambioDeEstado(cita, estadoAnterior, dto.getEstado());
+        } else if (fechaCambio || motivoCambio) {
+            // Cambio de fecha o motivo sin cambio de estado: enviar email de actualización
+            if (propietario != null && propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+                try {
+                    boolean emailEnviado = emailService.enviarEmailCambioEstadoCita(
+                        propietario.getEmail(),
+                        propietario.getNombre(),
+                        cita.getPaciente().getNombre(),
+                        cita.getFecha(),
+                        cita.getMotivo(),
+                        cita.getProfesional().getNombre(),
+                        "ACTUALIZADA"
+                    );
+                    if (emailEnviado) {
+                        log.info("✓ Email de actualización enviado a: {}", propietario.getEmail());
+                    } else {
+                        log.warn("No se pudo enviar email de actualización a: {}", propietario.getEmail());
+                    }
+                } catch (Exception e) {
+                    log.error("Error al enviar email de actualización: {}", e.getMessage(), e);
+                }
+            }
+        }
+        
         return CitaDTO.fromEntity(cita, true);
     }
 
@@ -543,6 +596,9 @@ public class CitaService {
         
         log.info("✅ Estado de cita ID {} actualizado exitosamente: {} → {}", id, estadoAnterior, nuevoEstado);
         
+        // Enviar correo cuando el estado cambia
+        enviarEmailPorCambioDeEstado(cita, estadoAnterior, nuevoEstado);
+        
         return CitaDTO.fromEntity(cita, true);
     }
 
@@ -566,6 +622,37 @@ public class CitaService {
                 log.error(MSG_CITA_NO_ENCONTRADA, id);
                 return new ResourceNotFoundException("Cita", "id", id);
             });
+        
+        // Obtener información antes de eliminar para enviar email
+        Propietario propietario = cita.getPropietario();
+        
+        // Enviar email de cancelación antes de eliminar
+        if (propietario != null && propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+            try {
+                String razonCancelacion = cita.getObservaciones() != null 
+                    ? cita.getObservaciones() 
+                    : "La cita ha sido eliminada del sistema";
+                
+                boolean emailEnviado = emailService.enviarEmailCancelacionCita(
+                    propietario.getEmail(),
+                    propietario.getNombre(),
+                    cita.getPaciente().getNombre(),
+                    cita.getFecha(),
+                    cita.getMotivo(),
+                    cita.getProfesional().getNombre(),
+                    razonCancelacion
+                );
+                
+                if (emailEnviado) {
+                    log.info("✓ Email de cancelación enviado a: {} antes de eliminar la cita", propietario.getEmail());
+                } else {
+                    log.warn("No se pudo enviar email de cancelación a: {}", propietario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("Error al enviar email de cancelación antes de eliminar cita: {}", e.getMessage());
+                // No lanzar excepción para no interrumpir la eliminación
+            }
+        }
         
         citaRepository.deleteById(id);
         log.warn("⚠ Cita eliminada exitosamente con ID: {}", id);
@@ -683,6 +770,77 @@ public class CitaService {
             citas.getTotalPages());
         
         return citas.map(c -> CitaDTO.fromEntity(c, true));
+    }
+
+    /**
+     * Método auxiliar para enviar correos electrónicos según el cambio de estado de una cita.
+     * 
+     * <p>Envía diferentes tipos de correos según el estado nuevo:</p>
+     * <ul>
+     *   <li>CANCELADA: Envía correo de cancelación</li>
+     *   <li>CONFIRMADA: Envía correo de confirmación</li>
+     *   <li>ATENDIDA/COMPLETADA: Envía correo de actualización de estado</li>
+     *   <li>PENDIENTE: Envía correo de actualización de estado</li>
+     * </ul>
+     * 
+     * @param cita Cita con el estado actualizado
+     * @param estadoAnterior Estado anterior de la cita
+     * @param nuevoEstado Nuevo estado de la cita
+     */
+    private void enviarEmailPorCambioDeEstado(Cita cita, Cita.EstadoCita estadoAnterior, Cita.EstadoCita nuevoEstado) {
+        Propietario propietario = cita.getPropietario();
+        
+        // Validar que el propietario existe y tiene email
+        if (propietario == null || propietario.getEmail() == null || propietario.getEmail().trim().isEmpty()) {
+            log.debug("Propietario sin email, no se envía correo de cambio de estado");
+            return;
+        }
+
+        try {
+            String propietarioEmail = propietario.getEmail();
+            String propietarioNombre = propietario.getNombre();
+            String pacienteNombre = cita.getPaciente() != null ? cita.getPaciente().getNombre() : "N/A";
+            LocalDateTime fecha = cita.getFecha();
+            String motivo = cita.getMotivo() != null ? cita.getMotivo() : "N/A";
+            String profesionalNombre = cita.getProfesional() != null ? cita.getProfesional().getNombre() : "N/A";
+            String razonCancelacion = cita.getObservaciones() != null ? cita.getObservaciones() : "No especificada";
+
+            boolean emailEnviado = false;
+
+            // Enviar correo según el nuevo estado
+            if (nuevoEstado == Cita.EstadoCita.CANCELADA) {
+                emailEnviado = emailService.enviarEmailCancelacionCita(
+                    propietarioEmail,
+                    propietarioNombre,
+                    pacienteNombre,
+                    fecha,
+                    motivo,
+                    profesionalNombre,
+                    razonCancelacion
+                );
+            } else {
+                // Para otros estados (CONFIRMADA, ATENDIDA, COMPLETADA, PENDIENTE, etc.)
+                emailEnviado = emailService.enviarEmailCambioEstadoCita(
+                    propietarioEmail,
+                    propietarioNombre,
+                    pacienteNombre,
+                    fecha,
+                    motivo,
+                    profesionalNombre,
+                    nuevoEstado.name()
+                );
+            }
+
+            if (emailEnviado) {
+                log.info("✓ Email de cambio de estado enviado exitosamente a: {} ({} → {})", 
+                    propietarioEmail, estadoAnterior, nuevoEstado);
+            } else {
+                log.warn("✗ No se pudo enviar email de cambio de estado a: {}", propietarioEmail);
+            }
+        } catch (Exception e) {
+            log.error("✗ Error inesperado al enviar email por cambio de estado de cita: {}", e.getMessage(), e);
+            // No lanzar excepción para no interrumpir el flujo principal
+        }
     }
 }
 
