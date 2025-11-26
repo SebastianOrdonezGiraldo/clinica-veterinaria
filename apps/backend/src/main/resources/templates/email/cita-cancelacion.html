@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelación de Cita</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #dc3545;
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .info-box strong {
+            color: #dc3545;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚫 Cancelación de Cita</h1>
+        </div>
+        
+        <div class="content">
+            <p>Estimado/a <strong th:text="${propietarioNombre}">Nombre del Propietario</strong>,</p>
+            
+            <p>Le informamos que su cita ha sido cancelada:</p>
+            
+            <div class="info-box">
+                <strong>Mascota:</strong>
+                <span th:text="${pacienteNombre}">Nombre de la Mascota</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Fecha programada:</strong>
+                <span th:text="${#temporals.format(fecha, 'dd/MM/yyyy')}">DD/MM/YYYY</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Hora programada:</strong>
+                <span th:text="${#temporals.format(hora, 'HH:mm')}">HH:MM</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Veterinario:</strong>
+                <span th:text="${profesionalNombre}">Nombre del Veterinario</span>
+            </div>
+            
+            <div class="info-box">
+                <strong>Motivo original:</strong>
+                <span th:text="${motivo}">Motivo de la consulta</span>
+            </div>
+            
+            <div class="warning" th:if="${razonCancelacion}">
+                <strong>📌 Razón de la cancelación:</strong>
+                <p th:text="${razonCancelacion}">Razón de cancelación</p>
+            </div>
+            
+            <p>Si desea reagendar su cita, por favor contáctenos y con gusto le ayudaremos a encontrar un nuevo horario disponible.</p>
+            
+            <p>Lamentamos cualquier inconveniente que esto pueda causarle.</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria</strong></p>
+            <p>Gracias por su comprensión.</p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                Este es un correo automático, por favor no responda a este mensaje.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

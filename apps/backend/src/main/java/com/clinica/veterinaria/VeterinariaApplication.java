@@ -27,7 +27,8 @@ public class VeterinariaApplication {
         // Cargar variables de entorno desde archivo .env si existe
         try {
             Dotenv dotenv = Dotenv.configure()
-                    .directory("./") // Buscar .env en la raíz del proyecto
+                    .directory("./") // Buscar .env en la raíz del proyecto (apps/backend/)
+                    .filename(".env") // Nombre del archivo
                     .ignoreIfMissing() // No fallar si no existe
                     .load();
             
