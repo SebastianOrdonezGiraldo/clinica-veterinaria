@@ -25,6 +25,7 @@ import CitaDetalle from "@features/agenda/pages/CitaDetalle";
 import AgendarCitaPublica from "@features/agenda/pages/AgendarCitaPublica";
 import ClienteLogin from "@features/clientes/pages/ClienteLogin";
 import ClienteDashboard from "@features/clientes/pages/ClienteDashboard";
+import EstablecerPassword from "@features/clientes/pages/EstablecerPassword";
 import HistoriasClinicas from "@features/historias/pages/HistoriasClinicas";
 import HistoriaDetalle from "@features/historias/pages/HistoriaDetalle";
 import ConsultaForm from "@features/historias/pages/ConsultaForm";
@@ -76,6 +77,7 @@ const App = () => (
               
               {/* Rutas del portal del cliente */}
               <Route path="/cliente/login" element={<ClienteLogin />} />
+              <Route path="/cliente/establecer-password" element={<EstablecerPassword />} />
               <Route
                 path="/cliente/dashboard"
                 element={

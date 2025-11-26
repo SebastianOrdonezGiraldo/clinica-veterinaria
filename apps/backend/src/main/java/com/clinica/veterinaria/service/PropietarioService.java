@@ -286,6 +286,49 @@ public class PropietarioService {
     }
 
     /**
+     * Establece una contraseña para un propietario existente que no tiene contraseña.
+     * 
+     * <p>Este método permite que un propietario que fue creado sin contraseña
+     * (por ejemplo, al agendar una cita) pueda establecer una contraseña después
+     * para acceder al portal del cliente.</p>
+     * 
+     * @param email Email del propietario. No puede ser null.
+     * @param password Contraseña en texto plano. No puede ser null.
+     * @throws ResourceNotFoundException si el propietario no existe.
+     * @throws BusinessException si el propietario ya tiene una contraseña establecida.
+     */
+    @CacheEvict(value = "propietarios", allEntries = true)
+    public void establecerPassword(@NonNull String email, @NonNull String password) {
+        log.info("→ Estableciendo contraseña para propietario con email: {}", email);
+        
+        Propietario propietario = propietarioRepository.findByEmail(email)
+            .orElseThrow(() -> {
+                log.error("✗ Propietario no encontrado con email: {}", email);
+                return new ResourceNotFoundException("Propietario", "email", email);
+            });
+        
+        // Verificar que el propietario no tenga contraseña ya establecida
+        if (propietario.getPassword() != null && !propietario.getPassword().trim().isEmpty()) {
+            log.warn("✗ El propietario ya tiene una contraseña establecida - Email: {}", email);
+            throw new com.clinica.veterinaria.exception.domain.BusinessException(
+                "Este cliente ya tiene una contraseña establecida. Si la olvidaste, contacta con la clínica.");
+        }
+        
+        // Verificar que el propietario esté activo
+        if (Boolean.FALSE.equals(propietario.getActivo())) {
+            log.error("✗ Intento de establecer contraseña para propietario inactivo - Email: {}", email);
+            throw new com.clinica.veterinaria.exception.domain.BusinessException(
+                "La cuenta está inactiva. Contacta con la clínica.");
+        }
+        
+        // Establecer la contraseña
+        propietario.setPassword(passwordEncoder.encode(password));
+        propietarioRepository.save(propietario);
+        
+        log.info("✓ Contraseña establecida exitosamente para propietario - Email: {}", email);
+    }
+    
+    /**
      * Cuenta el número de propietarios activos.
      * 
      * @return Número de propietarios activos en el sistema.

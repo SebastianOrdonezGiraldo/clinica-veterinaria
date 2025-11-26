@@ -28,5 +28,14 @@ export const clienteService = {
     const response = await axios.get<Paciente[]>('/clientes/mis-mascotas');
     return response.data;
   },
-};
 
+  /**
+   * Establece una contraseña para un propietario existente que no tiene contraseña
+   */
+  async establecerPassword(email: string, password: string): Promise<void> {
+    await axios.post('/public/clientes/establecer-password', {
+      email,
+      password,
+    });
+  },
+};

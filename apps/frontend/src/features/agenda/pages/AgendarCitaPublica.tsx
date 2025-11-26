@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2, Lock, LogIn } from 'lucide-react';
+import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2, Lock, LogIn, KeyRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Input } from '@shared/components/ui/input';
@@ -61,6 +62,7 @@ export default function AgendarCitaPublica() {
   const [isLoadingVets, setIsLoadingVets] = useState(true);
   const [citaCreada, setCitaCreada] = useState(false);
   const [citaId, setCitaId] = useState<string | null>(null);
+  const [emailSinPassword, setEmailSinPassword] = useState<string | null>(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CitaPublicaFormData>({
     resolver: zodResolver(citaPublicaSchema),
@@ -212,6 +214,13 @@ export default function AgendarCitaPublica() {
       const cita = await citaPublicaService.crearCita(request);
       setCitaId(cita.id);
       setCitaCreada(true);
+      
+      // Si se registró un nuevo propietario sin contraseña, guardar el email
+      if (tipoRegistro === 'nuevo' && data.propietarioEmail && 
+          (!data.propietarioPassword || data.propietarioPassword.length < 6)) {
+        setEmailSinPassword(data.propietarioEmail);
+      }
+      
       toast.success('¡Cita agendada exitosamente!');
     } catch (error: any) {
       console.error('Error al agendar cita:', error);
@@ -239,7 +248,32 @@ export default function AgendarCitaPublica() {
             <p className="text-center text-muted-foreground">
               Recibirá una confirmación por correo electrónico. Por favor, llegue 10 minutos antes de su cita.
             </p>
-            <div className="flex justify-center gap-4">
+            
+            {emailSinPassword && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <KeyRound className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-900 mb-1">
+                        ¿Quieres acceder al portal del cliente?
+                      </p>
+                      <p className="text-sm text-blue-800 mb-3">
+                        Establece una contraseña para ver tus citas y mascotas desde tu cuenta.
+                      </p>
+                      <Link to={`/cliente/establecer-password?email=${encodeURIComponent(emailSinPassword)}`}>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                          <Lock className="h-4 w-4 mr-2" />
+                          Establecer Contraseña
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button onClick={() => window.location.reload()}>
                 Agendar Otra Cita
               </Button>
