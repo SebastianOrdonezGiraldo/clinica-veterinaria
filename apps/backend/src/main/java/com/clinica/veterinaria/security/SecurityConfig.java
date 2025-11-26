@@ -142,6 +142,7 @@ public class SecurityConfig {
                 // Endpoints públicos (sin autenticación)
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/diagnostico/**").permitAll() // Endpoint de diagnóstico público
                 // Swagger/OpenAPI - múltiples rutas posibles
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
                 
