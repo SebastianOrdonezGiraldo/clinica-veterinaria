@@ -251,17 +251,22 @@ public class CitaController {
             @PathVariable Long id, 
             @RequestParam(required = false) String estado,
             @RequestBody(required = false) Map<String, String> body) {
-        log.info("PATCH /api/citas/{}/estado", id);
+        log.info("═══════════════════════════════════════════════════════════");
+        log.info("PATCH /api/citas/{}/estado - INICIANDO CAMBIO DE ESTADO", id);
+        log.info("═══════════════════════════════════════════════════════════");
         
         // Obtener el estado del body o del query param
         String estadoStr = null;
         if (body != null && body.containsKey("estado")) {
             estadoStr = body.get("estado");
+            log.info("📥 Estado recibido desde body: {}", estadoStr);
         } else if (estado != null) {
             estadoStr = estado;
+            log.info("📥 Estado recibido desde query param: {}", estadoStr);
         }
         
         if (estadoStr == null || estadoStr.isEmpty()) {
+            log.error("❌ ERROR: El estado es requerido");
             throw new RuntimeException("El estado es requerido");
         }
         
@@ -269,12 +274,18 @@ public class CitaController {
         Cita.EstadoCita estadoEnum;
         try {
             estadoEnum = Cita.EstadoCita.valueOf(estadoStr.toUpperCase());
+            log.info("✅ Estado convertido correctamente: {}", estadoEnum);
         } catch (IllegalArgumentException e) {
+            log.error("❌ ERROR: Estado inválido: {}", estadoStr);
             throw new RuntimeException("Estado inválido: " + estadoStr + ". Valores válidos: PENDIENTE, CONFIRMADA, ATENDIDA, CANCELADA");
         }
         
-        log.info("Cambiando estado de cita {} a {}", id, estadoEnum);
-        return ResponseEntity.ok(citaService.cambiarEstado(id, estadoEnum));
+        log.info("🔄 Llamando a citaService.cambiarEstado({}, {})", id, estadoEnum);
+        CitaDTO resultado = citaService.cambiarEstado(id, estadoEnum);
+        log.info("✅ Cambio de estado completado. Retornando resultado.");
+        log.info("═══════════════════════════════════════════════════════════");
+        
+        return ResponseEntity.ok(resultado);
     }
 
     /**
