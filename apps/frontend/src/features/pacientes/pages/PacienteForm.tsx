@@ -15,6 +15,7 @@ import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Propietario } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { sanitizeText } from '@shared/utils/sanitize';
 
 const pacienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -113,8 +114,13 @@ export default function PacienteForm() {
     try {
       setIsLoading(true);
       
+      // Sanitizar inputs de texto antes de enviar
       const pacienteData = {
         ...data,
+        nombre: sanitizeText(data.nombre),
+        raza: data.raza ? sanitizeText(data.raza) : undefined,
+        microchip: data.microchip ? sanitizeText(data.microchip) : undefined,
+        notas: data.notas ? sanitizeText(data.notas) : undefined,
         propietarioId: data.propietarioId, // Ya es string
       };
 

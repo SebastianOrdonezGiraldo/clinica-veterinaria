@@ -1,18 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Dog, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
-import { Badge } from '@shared/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shared/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@shared/components/ui/alert-dialog';
 import { LoadingCards } from '@shared/components/common/LoadingCards';
 import { Pagination } from '@shared/components/common/Pagination';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { usePacientes } from '../hooks/usePacientes';
 import { useAllPropietarios } from '@features/propietarios/hooks/usePropietarios';
+import { PacienteCard } from '../components/PacienteCard';
 
 export default function Pacientes() {
   const navigate = useNavigate();
@@ -117,77 +115,22 @@ export default function Pacientes() {
         <LoadingCards count={9} />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div 
+            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            role="list"
+            aria-label="Lista de pacientes"
+          >
             {pacientes.map((paciente) => {
-          const propietario = getPropietario(paciente.propietarioId);
-          return (
-            <Card key={paciente.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div 
-                    className="flex items-center gap-3 flex-1 cursor-pointer"
-                    onClick={() => navigate(`/pacientes/${paciente.id}`)}
-                  >
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Dog className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{paciente.nombre}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{paciente.raza || 'Sin raza'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary/20">
-                      {paciente.especie}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/pacientes/${paciente.id}`)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalle
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/pacientes/${paciente.id}/editar`)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setDeleteId(paciente.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Sexo:</span>
-                  <span className="font-medium">{paciente.sexo === 'M' ? 'Macho' : 'Hembra'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Edad:</span>
-                  <span className="font-medium">{paciente.edadMeses ? `${Math.floor(paciente.edadMeses / 12)}a ${paciente.edadMeses % 12}m` : 'N/A'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Peso:</span>
-                  <span className="font-medium">{paciente.pesoKg ? `${paciente.pesoKg} kg` : 'N/A'}</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">Propietario</p>
-                  <p className="text-sm font-medium">{propietario?.nombre}</p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+              const propietario = getPropietario(paciente.propietarioId);
+              return (
+                <PacienteCard
+                  key={paciente.id}
+                  paciente={paciente}
+                  propietario={propietario}
+                  onDelete={setDeleteId}
+                />
+              );
+            })}
           </div>
 
           {totalPages > 1 && (

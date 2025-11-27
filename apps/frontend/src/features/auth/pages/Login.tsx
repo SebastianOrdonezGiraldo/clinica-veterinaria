@@ -37,27 +37,40 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4"
+      role="main"
+      aria-label="Página de inicio de sesión"
+    >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center">
+          <div className="flex justify-center" aria-hidden="true">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Dog className="h-8 w-8 text-primary" />
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl" id="login-title">Iniciar Sesión</CardTitle>
+            <CardDescription id="login-description">
               Accede al sistema o al portal del cliente
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form 
+            onSubmit={handleSubmit} 
+            className="space-y-4"
+            aria-labelledby="login-title"
+            aria-describedby="login-description"
+            noValidate
+          >
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail 
+                  className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" 
+                  aria-hidden="true"
+                />
                 <Input
                   id="email"
                   type="email"
@@ -67,17 +80,30 @@ export default function Login() {
                   className="pl-10"
                   required
                   disabled={isLoading}
+                  aria-required="true"
+                  aria-invalid={false}
+                  autoComplete="email"
+                  aria-describedby="email-description"
                 />
               </div>
+              <span id="email-description" className="sr-only">
+                Ingrese su dirección de correo electrónico
+              </span>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock 
+                  className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" 
+                  aria-hidden="true"
+                />
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="current-password"
+                  aria-required="true"
+                  aria-describedby="password-description"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
@@ -85,8 +111,17 @@ export default function Login() {
                   disabled={isLoading}
                 />
               </div>
+              <span id="password-description" className="sr-only">
+                Ingrese su contraseña
+              </span>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              aria-busy={isLoading}
+              aria-label={isLoading ? 'Iniciando sesión, por favor espere' : 'Iniciar sesión'}
+            >
               {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>

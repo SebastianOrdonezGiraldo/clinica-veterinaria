@@ -74,8 +74,10 @@ export function AppSidebar() {
                           ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                           : 'hover:bg-sidebar-accent/50'
                       }
+                      aria-label={`Navegar a ${item.title}`}
+                      aria-current={({ isActive }) => isActive ? 'page' : undefined}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className="h-4 w-4" aria-hidden="true" />
                       {open && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>

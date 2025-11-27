@@ -18,6 +18,7 @@ import { propietarioService } from '@features/propietarios/services/propietarioS
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Paciente, Propietario, Usuario, Cita } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { sanitizeText } from '@shared/utils/sanitize';
 
 const citaSchema = z.object({
   pacienteId: z.string().min(1, 'Paciente es requerido'),
@@ -293,13 +294,14 @@ export default function CitaForm() {
       
       setIsValidating(false);
       
+      // Sanitizar inputs de texto antes de enviar
       const citaData = {
         pacienteId: data.pacienteId,
         propietarioId: data.propietarioId,
         profesionalId: data.profesionalId,
         fecha: fechaHora,
-        motivo: data.motivo.trim(),
-        observaciones: data.observaciones?.trim() || undefined,
+        motivo: sanitizeText(data.motivo.trim()),
+        observaciones: data.observaciones ? sanitizeText(data.observaciones.trim()) : undefined,
         estado: data.estado as EstadoCita,
       };
 

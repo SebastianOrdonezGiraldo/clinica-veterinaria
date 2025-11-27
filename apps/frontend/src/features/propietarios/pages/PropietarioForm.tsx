@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { useLogger } from '@shared/hooks/useLogger';
+import { sanitizeText, sanitizeURL } from '@shared/utils/sanitize';
 
 const propietarioSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -90,12 +91,13 @@ export default function PropietarioForm() {
       setIsLoading(true);
       
       // Preparar datos para enviar (convertir strings vacíos a undefined para campos opcionales)
+      // Sanitizar inputs antes de enviar al backend para prevenir XSS
       const propietarioData = {
-        nombre: data.nombre,
-        documento: data.documento || undefined,
-        email: data.email, // Email es requerido
-        telefono: data.telefono || undefined,
-        direccion: data.direccion || undefined,
+        nombre: sanitizeText(data.nombre),
+        documento: data.documento ? sanitizeText(data.documento) : undefined,
+        email: sanitizeText(data.email), // Email se sanitiza como texto, la validación de formato la hace Zod
+        telefono: data.telefono ? sanitizeText(data.telefono) : undefined,
+        direccion: data.direccion ? sanitizeText(data.direccion) : undefined,
       };
 
       if (isEdit && id) {
