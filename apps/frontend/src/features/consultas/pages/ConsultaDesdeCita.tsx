@@ -21,6 +21,7 @@ import { InfoPacientePanel } from '../components/InfoPacientePanel';
 import { HistorialRapido } from '../components/HistorialRapido';
 import { Cita, Paciente, Propietario } from '@core/types';
 import { AxiosError } from 'axios';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const consultaSchema = z.object({
   frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
@@ -36,6 +37,7 @@ const consultaSchema = z.object({
 type ConsultaFormData = z.infer<typeof consultaSchema>;
 
 export default function ConsultaDesdeCita() {
+  const logger = useLogger('ConsultaDesdeCita');
   const { citaId } = useParams<{ citaId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -103,7 +105,10 @@ export default function ConsultaDesdeCita() {
         setPropietario(propietarioData.value);
       }
     } catch (error) {
-      console.error('Error al cargar datos de la cita:', error);
+      logger.error('Error al cargar datos de la cita para consulta', error, {
+        action: 'loadCitaData',
+        citaId: citaId,
+      });
       const axiosError = error as AxiosError<{ message?: string }>;
       const statusCode = axiosError?.response?.status;
       const errorMessage = axiosError?.response?.data?.message || 'Error al cargar los datos de la cita';
@@ -171,7 +176,10 @@ export default function ConsultaDesdeCita() {
           await citaService.updateEstado(cita.id, 'ATENDIDA');
           toast.success('Cita marcada como atendida');
         } catch (error) {
-          console.error('Error al marcar cita como atendida:', error);
+          logger.warn('Error al marcar cita como atendida después de guardar consulta', {
+            action: 'updateCitaEstado',
+            citaId: cita.id,
+          });
           // No mostramos error porque la consulta ya se guardó exitosamente
         }
       }
@@ -179,7 +187,11 @@ export default function ConsultaDesdeCita() {
       // Navegar de vuelta al detalle de la cita
       navigate(`/agenda/${citaId}`);
     } catch (error) {
-      console.error('Error al guardar consulta:', error);
+      logger.error('Error al guardar consulta desde cita', error, {
+        action: 'saveConsulta',
+        citaId: citaId,
+        pacienteId: cita?.pacienteId,
+      });
       const axiosError = error as AxiosError<{ message?: string }>;
       const statusCode = axiosError?.response?.status;
       const errorMessage = axiosError?.response?.data?.message;

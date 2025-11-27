@@ -10,8 +10,10 @@ import { consultaService } from '@features/historias/services/consultaService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Paciente, Consulta, Propietario } from '@core/types';
 import { toast } from 'sonner';
+import { useLogger } from '@shared/hooks/useLogger';
 
 export default function PacienteDetalle() {
+  const logger = useLogger('PacienteDetalle');
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('general');
@@ -45,13 +47,20 @@ export default function PacienteDetalle() {
           const propietarioData = await propietarioService.getById(pacienteData.propietarioId);
           setPropietario(propietarioData);
         } catch (error) {
-          console.error('Error al cargar propietario:', error);
+          logger.warn('Error al cargar propietario del paciente', {
+            action: 'loadPropietario',
+            pacienteId: id,
+            propietarioId: pacienteData.propietarioId,
+          });
         }
       } else if (pacienteData.propietario) {
         setPropietario(pacienteData.propietario);
       }
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos del paciente', error, {
+        action: 'loadData',
+        pacienteId: id,
+      });
       toast.error('Error al cargar los datos del paciente');
     } finally {
       setIsLoading(false);

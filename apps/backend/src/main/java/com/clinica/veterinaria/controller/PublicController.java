@@ -2,6 +2,7 @@ package com.clinica.veterinaria.controller;
 
 import com.clinica.veterinaria.dto.CitaDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
+import com.clinica.veterinaria.entity.Cita;
 import com.clinica.veterinaria.service.CitaService;
 import com.clinica.veterinaria.service.UsuarioService;
 import lombok.RequiredArgsConstructor;

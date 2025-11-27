@@ -17,6 +17,7 @@ import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Paciente, Propietario, Usuario, Cita } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const citaSchema = z.object({
   pacienteId: z.string().min(1, 'Paciente es requerido'),
@@ -32,6 +33,7 @@ const citaSchema = z.object({
 type CitaFormData = z.infer<typeof citaSchema>;
 
 export default function CitaForm() {
+  const logger = useLogger('CitaForm');
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,7 +89,10 @@ export default function CitaForm() {
         // Limpiar el state para evitar seleccionarlo de nuevo
         window.history.replaceState({}, document.title);
       }).catch(error => {
-        console.error('Error al recargar pacientes:', error);
+        logger.warn('Error al recargar pacientes desde estado', {
+          action: 'reloadPacientes',
+          propietarioId: state.pacienteId,
+        });
       });
     } else if (state?.propietarioId) {
       // Si viene de crear propietario, recargar propietarios y seleccionarlo
@@ -101,7 +106,10 @@ export default function CitaForm() {
         // Limpiar el state para evitar seleccionarlo de nuevo
         window.history.replaceState({}, document.title);
       }).catch(error => {
-        console.error('Error al recargar propietarios:', error);
+        logger.warn('Error al recargar propietarios desde estado', {
+          action: 'reloadPropietarios',
+          propietarioId: state.propietarioId,
+        });
       });
     }
   }, [location.state, setValue]);
@@ -154,7 +162,11 @@ export default function CitaForm() {
         });
       }
     } catch (error: any) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos del formulario de cita', error, {
+        action: 'loadData',
+        citaId: id,
+        isEdit,
+      });
       const errorMessage = error?.response?.data?.message || 'Error al cargar los datos';
       toast.error(errorMessage);
     } finally {
@@ -169,7 +181,10 @@ export default function CitaForm() {
       const citas = await citaService.getByProfesional(profesionalSeleccionado);
       setCitasVeterinario(citas);
     } catch (error) {
-      console.error('Error al cargar citas del veterinario:', error);
+      logger.warn('Error al cargar citas del veterinario para validación', {
+        action: 'loadCitasVeterinario',
+        profesionalId: profesionalId,
+      });
       // No mostrar error, solo log
     }
   };
@@ -298,7 +313,12 @@ export default function CitaForm() {
       
       navigate('/agenda');
     } catch (error: any) {
-      console.error('Error al guardar cita:', error);
+      logger.error('Error al guardar cita', error, {
+        action: isEdit ? 'updateCita' : 'createCita',
+        citaId: id,
+        pacienteId: data.pacienteId,
+        profesionalId: data.profesionalId,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message;
       

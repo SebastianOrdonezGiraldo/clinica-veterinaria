@@ -13,6 +13,7 @@ import { citaService, EstadoCita } from '@features/agenda/services/citaService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Cita, Usuario, PageResponse } from '@core/types';
 import { toast } from 'sonner';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
@@ -37,6 +38,7 @@ const statusColors = {
  * - Strategy Pattern: Backend selecciona query apropiado
  */
 export default function Agenda() {
+  const logger = useLogger('Agenda');
   const navigate = useNavigate();
   
   // ESTADO: Fecha y filtros
@@ -77,7 +79,9 @@ export default function Agenda() {
       const veterinariosData = await usuarioService.getVeterinarios();
       setVeterinarios(veterinariosData);
     } catch (error) {
-      console.error('Error al cargar veterinarios:', error);
+      logger.warn('Error al cargar veterinarios para filtro', {
+        action: 'loadVeterinarios',
+      });
       // No es crítico, solo afecta el filtro
     }
   };
@@ -113,7 +117,13 @@ export default function Agenda() {
       const result = await citaService.searchWithFilters(searchParams);
       setCitasPage(result);
     } catch (error: any) {
-      console.error('Error al cargar citas:', error);
+      logger.error('Error al cargar citas de la agenda', error, {
+        action: 'loadCitas',
+        fecha: selectedDate.toISOString(),
+        filtroVet,
+        filtroEstado,
+        page: currentPage,
+      });
       const errorMessage = error.response?.data?.mensaje || error.response?.data?.message || 'Error al cargar citas';
       setError(errorMessage);
       toast.error(errorMessage);

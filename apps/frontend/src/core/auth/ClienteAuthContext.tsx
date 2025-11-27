@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { clienteAuthService, Propietario } from './clienteAuthService';
+import { loggerService } from '@core/logging/loggerService';
 
 interface ClienteAuthContextType {
   cliente: Propietario | null;
@@ -32,8 +33,12 @@ export function ClienteAuthProvider({ children }: { children: React.ReactNode })
             setCliente(null);
           }
         })
-        .catch(() => {
-          // Error al validar token
+        .catch((error) => {
+          // Error al validar token - usar logger centralizado
+          loggerService.warn('Error al validar token de cliente', {
+            component: 'ClienteAuthContext',
+            action: 'validateToken',
+          });
           localStorage.removeItem('clienteToken');
           localStorage.removeItem('cliente');
           setCliente(null);
@@ -56,7 +61,16 @@ export function ClienteAuthProvider({ children }: { children: React.ReactNode })
       
       setCliente(response.propietario);
     } catch (error: any) {
-      console.error('Error en login:', error);
+      // Log estructurado del error de login de cliente
+      loggerService.error(
+        'Error al iniciar sesión como cliente',
+        error,
+        {
+          component: 'ClienteAuthContext',
+          action: 'login',
+          email: email, // No es sensible, es solo para debugging
+        }
+      );
       throw new Error(error.response?.data?.message || 'Error al iniciar sesión');
     }
   };

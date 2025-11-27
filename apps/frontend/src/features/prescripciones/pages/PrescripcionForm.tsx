@@ -15,6 +15,7 @@ import { consultaService } from '@features/historias/services/consultaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Consulta, Paciente, Propietario } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 interface Medicamento {
   id: string;
@@ -28,6 +29,7 @@ interface Medicamento {
 }
 
 export default function PrescripcionForm() {
+  const logger = useLogger('PrescripcionForm');
   const navigate = useNavigate();
   const [consultaId, setConsultaId] = useState('');
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([
@@ -63,7 +65,9 @@ export default function PrescripcionForm() {
       setPacientes(pacientesData);
       setPropietarios(propietariosData);
     } catch (error: any) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos del formulario de prescripción', error, {
+        action: 'loadData',
+      });
       toast.error('Error al cargar los datos');
     } finally {
       setIsLoadingData(false);
@@ -137,7 +141,11 @@ export default function PrescripcionForm() {
       toast.success('Prescripción creada exitosamente');
       navigate('/prescripciones');
     } catch (error: any) {
-      console.error('Error al crear prescripción:', error);
+      logger.error('Error al crear prescripción', error, {
+        action: 'createPrescripcion',
+        consultaId: selectedConsulta,
+        pacienteId: selectedPaciente,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message;
       

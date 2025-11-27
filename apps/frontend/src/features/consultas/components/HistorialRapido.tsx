@@ -8,6 +8,7 @@ import { Consulta } from '@core/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useLogger } from '@shared/hooks/useLogger';
 
 interface HistorialRapidoProps {
   pacienteId: string;
@@ -15,6 +16,7 @@ interface HistorialRapidoProps {
 }
 
 export function HistorialRapido({ pacienteId, limit = 5 }: HistorialRapidoProps) {
+  const logger = useLogger('HistorialRapido');
   const navigate = useNavigate();
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +32,11 @@ export function HistorialRapido({ pacienteId, limit = 5 }: HistorialRapidoProps)
       });
       setConsultas(result.content);
     } catch (error) {
-      console.error('Error al cargar historial:', error);
+      logger.warn('Error al cargar historial rápido del paciente', {
+        action: 'loadHistorial',
+        pacienteId,
+        limit,
+      });
     } finally {
       setIsLoading(false);
     }

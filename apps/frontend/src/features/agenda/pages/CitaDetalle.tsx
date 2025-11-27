@@ -15,6 +15,7 @@ import { Cita, Paciente, Propietario, Usuario } from '@core/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
@@ -31,6 +32,7 @@ const statusLabels = {
 };
 
 export default function CitaDetalle() {
+  const logger = useLogger('CitaDetalle');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -77,7 +79,10 @@ export default function CitaDetalle() {
         setProfesional(profesionalData.value);
       }
     } catch (error: any) {
-      console.error('Error al cargar cita:', error);
+      logger.error('Error al cargar detalles de la cita', error, {
+        action: 'loadCita',
+        citaId: id,
+      });
       const errorMessage = error?.response?.data?.message || 'Error al cargar la cita';
       toast.error(errorMessage);
       navigate('/agenda');
@@ -100,7 +105,11 @@ export default function CitaDetalle() {
       setShowCancelDialog(false);
       setShowAttendDialog(false);
     } catch (error: any) {
-      console.error('Error al actualizar estado:', error);
+      logger.error('Error al actualizar estado de la cita', error, {
+        action: 'updateEstado',
+        citaId: id,
+        nuevoEstado: 'ATENDIDA',
+      });
       const errorMessage = error?.response?.data?.message || 'Error al actualizar el estado de la cita';
       toast.error(errorMessage);
     } finally {

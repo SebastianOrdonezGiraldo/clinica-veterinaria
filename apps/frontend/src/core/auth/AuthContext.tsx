@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Usuario, Rol, Propietario } from '@core/types';
 import { authService } from '@core/auth/authService';
+import { loggerService } from '@core/logging/loggerService';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -45,8 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserType(null);
           }
         })
-        .catch(() => {
-          // Error al validar token
+        .catch((error) => {
+          // Error al validar token - usar logger centralizado
+          loggerService.warn('Error al validar token de usuario del sistema', {
+            component: 'AuthContext',
+            action: 'validateToken',
+          });
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           localStorage.removeItem('userType');
@@ -93,7 +98,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserType('SISTEMA');
       }
     } catch (error: any) {
-      console.error('Error en login:', error);
+      // Log estructurado del error de login
+      loggerService.error(
+        'Error al iniciar sesión',
+        error,
+        {
+          component: 'AuthContext',
+          action: 'login',
+          email: email, // No es sensible, es solo para debugging
+          userType: error.response?.data?.userType,
+        }
+      );
       throw new Error(error.response?.data?.message || 'Error al iniciar sesión');
     }
   };

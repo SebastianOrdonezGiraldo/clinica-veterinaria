@@ -13,6 +13,7 @@ import { Skeleton } from '@shared/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@shared/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const propietarioSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -25,6 +26,7 @@ const propietarioSchema = z.object({
 type PropietarioFormData = z.infer<typeof propietarioSchema>;
 
 export default function PropietarioForm() {
+  const logger = useLogger('PropietarioForm');
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,7 +61,11 @@ export default function PropietarioForm() {
         direccion: propietario.direccion || '',
       });
     } catch (error) {
-      console.error('Error al cargar propietario:', error);
+      logger.error('Error al cargar datos del formulario de propietario', error, {
+        action: 'loadData',
+        propietarioId: id,
+        isEdit,
+      });
       toast.error('Error al cargar los datos del propietario');
     } finally {
       setIsLoadingData(false);
@@ -111,7 +117,10 @@ export default function PropietarioForm() {
         }
       }
     } catch (error: any) {
-      console.error('Error al guardar propietario:', error);
+      logger.error('Error al guardar propietario', error, {
+        action: isEdit ? 'updatePropietario' : 'createPropietario',
+        propietarioId: id,
+      });
       toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el propietario`);
     } finally {
       setIsLoading(false);

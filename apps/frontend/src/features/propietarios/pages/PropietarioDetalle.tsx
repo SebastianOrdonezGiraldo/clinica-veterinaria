@@ -10,8 +10,10 @@ import { propietarioService } from '@features/propietarios/services/propietarioS
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { Propietario, Paciente } from '@core/types';
 import { toast } from 'sonner';
+import { useLogger } from '@shared/hooks/useLogger';
 
 export default function PropietarioDetalle() {
+  const logger = useLogger('PropietarioDetalle');
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('informacion');
@@ -38,7 +40,10 @@ export default function PropietarioDetalle() {
       setPropietario(propietarioData);
       setMascotas(mascotasData);
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos del propietario', error, {
+        action: 'loadData',
+        propietarioId: id,
+      });
       toast.error('Error al cargar los datos del propietario');
     } finally {
       setIsLoading(false);

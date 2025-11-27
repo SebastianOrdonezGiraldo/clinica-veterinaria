@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { citaPublicaService, CitaPublicaRequestDTO } from '@features/agenda/services/citaPublicaService';
 import { Usuario } from '@core/types';
 import { Skeleton } from '@shared/components/ui/skeleton';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const citaPublicaSchema = z.object({
   tipoRegistro: z.enum(['existente', 'nuevo']),
@@ -57,6 +58,7 @@ const citaPublicaSchema = z.object({
 type CitaPublicaFormData = z.infer<typeof citaPublicaSchema>;
 
 export default function AgendarCitaPublica() {
+  const logger = useLogger('AgendarCitaPublica');
   const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingVets, setIsLoadingVets] = useState(true);
@@ -174,7 +176,9 @@ export default function AgendarCitaPublica() {
       const vets = await citaPublicaService.getVeterinarios();
       setVeterinarios(vets);
     } catch (error: any) {
-      console.error('Error al cargar veterinarios:', error);
+      logger.error('Error al cargar veterinarios disponibles', error, {
+        action: 'loadVeterinarios',
+      });
       toast.error('Error al cargar veterinarios disponibles');
     } finally {
       setIsLoadingVets(false);
@@ -192,7 +196,11 @@ export default function AgendarCitaPublica() {
       );
       setHorasOcupadas(horas);
     } catch (error: any) {
-      console.error('Error al cargar horas ocupadas:', error);
+      logger.warn('Error al cargar horas ocupadas', {
+        action: 'loadHorasOcupadas',
+        profesionalId: profesionalSeleccionado,
+        fecha: fechaSeleccionada,
+      });
       // No mostrar error al usuario, solo log
       setHorasOcupadas([]);
     } finally {
@@ -262,7 +270,12 @@ export default function AgendarCitaPublica() {
       
       toast.success('¡Cita agendada exitosamente!');
     } catch (error: any) {
-      console.error('Error al agendar cita:', error);
+      logger.error('Error al agendar cita pública', error, {
+        action: 'agendarCita',
+        tipoRegistro: tipoRegistro,
+        profesionalId: data.profesionalId,
+        fecha: data.fecha,
+      });
       const errorMessage = error.response?.data?.mensaje || error.response?.data?.message || 'Error al agendar la cita';
       toast.error(errorMessage);
     } finally {

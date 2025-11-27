@@ -12,8 +12,10 @@ import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Prescripcion, Consulta, Paciente, Usuario, Propietario } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 export default function PrescripcionDetalle() {
+  const logger = useLogger('PrescripcionDetalle');
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -55,7 +57,11 @@ export default function PrescripcionDetalle() {
           const propietarioData = await propietarioService.getById(pacienteData.propietarioId);
           setPropietario(propietarioData);
         } catch (error) {
-          console.error('Error al cargar propietario:', error);
+          logger.warn('Error al cargar propietario de la prescripción', {
+            action: 'loadPropietario',
+            prescripcionId: id,
+            propietarioId: pacienteData.propietarioId,
+          });
           // No es crítico, continuar sin propietario
         }
       }
@@ -66,12 +72,19 @@ export default function PrescripcionDetalle() {
           const profesionalData = await usuarioService.getById(consultaData.profesionalId);
           setProfesional(profesionalData);
         } catch (error) {
-          console.error('Error al cargar profesional:', error);
+          logger.warn('Error al cargar profesional de la prescripción', {
+            action: 'loadProfesional',
+            prescripcionId: id,
+            profesionalId: consultaData.profesionalId,
+          });
           // No es crítico, continuar sin profesional
         }
       }
     } catch (error: any) {
-      console.error('Error al cargar prescripción:', error);
+      logger.error('Error al cargar detalles de la prescripción', error, {
+        action: 'loadData',
+        prescripcionId: id,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message;
       
@@ -165,7 +178,10 @@ export default function PrescripcionDetalle() {
       
       toast.success('PDF descargado exitosamente', { id: 'pdf-generation' });
     } catch (error: any) {
-      console.error('Error al descargar PDF:', error);
+      logger.error('Error al descargar PDF de prescripción', error, {
+        action: 'downloadPDF',
+        prescripcionId: id,
+      });
       const errorMessage = error?.response?.data?.message || 'Error al generar el PDF';
       toast.error(errorMessage, { id: 'pdf-generation' });
     }

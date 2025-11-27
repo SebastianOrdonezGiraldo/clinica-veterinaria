@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Propietario } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const pacienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(100),
@@ -30,6 +31,7 @@ const pacienteSchema = z.object({
 type PacienteFormData = z.infer<typeof pacienteSchema>;
 
 export default function PacienteForm() {
+  const logger = useLogger('PacienteForm');
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -72,7 +74,11 @@ export default function PacienteForm() {
         });
       }
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos del formulario de paciente', error, {
+        action: 'loadData',
+        pacienteId: id,
+        isEdit,
+      });
       toast.error('Error al cargar los datos');
     } finally {
       setIsLoadingData(false);
@@ -131,7 +137,11 @@ export default function PacienteForm() {
         navigate('/pacientes');
       }
     } catch (error: any) {
-      console.error('Error al guardar paciente:', error);
+      logger.error('Error al guardar paciente', error, {
+        action: isEdit ? 'updatePaciente' : 'createPaciente',
+        pacienteId: id,
+        propietarioId: data.propietarioId,
+      });
       toast.error(error.response?.data?.message || `Error al ${isEdit ? 'actualizar' : 'registrar'} el paciente`);
     } finally {
       setIsLoading(false);

@@ -12,6 +12,7 @@ import { Pagination } from '@shared/components/common/Pagination';
 import { toast } from 'sonner';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Propietario, PageResponse } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 /**
  * Componente Propietarios - Gestión de propietarios con paginación backend
@@ -28,6 +29,7 @@ import { Propietario, PageResponse } from '@core/types';
  * - Debounce Pattern: Evita llamadas excesivas a la API
  */
 export default function Propietarios() {
+  const logger = useLogger('Propietarios');
   const navigate = useNavigate();
   
   // ESTADO: Paginación backend (PageResponse en lugar de array simple)
@@ -98,7 +100,11 @@ export default function Propietarios() {
       const result = await propietarioService.searchWithFilters(searchParams);
       setPropietariosPage(result);
     } catch (error: any) {
-      console.error('Error al cargar propietarios:', error);
+      logger.error('Error al cargar lista de propietarios', error, {
+        action: 'loadPropietarios',
+        searchTerm,
+        page: currentPage,
+      });
       toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al cargar propietarios');
     } finally {
       setIsLoading(false);
@@ -125,7 +131,10 @@ export default function Propietarios() {
       // Recargar la página actual
       await loadPropietarios();
     } catch (error: any) {
-      console.error('Error al eliminar propietario:', error);
+      logger.error('Error al eliminar propietario', error, {
+        action: 'deletePropietario',
+        propietarioId: id,
+      });
       toast.error(error.response?.data?.mensaje || error.response?.data?.message || 'Error al eliminar el propietario');
     } finally {
       setIsDeleting(false);

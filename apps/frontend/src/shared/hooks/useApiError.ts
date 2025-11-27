@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
+import { loggerService } from '@core/logging/loggerService';
 
 /**
  * Interface para errores estructurados del backend
@@ -83,25 +84,50 @@ export const useApiError = () => {
   /**
    * Maneja errores de API mostrando notificación toast
    * 
+   * Utiliza el logger centralizado en lugar de console.error para:
+   * - Envío automático de logs críticos al backend
+   * - Mejor trazabilidad y debugging
+   * - Logging estructurado con contexto
+   * 
    * @param error Error de axios
    * @param customMessage Mensaje personalizado (opcional)
    */
   const handleError = (error: unknown, customMessage?: string) => {
-    console.error('API Error:', error);
-
     if (error instanceof AxiosError) {
       const message = customMessage || extractErrorMessage(error);
+      const status = error.response?.status;
+      const url = error.config?.url || 'unknown';
+      const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
+      
+      // Log estructurado del error
+      loggerService.logApiError(
+        method,
+        url,
+        status || 0,
+        error.response?.data,
+        0, // duration no disponible aquí
+        error.config?.headers?.['X-Correlation-ID'] as string || 'unknown'
+      );
       
       // No mostrar toast para 401 porque se redirige automáticamente
-      if (error.response?.status !== 401) {
+      if (status !== 401) {
         toast.error(message, {
           duration: 5000,
           description: error.response?.data?.detalle,
         });
       }
     } else if (error instanceof Error) {
+      // Log de errores no relacionados con API
+      loggerService.error('Error no relacionado con API', error, {
+        type: 'non-api-error',
+      });
       toast.error(customMessage || error.message);
     } else {
+      // Log de errores desconocidos
+      loggerService.error('Error desconocido', undefined, {
+        type: 'unknown-error',
+        error: String(error),
+      });
       toast.error(customMessage || 'Ocurrió un error inesperado');
     }
   };
