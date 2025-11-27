@@ -63,6 +63,8 @@ export default function AgendarCitaPublica() {
   const [citaCreada, setCitaCreada] = useState(false);
   const [citaId, setCitaId] = useState<string | null>(null);
   const [emailSinPassword, setEmailSinPassword] = useState<string | null>(null);
+  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
+  const [isLoadingHoras, setIsLoadingHoras] = useState(false);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CitaPublicaFormData>({
     resolver: zodResolver(citaPublicaSchema),
@@ -73,6 +75,7 @@ export default function AgendarCitaPublica() {
 
   const tipoRegistro = watch('tipoRegistro');
   const fechaSeleccionada = watch('fecha');
+  const profesionalSeleccionado = watch('profesionalId');
 
   // Función para verificar si una fecha es domingo
   const esDomingo = (fechaStr: string): boolean => {
@@ -97,8 +100,8 @@ export default function AgendarCitaPublica() {
     return `${hora12}:${minutos} ${ampm}`;
   };
 
-  // Función para obtener las horas disponibles según el día
-  const getHorasDisponibles = (): string[] => {
+  // Función para obtener todas las horas posibles según el día (horario laboral)
+  const getHorasLaborales = (): string[] => {
     if (!fechaSeleccionada || esDomingo(fechaSeleccionada)) return [];
     
     const horas: string[] = [];
@@ -126,6 +129,14 @@ export default function AgendarCitaPublica() {
     return horas;
   };
 
+  // Función para obtener las horas disponibles (horario laboral menos horas ocupadas)
+  const getHorasDisponibles = (): string[] => {
+    const horasLaborales = getHorasLaborales();
+    
+    // Filtrar las horas ocupadas
+    return horasLaborales.filter(hora => !horasOcupadas.includes(hora));
+  };
+
   // Función para deshabilitar domingos en el input de fecha
   const isDateDisabled = (date: Date): boolean => {
     return date.getDay() === 0; // Deshabilitar domingos
@@ -135,7 +146,16 @@ export default function AgendarCitaPublica() {
     loadVeterinarios();
   }, []);
 
-  // Resetear hora cuando cambia la fecha
+  // Cargar horas ocupadas cuando cambia el veterinario o la fecha
+  useEffect(() => {
+    if (profesionalSeleccionado && fechaSeleccionada && !esDomingo(fechaSeleccionada)) {
+      loadHorasOcupadas();
+    } else {
+      setHorasOcupadas([]);
+    }
+  }, [profesionalSeleccionado, fechaSeleccionada]);
+
+  // Resetear hora cuando cambian las horas disponibles
   useEffect(() => {
     if (fechaSeleccionada) {
       const horasDisponibles = getHorasDisponibles();
@@ -146,7 +166,7 @@ export default function AgendarCitaPublica() {
         setValue('hora', '');
       }
     }
-  }, [fechaSeleccionada]);
+  }, [horasOcupadas, fechaSeleccionada]);
 
   const loadVeterinarios = async () => {
     try {
@@ -158,6 +178,25 @@ export default function AgendarCitaPublica() {
       toast.error('Error al cargar veterinarios disponibles');
     } finally {
       setIsLoadingVets(false);
+    }
+  };
+
+  const loadHorasOcupadas = async () => {
+    if (!profesionalSeleccionado || !fechaSeleccionada) return;
+    
+    try {
+      setIsLoadingHoras(true);
+      const horas = await citaPublicaService.getHorasOcupadas(
+        profesionalSeleccionado,
+        fechaSeleccionada
+      );
+      setHorasOcupadas(horas);
+    } catch (error: any) {
+      console.error('Error al cargar horas ocupadas:', error);
+      // No mostrar error al usuario, solo log
+      setHorasOcupadas([]);
+    } finally {
+      setIsLoadingHoras(false);
     }
   };
 
@@ -336,20 +375,33 @@ export default function AgendarCitaPublica() {
 
               <div className="space-y-2">
                 <Label htmlFor="hora">Hora *</Label>
-                {fechaSeleccionada && !esDomingo(fechaSeleccionada) ? (
+                {isLoadingHoras ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : fechaSeleccionada && !esDomingo(fechaSeleccionada) ? (
                   <Select
                     value={watch('hora')}
                     onValueChange={(value) => setValue('hora', value)}
+                    disabled={!profesionalSeleccionado || isLoadingHoras}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una hora" />
+                      <SelectValue placeholder={
+                        !profesionalSeleccionado 
+                          ? "Seleccione primero un veterinario" 
+                          : "Seleccione una hora"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
-                      {getHorasDisponibles().map((hora) => (
-                        <SelectItem key={hora} value={hora}>
-                          {formatHora12h(hora)}
+                      {getHorasDisponibles().length > 0 ? (
+                        getHorasDisponibles().map((hora) => (
+                          <SelectItem key={hora} value={hora}>
+                            {formatHora12h(hora)}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-horas" disabled>
+                          No hay horas disponibles
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -363,6 +415,11 @@ export default function AgendarCitaPublica() {
                 )}
                 {errors.hora && (
                   <p className="text-sm text-destructive">{errors.hora.message}</p>
+                )}
+                {horasOcupadas.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {horasOcupadas.length} hora(s) ocupada(s) excluida(s)
+                  </p>
                 )}
                 {fechaSeleccionada && esSabado(fechaSeleccionada) && (
                   <p className="text-xs text-muted-foreground">

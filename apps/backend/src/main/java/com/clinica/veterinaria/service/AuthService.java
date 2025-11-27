@@ -1,5 +1,7 @@
 package com.clinica.veterinaria.service;
 
+import com.clinica.veterinaria.dto.ClienteLoginRequestDTO;
+import com.clinica.veterinaria.dto.ClienteLoginResponseDTO;
 import com.clinica.veterinaria.dto.LoginRequestDTO;
 import com.clinica.veterinaria.dto.LoginResponseDTO;
 import com.clinica.veterinaria.dto.UsuarioDTO;
@@ -96,6 +98,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final UsuarioRepository usuarioRepository;
     private final IAuditLogger auditLogger;
+    private final ClienteAuthService clienteAuthService;
 
     /**
      * Autentica un usuario y genera un token JWT para acceso stateless.
@@ -137,8 +140,9 @@ public class AuthService {
     @SuppressWarnings("null") // Los valores del DTO son validados antes de usar
     public LoginResponseDTO login(@NonNull LoginRequestDTO request) {
         String ipAddress = getClientIp();
-        log.info("→ Intento de login para usuario: {} desde IP: {}", request.getEmail(), ipAddress);
+        log.info("→ Intento de login unificado para: {} desde IP: {}", request.getEmail(), ipAddress);
 
+        // Intentar primero autenticar como usuario del sistema
         try {
             // Autenticar con Spring Security
             authenticationManager.authenticate(
@@ -148,50 +152,83 @@ public class AuthService {
                 )
             );
         } catch (BadCredentialsException e) {
-            log.error("✗ Credenciales inválidas para usuario: {} desde IP: {}", request.getEmail(), ipAddress);
-            // Registrar intento fallido en auditoría
-            auditLogger.logLoginFailure(request.getEmail(), ipAddress, "Credenciales inválidas");
+            // Si falla, intentar como cliente
+            log.info("→ Intento de login como usuario del sistema falló, intentando como cliente: {}", request.getEmail());
+            return tryLoginAsCliente(request, ipAddress);
+        }
+
+        // Si llegamos aquí, es un usuario del sistema
+        try {
+            // Cargar los detalles del usuario
+            final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            
+            // Obtener el usuario de la base de datos
+            Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    log.error("✗ Usuario no encontrado: {}", request.getEmail());
+                    auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_NO_ENCONTRADO);
+                    return new ResourceNotFoundException("Usuario", "email", request.getEmail());
+                });
+
+            // Verificar si el usuario está activo
+            if (Boolean.FALSE.equals(usuario.getActivo())) {
+                log.warn("✗ Intento de login de usuario inactivo: {}", request.getEmail());
+                auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_INACTIVO);
+                throw new BusinessException(MSG_USUARIO_INACTIVO);
+            }
+
+            // Agregar información adicional al token (rol, etc.)
+            Map<String, Object> extraClaims = new HashMap<>();
+            extraClaims.put("rol", usuario.getRol().name());
+            extraClaims.put("userId", usuario.getId());
+
+            // Generar el token JWT
+            final String jwt = jwtUtil.generateToken(userDetails, extraClaims);
+
+            log.info("✓ Login exitoso para usuario del sistema: {} (ID: {}, Rol: {}) desde IP: {}", 
+                    request.getEmail(), usuario.getId(), usuario.getRol(), ipAddress);
+
+            // Registrar login exitoso en auditoría
+            auditLogger.logLoginSuccess(request.getEmail(), ipAddress);
+
+            // Crear la respuesta
+            return LoginResponseDTO.builder()
+                .token(jwt)
+                .type("Bearer")
+                .usuario(UsuarioDTO.fromEntity(usuario))
+                .userType("SISTEMA")
+                .build();
+        } catch (Exception e) {
+            // Si hay algún error, intentar como cliente
+            log.info("→ Error al autenticar como usuario del sistema, intentando como cliente: {}", request.getEmail());
+            return tryLoginAsCliente(request, ipAddress);
+        }
+    }
+
+    /**
+     * Intenta autenticar como cliente (propietario).
+     */
+    private LoginResponseDTO tryLoginAsCliente(@NonNull LoginRequestDTO request, String ipAddress) {
+        try {
+            ClienteLoginRequestDTO clienteRequest = new ClienteLoginRequestDTO();
+            clienteRequest.setEmail(request.getEmail());
+            clienteRequest.setPassword(request.getPassword());
+            
+            ClienteLoginResponseDTO clienteResponse = clienteAuthService.login(clienteRequest);
+            
+            log.info("✓ Login exitoso para cliente: {} desde IP: {}", request.getEmail(), ipAddress);
+            
+            return LoginResponseDTO.builder()
+                .token(clienteResponse.getToken())
+                .type(clienteResponse.getType())
+                .propietario(clienteResponse.getPropietario())
+                .userType("CLIENTE")
+                .build();
+        } catch (Exception e) {
+            log.error("✗ Credenciales inválidas para cliente: {} desde IP: {}", request.getEmail(), ipAddress);
+            auditLogger.logLoginFailure(request.getEmail(), ipAddress, "Credenciales inválidas (sistema y cliente)");
             throw new BadCredentialsException(MSG_CREDENCIALES_INVALIDAS);
         }
-
-        // Cargar los detalles del usuario
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-        
-        // Obtener el usuario de la base de datos
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> {
-                log.error("✗ Usuario no encontrado: {}", request.getEmail());
-                auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_NO_ENCONTRADO);
-                return new ResourceNotFoundException("Usuario", "email", request.getEmail());
-            });
-
-        // Verificar si el usuario está activo
-        if (Boolean.FALSE.equals(usuario.getActivo())) {
-            log.warn("✗ Intento de login de usuario inactivo: {}", request.getEmail());
-            auditLogger.logLoginFailure(request.getEmail(), ipAddress, MSG_USUARIO_INACTIVO);
-            throw new BusinessException(MSG_USUARIO_INACTIVO);
-        }
-
-        // Agregar información adicional al token (rol, etc.)
-        Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("rol", usuario.getRol().name());
-        extraClaims.put("userId", usuario.getId());
-
-        // Generar el token JWT
-        final String jwt = jwtUtil.generateToken(userDetails, extraClaims);
-
-        log.info("✓ Login exitoso para usuario: {} (ID: {}, Rol: {}) desde IP: {}", 
-                request.getEmail(), usuario.getId(), usuario.getRol(), ipAddress);
-
-        // Registrar login exitoso en auditoría
-        auditLogger.logLoginSuccess(request.getEmail(), ipAddress);
-
-        // Crear la respuesta
-        return LoginResponseDTO.builder()
-            .token(jwt)
-            .type("Bearer")
-            .usuario(UsuarioDTO.fromEntity(usuario))
-            .build();
     }
     
     /**

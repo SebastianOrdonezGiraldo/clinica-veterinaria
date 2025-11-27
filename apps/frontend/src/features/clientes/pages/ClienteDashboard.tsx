@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useClienteAuth } from '@core/auth/ClienteAuthContext';
+import { useAuth } from '@core/auth/AuthContext';
 import { clienteService } from '../services/clienteService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function ClienteDashboard() {
-  const { cliente, logout } = useClienteAuth();
+  const { cliente, logout } = useAuth();
   const navigate = useNavigate();
 
   const { data: citas, isLoading: isLoadingCitas } = useQuery({
@@ -27,7 +27,7 @@ export default function ClienteDashboard() {
   const handleLogout = () => {
     logout();
     toast.success('Sesión cerrada');
-    navigate('/cliente/login');
+    navigate('/login');
   };
 
   const getEstadoBadge = (estado: string) => {

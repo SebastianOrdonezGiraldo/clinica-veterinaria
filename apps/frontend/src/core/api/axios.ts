@@ -22,8 +22,19 @@ axiosInstance.interceptors.request.use(
     const correlationId = config.headers['X-Correlation-ID'] as string || generateCorrelationId();
     config.headers['X-Correlation-ID'] = correlationId;
     
-    // Agregar token JWT si existe (prioridad: token de usuario del sistema, luego token de cliente)
-    const token = localStorage.getItem('token') || localStorage.getItem('clienteToken');
+    // Agregar token JWT según el tipo de usuario
+    const userType = localStorage.getItem('userType');
+    let token: string | null = null;
+    
+    if (userType === 'CLIENTE') {
+      token = localStorage.getItem('clienteToken');
+    } else if (userType === 'SISTEMA') {
+      token = localStorage.getItem('token');
+    } else {
+      // Fallback: intentar ambos tokens si no hay userType
+      token = localStorage.getItem('token') || localStorage.getItem('clienteToken');
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -106,18 +117,14 @@ axiosInstance.interceptors.response.use(
           correlationId,
           url: config?.url
         });
-        // Limpiar tokens de usuario del sistema
+        // Limpiar todos los tokens
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // Limpiar tokens de cliente
         localStorage.removeItem('clienteToken');
         localStorage.removeItem('cliente');
-        // Redirigir según el tipo de usuario
-        if (config?.url?.includes('/clientes/')) {
-          window.location.href = '/cliente/login';
-        } else {
-          window.location.href = '/login';
-        }
+        localStorage.removeItem('userType');
+        // Redirigir al login unificado
+        window.location.href = '/login';
       } else if (error.response.status === 403) {
         loggerService.warn('Access forbidden', {
           correlationId,

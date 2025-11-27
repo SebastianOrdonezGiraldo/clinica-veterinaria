@@ -1,5 +1,5 @@
 import axios from '@core/api/axios';
-import { Usuario } from '@core/types';
+import { Usuario, Propietario } from '@core/types';
 
 export interface LoginRequest {
   email: string;
@@ -9,7 +9,9 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   type: string;
-  usuario: Usuario;
+  usuario?: Usuario;
+  propietario?: Propietario;
+  userType: 'SISTEMA' | 'CLIENTE';
 }
 
 export const authService = {

@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useClienteAuth } from '@core/auth/ClienteAuthContext';
+import { useAuth } from '@core/auth/AuthContext';
 import { Skeleton } from '@shared/components/ui/skeleton';
 
 interface ClienteProtectedRouteProps {
@@ -7,7 +7,7 @@ interface ClienteProtectedRouteProps {
 }
 
 export function ClienteProtectedRoute({ children }: ClienteProtectedRouteProps) {
-  const { cliente, isLoading } = useClienteAuth();
+  const { cliente, userType, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -20,8 +20,8 @@ export function ClienteProtectedRoute({ children }: ClienteProtectedRouteProps) 
     );
   }
 
-  if (!cliente) {
-    return <Navigate to="/cliente/login" replace />;
+  if (!cliente || userType !== 'CLIENTE') {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

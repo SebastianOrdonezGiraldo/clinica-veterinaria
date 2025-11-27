@@ -218,6 +218,27 @@ public class CitaService {
     }
 
     /**
+     * Busca citas de un profesional específico dentro de un rango de fechas.
+     * 
+     * <p>Útil para consultar la disponibilidad de un veterinario en un período específico.</p>
+     * 
+     * @param profesionalId ID del profesional. No puede ser null.
+     * @param inicio Fecha y hora de inicio del rango (inclusivo). No puede ser null.
+     * @param fin Fecha y hora de fin del rango (inclusivo). No puede ser null.
+     * @return Lista de citas del profesional en el rango especificado. Puede estar vacía.
+     */
+    @Transactional(readOnly = true)
+    public List<CitaDTO> findByProfesionalAndFechaRange(
+            @NonNull Long profesionalId, 
+            @NonNull LocalDateTime inicio, 
+            @NonNull LocalDateTime fin) {
+        log.debug("Buscando citas del profesional {} entre {} y {}", profesionalId, inicio, fin);
+        return citaRepository.findByProfesionalIdAndFechaBetween(profesionalId, inicio, fin).stream()
+            .map(c -> CitaDTO.fromEntity(c, true))
+            .toList();
+    }
+
+    /**
      * Valida las reglas de negocio para una cita.
      * 
      * <p>Realiza múltiples validaciones:</p>

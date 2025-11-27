@@ -62,6 +62,17 @@ export const citaPublicaService = {
   },
 
   /**
+   * Obtiene las horas ocupadas de un veterinario en una fecha específica
+   */
+  async getHorasOcupadas(veterinarioId: string, fecha: string): Promise<string[]> {
+    const response = await axios.get<string[]>(
+      `/public/veterinarios/${veterinarioId}/horas-ocupadas`,
+      { params: { fecha } }
+    );
+    return response.data;
+  },
+
+  /**
    * Crea una nueva cita pública con registro opcional
    */
   async crearCita(data: CitaPublicaRequestDTO): Promise<Cita> {

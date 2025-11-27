@@ -56,6 +56,8 @@ public class LoginResponseDTO {
 
     private String token;
     private String type; // "Bearer"
-    private UsuarioDTO usuario;
+    private UsuarioDTO usuario; // Para usuarios del sistema (ADMIN, VET, RECEPCION, ESTUDIANTE)
+    private PropietarioDTO propietario; // Para clientes (CLIENTE)
+    private String userType; // "SISTEMA" o "CLIENTE"
 }
 
