@@ -8,10 +8,12 @@ import { Skeleton } from '@shared/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { reporteService, PeriodoReporte, ReporteDTO } from '@features/reportes/services/reporteService';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--info))', 'hsl(var(--warning))'];
 
 export default function Reportes() {
+  const logger = useLogger('Reportes');
   const [periodo, setPeriodo] = useState<PeriodoReporte>('mes');
   const [reporte, setReporte] = useState<ReporteDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,7 +30,10 @@ export default function Reportes() {
       const data = await reporteService.generarReporte(periodo);
       setReporte(data);
     } catch (error: any) {
-      console.error('Error al cargar reporte:', error);
+      logger.error('Error al cargar reporte', error, {
+        action: 'loadReporte',
+        periodo,
+      });
       const errorMessage = error?.response?.data?.message || 'Error al cargar el reporte';
       setError(errorMessage);
       toast.error(errorMessage);

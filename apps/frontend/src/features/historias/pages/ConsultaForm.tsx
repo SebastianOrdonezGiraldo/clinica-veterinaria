@@ -15,6 +15,7 @@ import { useAuth } from '@core/auth/AuthContext';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { consultaService } from '@features/historias/services/consultaService';
 import { Paciente } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const consultaSchema = z.object({
   frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
@@ -30,6 +31,7 @@ const consultaSchema = z.object({
 type ConsultaFormData = z.infer<typeof consultaSchema>;
 
 export default function ConsultaForm() {
+  const logger = useLogger('ConsultaForm');
   const { pacienteId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -57,7 +59,10 @@ export default function ConsultaForm() {
       const pacienteData = await pacienteService.getById(pacienteId);
       setPaciente(pacienteData);
     } catch (error: any) {
-      console.error('Error al cargar paciente:', error);
+      logger.error('Error al cargar paciente para consulta', error, {
+        action: 'loadPaciente',
+        pacienteId: pacienteId,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message || 'Error al cargar los datos del paciente';
       
@@ -131,7 +136,10 @@ export default function ConsultaForm() {
       toast.success('Consulta registrada exitosamente');
       navigate(`/historias/${pacienteId}`);
     } catch (error: any) {
-      console.error('Error al guardar consulta:', error);
+      logger.error('Error al guardar consulta', error, {
+        action: 'saveConsulta',
+        pacienteId: pacienteId,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message;
       

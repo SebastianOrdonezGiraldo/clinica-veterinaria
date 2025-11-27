@@ -13,6 +13,7 @@ import { Separator } from '@shared/components/ui/separator';
 import { toast } from 'sonner';
 import { usuarioService, UsuarioUpdateDTO } from '@features/usuarios/services/usuarioService';
 import { Usuario, Rol } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const roleLabels: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -50,6 +51,7 @@ const perfilSchema = z.object({
 type PerfilFormData = z.infer<typeof perfilSchema>;
 
 export default function Perfil() {
+  const logger = useLogger('Perfil');
   const { user, updateUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -144,7 +146,10 @@ export default function Perfil() {
         confirmPassword: '',
       });
     } catch (error: any) {
-      console.error('Error al actualizar perfil:', error);
+      logger.error('Error al actualizar perfil de usuario', error, {
+        action: 'updatePerfil',
+        userId: user?.id,
+      });
       const statusCode = error?.response?.status;
       const errorMessage = error?.response?.data?.message;
 

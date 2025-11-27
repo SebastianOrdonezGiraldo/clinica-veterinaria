@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import { Usuario, Rol } from '@core/types';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const roleLabels: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -78,7 +79,9 @@ export default function SeguridadRoles() {
       const data = await usuarioService.getAll();
       setUsuarios(data);
     } catch (error: any) {
-      console.error('Error al cargar usuarios:', error);
+      logger.error('Error al cargar usuarios para gestión de roles', error, {
+        action: 'loadUsuarios',
+      });
       const errorMessage = error?.response?.data?.message || 'Error al cargar los usuarios';
       setError(errorMessage);
       toast.error(errorMessage);

@@ -10,8 +10,10 @@ import { toast } from 'sonner';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { consultaService } from '@features/historias/services/consultaService';
 import { Paciente, Consulta } from '@core/types';
+import { useLogger } from '@shared/hooks/useLogger';
 
 export default function HistoriaDetalle() {
+  const logger = useLogger('HistoriaDetalle');
   const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
@@ -43,7 +45,10 @@ export default function HistoriaDetalle() {
         setPaciente(results[0].value);
       } else {
         const error = results[0].reason;
-        console.error('Error al cargar paciente:', error);
+        logger.error('Error al cargar paciente para historia clínica', error, {
+          action: 'loadPaciente',
+          pacienteId: id,
+        });
         const errorMessage = error?.response?.data?.message || 'Error al cargar el paciente';
         const statusCode = error?.response?.status;
         
@@ -63,7 +68,10 @@ export default function HistoriaDetalle() {
         setConsultas(results[1].value);
       } else {
         const error = results[1].reason;
-        console.error('Error al cargar consultas:', error);
+        logger.warn('Error al cargar consultas de la historia clínica', {
+          action: 'loadConsultas',
+          pacienteId: id,
+        });
         const errorMessage = error?.response?.data?.message || 'Error al cargar las consultas';
         const statusCode = error?.response?.status;
         
@@ -76,7 +84,10 @@ export default function HistoriaDetalle() {
         setConsultas([]);
       }
     } catch (error: any) {
-      console.error('Error inesperado al cargar datos:', error);
+      logger.error('Error inesperado al cargar historia clínica', error, {
+        action: 'loadData',
+        pacienteId: id,
+      });
       const errorMessage = error?.response?.data?.message || 'Error inesperado al cargar la historia clínica';
       setError(errorMessage);
       toast.error(errorMessage);

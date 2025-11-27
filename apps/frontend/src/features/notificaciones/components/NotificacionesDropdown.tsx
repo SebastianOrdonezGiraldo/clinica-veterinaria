@@ -12,6 +12,7 @@ import { Badge } from '@shared/components/ui/badge';
 import { notificacionService, Notificacion } from '@features/notificaciones/services/notificacionService';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { useLogger } from '@shared/hooks/useLogger';
 
 const tipoIcons = {
   CITA: Calendar,
@@ -32,6 +33,7 @@ const tipoColors = {
 };
 
 export function NotificacionesDropdown() {
+  const logger = useLogger('NotificacionesDropdown');
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [noLeidasCount, setNoLeidasCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +49,9 @@ export function NotificacionesDropdown() {
       setNotificaciones(all);
       setNoLeidasCount(count);
     } catch (error: any) {
-      console.error('Error al cargar notificaciones:', error);
+      logger.error('Error al cargar notificaciones', error, {
+        action: 'loadNotificaciones',
+      });
       toast.error('Error al cargar notificaciones');
     } finally {
       setIsLoading(false);
@@ -73,7 +77,10 @@ export function NotificacionesDropdown() {
       await notificacionService.marcarComoLeida(id);
       await loadNotificaciones();
     } catch (error: any) {
-      console.error('Error al marcar como leída:', error);
+      logger.warn('Error al marcar notificación como leída', {
+        action: 'marcarComoLeida',
+        notificacionId: id,
+      });
       toast.error('Error al marcar como leída');
     }
   };
@@ -84,7 +91,9 @@ export function NotificacionesDropdown() {
       await loadNotificaciones();
       toast.success('Todas las notificaciones marcadas como leídas');
     } catch (error: any) {
-      console.error('Error al marcar todas como leídas:', error);
+      logger.warn('Error al marcar todas las notificaciones como leídas', {
+        action: 'marcarTodasComoLeidas',
+      });
       toast.error('Error al marcar todas como leídas');
     }
   };
@@ -95,7 +104,10 @@ export function NotificacionesDropdown() {
       await loadNotificaciones();
       toast.success('Notificación eliminada');
     } catch (error: any) {
-      console.error('Error al eliminar:', error);
+      logger.warn('Error al eliminar notificación', {
+        action: 'eliminarNotificacion',
+        notificacionId: id,
+      });
       toast.error('Error al eliminar notificación');
     }
   };
