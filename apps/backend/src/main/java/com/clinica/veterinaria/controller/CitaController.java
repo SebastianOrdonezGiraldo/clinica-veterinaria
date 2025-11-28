@@ -3,6 +3,7 @@ package com.clinica.veterinaria.controller;
 import com.clinica.veterinaria.dto.CitaDTO;
 import com.clinica.veterinaria.entity.Cita;
 import com.clinica.veterinaria.entity.Cita.EstadoCita;
+import com.clinica.veterinaria.exception.domain.InvalidDataException;
 import com.clinica.veterinaria.service.CitaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -63,14 +65,17 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class CitaController {
 
+    private static final String LOG_SEPARATOR = "═══════════════════════════════════════════════════════════";
+    
     private final CitaService citaService;
 
     /**
      * Obtener todas las citas
      * 
      * @deprecated Usar {@link #searchWithFilters} en su lugar para búsquedas paginadas con filtros
+     * @since 1.0.0
      */
-    @Deprecated
+    @Deprecated(since = "1.0.0")
     @GetMapping
     public ResponseEntity<List<CitaDTO>> getAll() {
         log.info("GET /api/citas (DEPRECATED)");
@@ -81,7 +86,7 @@ public class CitaController {
      * Obtener una cita por ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<CitaDTO> getById(@PathVariable Long id) {
+    public ResponseEntity<CitaDTO> getById(@PathVariable @NonNull Long id) {
         log.info("GET /api/citas/{}", id);
         return ResponseEntity.ok(citaService.findById(id));
     }
@@ -172,10 +177,11 @@ public class CitaController {
      * Obtener citas por paciente
      * 
      * @deprecated Usar {@link #searchWithFilters} con pacienteId
+     * @since 1.0.0
      */
-    @Deprecated
+    @Deprecated(since = "1.0.0")
     @GetMapping("/paciente/{pacienteId}")
-    public ResponseEntity<List<CitaDTO>> getByPaciente(@PathVariable Long pacienteId) {
+    public ResponseEntity<List<CitaDTO>> getByPaciente(@PathVariable @NonNull Long pacienteId) {
         log.info("GET /api/citas/paciente/{} (DEPRECATED)", pacienteId);
         return ResponseEntity.ok(citaService.findByPaciente(pacienteId));
     }
@@ -184,10 +190,11 @@ public class CitaController {
      * Obtener citas por profesional
      * 
      * @deprecated Usar {@link #searchWithFilters} con profesionalId
+     * @since 1.0.0
      */
-    @Deprecated
+    @Deprecated(since = "1.0.0")
     @GetMapping("/profesional/{profesionalId}")
-    public ResponseEntity<List<CitaDTO>> getByProfesional(@PathVariable Long profesionalId) {
+    public ResponseEntity<List<CitaDTO>> getByProfesional(@PathVariable @NonNull Long profesionalId) {
         log.info("GET /api/citas/profesional/{} (DEPRECATED)", profesionalId);
         return ResponseEntity.ok(citaService.findByProfesional(profesionalId));
     }
@@ -196,10 +203,11 @@ public class CitaController {
      * Obtener citas por estado
      * 
      * @deprecated Usar {@link #searchWithFilters} con estado
+     * @since 1.0.0
      */
-    @Deprecated
+    @Deprecated(since = "1.0.0")
     @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<CitaDTO>> getByEstado(@PathVariable Cita.EstadoCita estado) {
+    public ResponseEntity<List<CitaDTO>> getByEstado(@PathVariable @NonNull Cita.EstadoCita estado) {
         log.info("GET /api/citas/estado/{} (DEPRECATED)", estado);
         return ResponseEntity.ok(citaService.findByEstado(estado));
     }
@@ -208,12 +216,13 @@ public class CitaController {
      * Obtener citas por rango de fechas
      * 
      * @deprecated Usar {@link #searchWithFilters} con fechaInicio y fechaFin
+     * @since 1.0.0
      */
-    @Deprecated
+    @Deprecated(since = "1.0.0")
     @GetMapping("/rango")
     public ResponseEntity<List<CitaDTO>> getByFechaRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @NonNull LocalDateTime inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @NonNull LocalDateTime fin) {
         log.info("GET /api/citas/rango?inicio={}&fin={} (DEPRECATED)", inicio, fin);
         return ResponseEntity.ok(citaService.findByFechaRange(inicio, fin));
     }
@@ -236,7 +245,7 @@ public class CitaController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'VET')")
-    public ResponseEntity<CitaDTO> update(@PathVariable Long id, @Valid @RequestBody CitaDTO dto) {
+    public ResponseEntity<CitaDTO> update(@PathVariable @NonNull Long id, @Valid @RequestBody @NonNull CitaDTO dto) {
         log.info("PUT /api/citas/{}", id);
         return ResponseEntity.ok(citaService.update(id, dto));
     }
@@ -248,12 +257,12 @@ public class CitaController {
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION', 'VET')")
     public ResponseEntity<CitaDTO> cambiarEstado(
-            @PathVariable Long id, 
+            @PathVariable @NonNull Long id, 
             @RequestParam(required = false) String estado,
             @RequestBody(required = false) Map<String, String> body) {
-        log.info("═══════════════════════════════════════════════════════════");
+        log.info(LOG_SEPARATOR);
         log.info("PATCH /api/citas/{}/estado - INICIANDO CAMBIO DE ESTADO", id);
-        log.info("═══════════════════════════════════════════════════════════");
+        log.info(LOG_SEPARATOR);
         
         // Obtener el estado del body o del query param
         String estadoStr = null;
@@ -267,7 +276,7 @@ public class CitaController {
         
         if (estadoStr == null || estadoStr.isEmpty()) {
             log.error("❌ ERROR: El estado es requerido");
-            throw new RuntimeException("El estado es requerido");
+            throw new InvalidDataException("estado", estadoStr, "El estado es requerido");
         }
         
         // Convertir String a enum
@@ -277,13 +286,14 @@ public class CitaController {
             log.info("✅ Estado convertido correctamente: {}", estadoEnum);
         } catch (IllegalArgumentException e) {
             log.error("❌ ERROR: Estado inválido: {}", estadoStr);
-            throw new RuntimeException("Estado inválido: " + estadoStr + ". Valores válidos: PENDIENTE, CONFIRMADA, ATENDIDA, CANCELADA");
+            throw new InvalidDataException("estado", estadoStr, 
+                "Estado inválido. Valores válidos: PENDIENTE, CONFIRMADA, EN_PROCESO, COMPLETADA, CANCELADA");
         }
         
         log.info("🔄 Llamando a citaService.cambiarEstado({}, {})", id, estadoEnum);
         CitaDTO resultado = citaService.cambiarEstado(id, estadoEnum);
         log.info("✅ Cambio de estado completado. Retornando resultado.");
-        log.info("═══════════════════════════════════════════════════════════");
+        log.info(LOG_SEPARATOR);
         
         return ResponseEntity.ok(resultado);
     }
@@ -294,7 +304,7 @@ public class CitaController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RECEPCION')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable @NonNull Long id) {
         log.info("DELETE /api/citas/{}", id);
         citaService.delete(id);
         return ResponseEntity.noContent().build();
