@@ -4,7 +4,44 @@ import { Consulta, PageResponse } from '@core/types';
 import { useApiError } from '@shared/hooks/useApiError';
 
 /**
- * Hook personalizado para gestionar consultas con React Query
+ * Hook personalizado para gestionar consultas médicas con React Query.
+ *
+ * Proporciona funcionalidades CRUD para consultas veterinarias con:
+ * - Cache automático de datos
+ * - Invalidación de cache de pacientes relacionados
+ * - Manejo de estados de carga y error
+ *
+ * @hook
+ *
+ * @param {ConsultaSearchParams} params - Parámetros de búsqueda y paginación
+ * @param {number} [params.page=0] - Número de página
+ * @param {number} [params.size=10] - Elementos por página
+ * @param {string} [params.pacienteId] - Filtrar por paciente
+ * @param {string} [params.veterinarioId] - Filtrar por veterinario
+ *
+ * @returns {Object} Estado y funciones de consultas
+ * @returns {PageResponse<Consulta>} returns.consultasPage - Respuesta paginada
+ * @returns {Consulta[]} returns.consultas - Array de consultas
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Function} returns.createConsulta - Crear consulta
+ * @returns {Function} returns.updateConsulta - Actualizar consulta
+ * @returns {Function} returns.deleteConsulta - Eliminar consulta
+ *
+ * @example
+ * ```tsx
+ * function ConsultasList() {
+ *   const { consultas, isLoading, createConsulta } = useConsultas();
+ *
+ *   const handleCreate = (data: ConsultaDTO) => {
+ *     createConsulta(data);
+ *   };
+ *
+ *   return <ConsultaForm onSubmit={handleCreate} />;
+ * }
+ * ```
+ *
+ * @see {@link useConsulta}
+ * @see {@link useConsultasByPaciente}
  */
 export function useConsultas(params: ConsultaSearchParams = {}) {
   const { handleError, showSuccess } = useApiError();
@@ -70,7 +107,28 @@ export function useConsultas(params: ConsultaSearchParams = {}) {
 }
 
 /**
- * Hook para obtener una consulta por ID
+ * Hook para obtener una consulta por ID.
+ *
+ * @hook
+ *
+ * @param {string | undefined} id - ID de la consulta
+ *
+ * @returns {Object} Consulta y estado de carga
+ * @returns {Consulta} returns.consulta - Datos de la consulta
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Function} returns.refetch - Recargar datos
+ *
+ * @example
+ * ```tsx
+ * function ConsultaDetalle({ id }: { id: string }) {
+ *   const { consulta, isLoading } = useConsulta(id);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (!consulta) return <NotFound />;
+ *
+ *   return <ConsultaView consulta={consulta} />;
+ * }
+ * ```
  */
 export function useConsulta(id: string | undefined) {
   const { handleError } = useApiError();
@@ -99,7 +157,32 @@ export function useConsulta(id: string | undefined) {
 }
 
 /**
- * Hook para obtener consultas de un paciente (historia clínica)
+ * Hook para obtener consultas de un paciente (historia clínica).
+ *
+ * Carga todas las consultas de un paciente ordenadas por fecha descendente.
+ * Útil para mostrar la historia clínica completa.
+ *
+ * @hook
+ *
+ * @param {string | undefined} pacienteId - ID del paciente
+ *
+ * @returns {Object} Consultas del paciente y estado
+ * @returns {Consulta[]} returns.consultas - Array de consultas del paciente
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Function} returns.refetch - Recargar datos
+ *
+ * @example
+ * ```tsx
+ * function HistoriaClinica({ pacienteId }: { pacienteId: string }) {
+ *   const { consultas, isLoading } = useConsultasByPaciente(pacienteId);
+ *
+ *   return (
+ *     <Timeline>
+ *       {consultas.map(c => <ConsultaItem key={c.id} consulta={c} />)}
+ *     </Timeline>
+ *   );
+ * }
+ * ```
  */
 export function useConsultasByPaciente(pacienteId: string | undefined) {
   const { handleError } = useApiError();

@@ -4,14 +4,60 @@ import { X } from "lucide-react";
 
 import { cn } from "@shared/utils/utils";
 
+/**
+ * Componente Dialog principal.
+ *
+ * Modal accesible basado en Radix UI con soporte para overlay,
+ * animaciones de entrada/salida y manejo de foco.
+ *
+ * @component
+ *
+ * @example
+ * ```tsx
+ * <Dialog>
+ *   <DialogTrigger asChild>
+ *     <Button>Abrir Dialog</Button>
+ *   </DialogTrigger>
+ *   <DialogContent>
+ *     <DialogHeader>
+ *       <DialogTitle>Título</DialogTitle>
+ *       <DialogDescription>Descripción del diálogo</DialogDescription>
+ *     </DialogHeader>
+ *     <p>Contenido del diálogo...</p>
+ *     <DialogFooter>
+ *       <Button>Confirmar</Button>
+ *     </DialogFooter>
+ *   </DialogContent>
+ * </Dialog>
+ * ```
+ *
+ * @see {@link DialogContent}
+ * @see {@link DialogTrigger}
+ */
 const Dialog = DialogPrimitive.Root;
 
+/**
+ * Elemento que activa la apertura del Dialog.
+ * @component
+ */
 const DialogTrigger = DialogPrimitive.Trigger;
 
+/**
+ * Portal para renderizar el Dialog fuera del DOM tree.
+ * @component
+ */
 const DialogPortal = DialogPrimitive.Portal;
 
+/**
+ * Botón para cerrar el Dialog.
+ * @component
+ */
 const DialogClose = DialogPrimitive.Close;
 
+/**
+ * Overlay oscuro detrás del Dialog.
+ * @component
+ */
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -27,6 +73,12 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * Contenedor principal del contenido del Dialog.
+ * Incluye overlay, animaciones y botón de cierre.
+ * @component
+ * @see {@link Dialog}
+ */
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -51,16 +103,31 @@ const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
+/**
+ * Encabezado del Dialog con título y descripción.
+ * @component
+ * @see {@link Dialog}
+ */
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 
+/**
+ * Pie del Dialog para botones de acción.
+ * @component
+ * @see {@link Dialog}
+ */
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 
+/**
+ * Título del Dialog.
+ * @component
+ * @see {@link Dialog}
+ */
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -73,6 +140,11 @@ const DialogTitle = React.forwardRef<
 ));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
+/**
+ * Descripción del Dialog.
+ * @component
+ * @see {@link Dialog}
+ */
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>

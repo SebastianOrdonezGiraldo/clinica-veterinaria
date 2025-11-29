@@ -2,6 +2,34 @@ import * as React from "react";
 
 import { cn } from "@shared/utils/utils";
 
+/**
+ * Componente Input para entrada de texto.
+ *
+ * Campo de entrada estilizado con soporte para diferentes tipos (text, email, password, etc.).
+ * Incluye estados visuales para focus, disabled y validación.
+ *
+ * @component
+ *
+ * @param {React.ComponentProps<"input">} props - Propiedades estándar de input HTML
+ * @param {string} [props.type] - Tipo de input (text, email, password, number, etc.)
+ * @param {string} [props.className] - Clases CSS adicionales
+ * @param {string} [props.placeholder] - Texto placeholder
+ * @param {boolean} [props.disabled] - Si está deshabilitado
+ *
+ * @returns {JSX.Element} El componente Input renderizado
+ *
+ * @example
+ * ```tsx
+ * // Input básico
+ * <Input placeholder="Escribe aquí..." />
+ *
+ * // Input de email
+ * <Input type="email" placeholder="email@ejemplo.com" />
+ *
+ * // Input deshabilitado
+ * <Input disabled value="No editable" />
+ * ```
+ */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (

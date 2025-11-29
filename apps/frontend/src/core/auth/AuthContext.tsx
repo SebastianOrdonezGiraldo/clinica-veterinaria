@@ -3,19 +3,61 @@ import { Usuario, Rol, Propietario } from '@core/types';
 import { authService } from '@core/auth/authService';
 import { loggerService } from '@core/logging/loggerService';
 
+/**
+ * Tipo del contexto de autenticación.
+ *
+ * Define la estructura del estado y funciones disponibles para autenticación.
+ *
+ * @interface AuthContextType
+ */
 interface AuthContextType {
+  /** Usuario del sistema autenticado (veterinario, admin, recepcionista) */
   user: Usuario | null;
+  /** Cliente (propietario) autenticado */
   cliente: Propietario | null;
+  /** Tipo de usuario actual */
   userType: 'SISTEMA' | 'CLIENTE' | null;
+  /** Función para iniciar sesión */
   login: (email: string, password: string) => Promise<void>;
+  /** Función para cerrar sesión */
   logout: () => void;
+  /** Función para actualizar datos del usuario del sistema */
   updateUser: (updatedUser: Usuario) => void;
+  /** Función para actualizar datos del cliente */
   updateCliente: (updatedCliente: Propietario) => void;
+  /** Indica si está cargando el estado de autenticación */
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Proveedor del contexto de autenticación.
+ *
+ * Maneja el estado de autenticación para dos tipos de usuarios:
+ * - Usuarios del sistema: veterinarios, recepcionistas, administradores
+ * - Clientes: propietarios de mascotas
+ *
+ * Persiste la sesión en localStorage y valida tokens al cargar.
+ *
+ * @component
+ *
+ * @param {Object} props - Propiedades del componente
+ * @param {React.ReactNode} props.children - Componentes hijos que tendrán acceso al contexto
+ *
+ * @returns {JSX.Element} Provider del contexto de autenticación
+ *
+ * @example
+ * ```tsx
+ * // En el App.tsx principal
+ * <AuthProvider>
+ *   <App />
+ * </AuthProvider>
+ * ```
+ *
+ * @see {@link useAuth}
+ * @see {@link useRequireAuth}
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null);
   const [cliente, setCliente] = useState<Propietario | null>(null);
@@ -149,6 +191,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Hook para acceder al contexto de autenticación.
+ *
+ * Proporciona acceso al estado de autenticación y funciones para
+ * login, logout y actualización de datos del usuario.
+ *
+ * @hook
+ *
+ * @returns {AuthContextType} Estado y funciones de autenticación
+ * @throws {Error} Si se usa fuera de AuthProvider
+ *
+ * @example
+ * ```tsx
+ * function MyComponent() {
+ *   const { user, login, logout, isLoading } = useAuth();
+ *
+ *   if (isLoading) return <Loading />;
+ *   if (!user) return <LoginForm onLogin={login} />;
+ *
+ *   return (
+ *     <div>
+ *       <p>Bienvenido, {user.nombre}</p>
+ *       <Button onClick={logout}>Cerrar sesión</Button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link AuthProvider}
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -157,6 +229,31 @@ export function useAuth() {
   return context;
 }
 
+/**
+ * Hook para verificar autenticación y autorización.
+ *
+ * Verifica si el usuario actual tiene acceso basado en roles opcionales.
+ * Útil para mostrar/ocultar elementos según permisos.
+ *
+ * @hook
+ *
+ * @param {Rol[]} [allowedRoles] - Roles permitidos (opcional)
+ *
+ * @returns {{ hasAccess: boolean, user: Usuario | null }} Estado de acceso y usuario
+ *
+ * @example
+ * ```tsx
+ * function AdminButton() {
+ *   const { hasAccess } = useRequireAuth(['ADMIN']);
+ *
+ *   if (!hasAccess) return null;
+ *
+ *   return <Button>Opciones de Admin</Button>;
+ * }
+ * ```
+ *
+ * @see {@link useAuth}
+ */
 export function useRequireAuth(allowedRoles?: Rol[]) {
   const { user } = useAuth();
   
