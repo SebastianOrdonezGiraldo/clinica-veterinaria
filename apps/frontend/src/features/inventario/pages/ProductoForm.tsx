@@ -20,9 +20,9 @@ const productoSchema = z.object({
   descripcion: z.string().max(1000, 'La descripción no puede exceder 1000 caracteres').optional().or(z.literal('')),
   categoriaId: z.number().min(1, 'La categoría es requerida'),
   unidadMedida: z.string().min(1, 'La unidad de medida es requerida').max(20),
-  stockActual: z.number().min(0, 'El stock actual no puede ser negativo').default(0),
-  stockMinimo: z.number().min(0, 'El stock mínimo no puede ser negativo').optional().nullable(),
-  stockMaximo: z.number().min(0, 'El stock máximo no puede ser negativo').optional().nullable(),
+  stockActual: z.number().int('El stock debe ser un número entero').min(0, 'El stock actual no puede ser negativo').default(0),
+  stockMinimo: z.number().int('El stock mínimo debe ser un número entero').min(0, 'El stock mínimo no puede ser negativo').optional().nullable(),
+  stockMaximo: z.number().int('El stock máximo debe ser un número entero').min(0, 'El stock máximo no puede ser negativo').optional().nullable(),
   costo: z.number().min(0, 'El costo no puede ser negativo').default(0),
   precioVenta: z.number().min(0, 'El precio de venta no puede ser negativo').optional().nullable(),
   activo: z.boolean().default(true),
@@ -271,10 +271,21 @@ export default function ProductoForm() {
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
+                          step="1"
                           min="0"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              field.onChange(0);
+                            } else {
+                              const intValue = parseInt(value, 10);
+                              if (!isNaN(intValue) && intValue >= 0) {
+                                field.onChange(intValue);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
@@ -294,11 +305,21 @@ export default function ProductoForm() {
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
+                          step="1"
                           min="0"
                           {...field}
                           value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              field.onChange(undefined);
+                            } else {
+                              const intValue = parseInt(value, 10);
+                              if (!isNaN(intValue) && intValue >= 0) {
+                                field.onChange(intValue);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>Alerta cuando el stock cae por debajo</FormDescription>
@@ -316,11 +337,21 @@ export default function ProductoForm() {
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
+                          step="1"
                           min="0"
                           {...field}
                           value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              field.onChange(undefined);
+                            } else {
+                              const intValue = parseInt(value, 10);
+                              if (!isNaN(intValue) && intValue >= 0) {
+                                field.onChange(intValue);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>Nivel máximo recomendado</FormDescription>

@@ -18,7 +18,7 @@ import { TipoMovimiento } from '../services/inventarioService';
 
 const movimientoBaseSchema = z.object({
   productoId: z.number().min(1, 'El producto es requerido'),
-  cantidad: z.number().min(0.01, 'La cantidad debe ser mayor a 0'),
+  cantidad: z.number().int('La cantidad debe ser un número entero').min(1, 'La cantidad debe ser mayor a 0'),
   precioUnitario: z.number().min(0, 'El precio unitario no puede ser negativo').optional().nullable(),
   motivo: z.string().min(1, 'El motivo es requerido').max(500, 'El motivo no puede exceder 500 caracteres'),
   notas: z.string().max(1000, 'Las notas no pueden exceder 1000 caracteres').optional().or(z.literal('')),
@@ -214,16 +214,27 @@ export default function MovimientoForm() {
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
-                          min="0.01"
+                          step="1"
+                          min="1"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              field.onChange(0);
+                            } else {
+                              const intValue = parseInt(value, 10);
+                              if (!isNaN(intValue) && intValue >= 1) {
+                                field.onChange(intValue);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
                         {isAjuste 
-                          ? 'Stock final deseado' 
-                          : `Cantidad a ${isEntrada ? 'ingresar' : 'retirar'}`}
+                          ? 'Stock final deseado (número entero)' 
+                          : `Cantidad a ${isEntrada ? 'ingresar' : 'retirar'} (número entero)`}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
