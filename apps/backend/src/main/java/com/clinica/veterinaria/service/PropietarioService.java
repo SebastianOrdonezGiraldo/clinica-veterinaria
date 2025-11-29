@@ -63,6 +63,7 @@ public class PropietarioService {
 
     private final PropietarioRepository propietarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     /**
      * Obtiene todos los propietarios registrados.
@@ -212,6 +213,25 @@ public class PropietarioService {
         propietario = propietarioRepository.save(propietario);
         log.info("✓ Propietario creado con contraseña - ID: {}", propietario.getId());
         
+        // Enviar email de bienvenida si tiene email y contraseña
+        if (password != null && !password.trim().isEmpty() 
+            && propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.enviarEmailBienvenidaCliente(
+                    propietario.getEmail(),
+                    propietario.getNombre()
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de bienvenida enviado exitosamente a: {}", propietario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de bienvenida a: {}", propietario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de bienvenida: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        }
+        
         return PropietarioDTO.fromEntity(propietario);
     }
 
@@ -326,6 +346,24 @@ public class PropietarioService {
         propietarioRepository.save(propietario);
         
         log.info("✓ Contraseña establecida exitosamente para propietario - Email: {}", email);
+        
+        // Enviar email de confirmación de contraseña establecida
+        if (propietario.getEmail() != null && !propietario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.enviarEmailCambioPasswordCliente(
+                    propietario.getEmail(),
+                    propietario.getNombre()
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de confirmación de contraseña enviado exitosamente a: {}", propietario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de confirmación de contraseña a: {}", propietario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de confirmación de contraseña: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        }
     }
     
     /**

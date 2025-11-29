@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +68,15 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+
+    // Mapa de roles a nombres en español
+    private static final Map<Usuario.Rol, String> ROL_NAMES = Map.of(
+        Usuario.Rol.ADMIN, "Administrador",
+        Usuario.Rol.VET, "Veterinario",
+        Usuario.Rol.RECEPCION, "Recepcionista",
+        Usuario.Rol.ESTUDIANTE, "Estudiante"
+    );
 
     /**
      * Obtiene todos los usuarios del sistema.
@@ -166,6 +176,26 @@ public class UsuarioService {
         usuario = usuarioRepository.save(usuario);
         log.info("✓ Usuario creado exitosamente con ID: {} | Rol: {}", usuario.getId(), usuario.getRol());
         
+        // Enviar email de bienvenida
+        if (usuario.getEmail() != null && !usuario.getEmail().trim().isEmpty()) {
+            try {
+                String rolNombre = ROL_NAMES.getOrDefault(usuario.getRol(), usuario.getRol().name());
+                boolean emailEnviado = emailService.enviarEmailBienvenidaUsuario(
+                    usuario.getEmail(),
+                    usuario.getNombre(),
+                    rolNombre
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de bienvenida enviado exitosamente a: {}", usuario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de bienvenida a: {}", usuario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de bienvenida: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        }
+        
         return UsuarioDTO.fromEntity(usuario);
     }
 
@@ -212,13 +242,35 @@ public class UsuarioService {
             usuario.setActivo(dto.getActivo());
         }
         
+        // Detectar si se cambió la contraseña
+        boolean passwordCambiado = dto.getPassword() != null && !dto.getPassword().trim().isEmpty();
+        
         // Solo actualizar password si se proporciona
-        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
+        if (passwordCambiado) {
             usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
 
         usuario = usuarioRepository.save(usuario);
         log.info("✓ Usuario actualizado exitosamente con ID: {}", id);
+        
+        // Enviar email si se cambió la contraseña
+        if (passwordCambiado && usuario.getEmail() != null && !usuario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.enviarEmailCambioPasswordUsuario(
+                    usuario.getEmail(),
+                    usuario.getNombre(),
+                    false // No es reset por admin, es cambio por el usuario mismo
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de cambio de contraseña enviado exitosamente a: {}", usuario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de cambio de contraseña a: {}", usuario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de cambio de contraseña: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        }
         
         return UsuarioDTO.fromEntity(usuario);
     }
@@ -332,6 +384,25 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
         
         log.info("✓ Contraseña reseteada exitosamente para usuario con ID: {}", id);
+        
+        // Enviar email de notificación de reset de contraseña
+        if (usuario.getEmail() != null && !usuario.getEmail().trim().isEmpty()) {
+            try {
+                boolean emailEnviado = emailService.enviarEmailCambioPasswordUsuario(
+                    usuario.getEmail(),
+                    usuario.getNombre(),
+                    true // Es reset por admin
+                );
+                if (emailEnviado) {
+                    log.info("✓ Email de reset de contraseña enviado exitosamente a: {}", usuario.getEmail());
+                } else {
+                    log.warn("✗ No se pudo enviar email de reset de contraseña a: {}", usuario.getEmail());
+                }
+            } catch (Exception e) {
+                log.error("✗ Error al enviar email de reset de contraseña: {}", e.getMessage(), e);
+                // No lanzar excepción para no interrumpir el flujo principal
+            }
+        }
     }
     
     /**

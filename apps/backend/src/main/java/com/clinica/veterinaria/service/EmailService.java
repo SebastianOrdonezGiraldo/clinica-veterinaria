@@ -17,13 +17,18 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 
 /**
- * Servicio para el envío de correos electrónicos relacionados con citas.
+ * Servicio para el envío de correos electrónicos del sistema.
  * 
  * <p>Este servicio proporciona funcionalidad para enviar emails HTML usando
- * plantillas Thymeleaf cuando se crean, actualizan o cancelan citas.</p>
+ * plantillas Thymeleaf para diferentes eventos del sistema:</p>
+ * <ul>
+ *   <li>Confirmación y actualización de citas</li>
+ *   <li>Bienvenida a usuarios del sistema y clientes</li>
+ *   <li>Notificaciones de cambio de contraseña</li>
+ * </ul>
  * 
  * @author Sebastian Ordoñez
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-01-XX
  */
 @Service
@@ -176,6 +181,148 @@ public class EmailService {
             return enviarEmailHtml(propietarioEmail, subject, "email/cita-estado-actualizado", context);
         } catch (Exception e) {
             log.error("✗ Error al enviar email de cambio de estado de cita: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Envía un email de bienvenida cuando se crea un nuevo usuario del sistema.
+     * 
+     * @param usuarioEmail Email del usuario
+     * @param usuarioNombre Nombre del usuario
+     * @param rolNombre Nombre del rol asignado (ej: "Administrador", "Veterinario")
+     * @return true si el email se envió exitosamente
+     */
+    public boolean enviarEmailBienvenidaUsuario(String usuarioEmail, String usuarioNombre, String rolNombre) {
+        try {
+            log.info("📧 Enviando email de bienvenida a usuario: {}", usuarioEmail);
+            
+            Context context = new Context(new Locale("es", "ES"));
+            context.setVariable("usuarioNombre", usuarioNombre);
+            context.setVariable("usuarioEmail", usuarioEmail);
+            context.setVariable("rolNombre", rolNombre);
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
+            context.setVariable("baseUrl", baseUrl);
+
+            String subject = String.format("Bienvenido/a a %s", "Clínica Veterinaria Universitaria Humboldt");
+            
+            return enviarEmailHtml(usuarioEmail, subject, "email/usuario-bienvenida", context);
+        } catch (Exception e) {
+            log.error("✗ Error al enviar email de bienvenida a usuario: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Envía un email de bienvenida cuando se crea un nuevo propietario/cliente.
+     * 
+     * @param propietarioEmail Email del propietario
+     * @param propietarioNombre Nombre del propietario
+     * @return true si el email se envió exitosamente
+     */
+    public boolean enviarEmailBienvenidaCliente(String propietarioEmail, String propietarioNombre) {
+        try {
+            log.info("📧 Enviando email de bienvenida a cliente: {}", propietarioEmail);
+            
+            Context context = new Context(new Locale("es", "ES"));
+            context.setVariable("propietarioNombre", propietarioNombre);
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
+            context.setVariable("baseUrl", baseUrl);
+            
+            // Construir URL del portal del cliente
+            String portalUrl = baseUrl != null && !baseUrl.isEmpty() 
+                ? baseUrl + "/cliente/login" 
+                : "http://localhost:5173/cliente/login";
+            context.setVariable("portalUrl", portalUrl);
+
+            String subject = "Bienvenido al Portal del Cliente";
+            
+            return enviarEmailHtml(propietarioEmail, subject, "email/cliente-bienvenida", context);
+        } catch (Exception e) {
+            log.error("✗ Error al enviar email de bienvenida a cliente: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Envía un email cuando se cambia la contraseña de un usuario del sistema.
+     * 
+     * @param usuarioEmail Email del usuario
+     * @param usuarioNombre Nombre del usuario
+     * @param esResetAdmin true si el cambio fue realizado por un administrador, false si fue por el usuario
+     * @return true si el email se envió exitosamente
+     */
+    public boolean enviarEmailCambioPasswordUsuario(String usuarioEmail, String usuarioNombre, boolean esResetAdmin) {
+        try {
+            log.info("📧 Enviando email de cambio de contraseña a usuario: {}", usuarioEmail);
+            
+            Context context = new Context(new Locale("es", "ES"));
+            context.setVariable("usuarioNombre", usuarioNombre);
+            context.setVariable("esResetAdmin", esResetAdmin);
+            context.setVariable("fechaCambio", LocalDateTime.now());
+            context.setVariable("titulo", esResetAdmin ? "Contraseña Reseteada" : "Contraseña Cambiada");
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
+            context.setVariable("baseUrl", baseUrl);
+
+            String subject = esResetAdmin 
+                ? "Su contraseña ha sido reseteada" 
+                : "Confirmación de cambio de contraseña";
+            
+            return enviarEmailHtml(usuarioEmail, subject, "email/usuario-cambio-password", context);
+        } catch (Exception e) {
+            log.error("✗ Error al enviar email de cambio de contraseña a usuario: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * Envía un email cuando se establece o cambia la contraseña de un propietario/cliente.
+     * 
+     * @param propietarioEmail Email del propietario
+     * @param propietarioNombre Nombre del propietario
+     * @return true si el email se envió exitosamente
+     */
+    public boolean enviarEmailCambioPasswordCliente(String propietarioEmail, String propietarioNombre) {
+        try {
+            log.info("📧 Enviando email de confirmación de contraseña a cliente: {}", propietarioEmail);
+            
+            Context context = new Context(new Locale("es", "ES"));
+            context.setVariable("propietarioNombre", propietarioNombre);
+            context.setVariable("titulo", "Contraseña Establecida");
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
+            context.setVariable("baseUrl", baseUrl);
+            
+            // Construir URL del portal del cliente
+            String portalUrl = baseUrl != null && !baseUrl.isEmpty() 
+                ? baseUrl + "/cliente/login" 
+                : "http://localhost:5173/cliente/login";
+            context.setVariable("portalUrl", portalUrl);
+
+            String subject = "Contraseña establecida - Portal del Cliente";
+            
+            return enviarEmailHtml(propietarioEmail, subject, "email/cliente-cambio-password", context);
+        } catch (Exception e) {
+            log.error("✗ Error al enviar email de cambio de contraseña a cliente: {}", e.getMessage(), e);
             return false;
         }
     }

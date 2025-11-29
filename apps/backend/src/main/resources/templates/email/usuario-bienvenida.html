@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a la Clínica Veterinaria</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .credentials-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-row {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            width: 120px;
+        }
+        .value {
+            color: #333;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2196f3;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .highlight {
+            color: #2196f3;
+            font-weight: bold;
+        }
+        .security-note {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:if="${logoUrl != null and logoUrl != ''}" th:src="${logoUrl}" alt="Logo" class="logo" />
+            <h1>¡Bienvenido/a a la Clínica Veterinaria!</h1>
+        </div>
+
+        <p>Estimado/a <span class="highlight" th:text="${usuarioNombre}">Usuario</span>,</p>
+
+        <p>Le damos la bienvenida al sistema de gestión de la <strong th:text="${clinicaNombre}">Clínica Veterinaria Universitaria Humboldt</strong>.</p>
+
+        <div class="info-box">
+            <h2 style="margin-top: 0; font-size: 18px;">Información de su cuenta</h2>
+            <div class="info-row">
+                <span class="label">Nombre:</span>
+                <span class="value" th:text="${usuarioNombre}">Nombre del usuario</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Email:</span>
+                <span class="value" th:text="${usuarioEmail}">Email del usuario</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Rol:</span>
+                <span class="value" th:text="${rolNombre}">Rol asignado</span>
+            </div>
+        </div>
+
+        <div class="security-note">
+            <p><strong>🔒 Seguridad de la cuenta:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Su cuenta ha sido creada exitosamente</li>
+                <li>Por seguridad, le recomendamos cambiar su contraseña en el primer acceso</li>
+                <li>Nunca comparta sus credenciales de acceso</li>
+                <li>Si detecta actividad sospechosa, contacte al administrador inmediatamente</li>
+            </ul>
+        </div>
+
+        <p><strong>Próximos pasos:</strong></p>
+        <ol>
+            <li>Acceda al sistema usando sus credenciales</li>
+            <li>Complete su perfil si es necesario</li>
+            <li>Familiarícese con las funcionalidades según su rol</li>
+        </ol>
+
+        <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria Universitaria Humboldt</strong></p>
+            <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            <p th:if="${baseUrl != null and baseUrl != ''}">
+                <a th:href="${baseUrl}" th:text="${baseUrl}">Visite nuestro sitio web</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

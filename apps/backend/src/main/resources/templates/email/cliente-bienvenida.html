@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido al Portal del Cliente</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .info-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #4caf50;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .highlight {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .benefits {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .benefits ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img th:if="${logoUrl != null and logoUrl != ''}" th:src="${logoUrl}" alt="Logo" class="logo" />
+            <h1>¡Bienvenido al Portal del Cliente!</h1>
+        </div>
+
+        <p>Estimado/a <span class="highlight" th:text="${propietarioNombre}">Cliente</span>,</p>
+
+        <p>Le damos la bienvenida al portal de clientes de la <strong th:text="${clinicaNombre}">Clínica Veterinaria Universitaria Humboldt</strong>.</p>
+
+        <p>Su cuenta ha sido creada exitosamente. Ahora puede acceder al portal y gestionar la información de sus mascotas de forma fácil y segura.</p>
+
+        <div class="info-box">
+            <p style="margin: 0;"><strong>✅ Su cuenta está lista para usar</strong></p>
+        </div>
+
+        <div class="benefits">
+            <p><strong>Con el portal del cliente podrá:</strong></p>
+            <ul>
+                <li>Ver y gestionar las citas de sus mascotas</li>
+                <li>Consultar el historial médico de sus mascotas</li>
+                <li>Ver prescripciones y tratamientos</li>
+                <li>Agendar nuevas citas de forma rápida</li>
+                <li>Actualizar información de contacto</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a th:href="${portalUrl ?: baseUrl + '/cliente/login'}" class="button">
+                Acceder al Portal del Cliente
+            </a>
+        </div>
+
+        <div class="info-box" style="background-color: #fff3cd; border-left-color: #ffc107;">
+            <p style="margin: 0;"><strong>🔒 Seguridad:</strong> Por favor, mantenga sus credenciales de acceso en un lugar seguro y no las comparta con nadie.</p>
+        </div>
+
+        <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
+
+        <div class="footer">
+            <p><strong th:text="${clinicaNombre}">Clínica Veterinaria Universitaria Humboldt</strong></p>
+            <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+            <p th:if="${baseUrl != null and baseUrl != ''}">
+                <a th:href="${baseUrl}" th:text="${baseUrl}">Visite nuestro sitio web</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
