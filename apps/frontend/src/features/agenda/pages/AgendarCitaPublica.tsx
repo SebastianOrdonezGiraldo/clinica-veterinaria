@@ -44,7 +44,6 @@ const citaPublicaSchema = z.object({
   pacienteSexo: z.string().optional(),
   pacienteEdadMeses: z.string().optional(),
   pacientePesoKg: z.string().optional(),
-  pacienteMicrochip: z.string().optional(),
   pacienteNotas: z.string().optional(),
 }).refine((data) => {
   if (data.tipoRegistro === 'existente') {
@@ -253,7 +252,6 @@ export default function AgendarCitaPublica() {
             sexo: data.pacienteSexo || undefined,
             edadMeses: data.pacienteEdadMeses ? parseInt(data.pacienteEdadMeses) : undefined,
             pesoKg: data.pacientePesoKg ? parseFloat(data.pacientePesoKg) : undefined,
-            microchip: data.pacienteMicrochip || undefined,
             notas: data.pacienteNotas || undefined,
           },
         };
@@ -924,7 +922,7 @@ export default function AgendarCitaPublica() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pacienteEdadMeses">Edad (meses)</Label>
                   <Input
@@ -945,15 +943,6 @@ export default function AgendarCitaPublica() {
                     min="0"
                     placeholder="30.5"
                     {...register('pacientePesoKg')}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pacienteMicrochip">Microchip</Label>
-                  <Input
-                    id="pacienteMicrochip"
-                    placeholder="123456789012345"
-                    {...register('pacienteMicrochip')}
                   />
                 </div>
               </div>
