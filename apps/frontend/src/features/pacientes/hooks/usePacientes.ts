@@ -4,13 +4,64 @@ import { Paciente, PageResponse } from '@core/types';
 import { useApiError } from '@shared/hooks/useApiError';
 
 /**
- * Hook personalizado para gestionar pacientes con React Query
- * 
- * Beneficios:
- * - Cache automático de datos
+ * Hook personalizado para gestionar pacientes con React Query.
+ *
+ * Proporciona funcionalidades CRUD completas para pacientes (mascotas) con:
+ * - Cache automático de datos (30 segundos staleTime)
  * - Refetch automático en background
- * - Loading y error states manejados automáticamente
  * - Invalidación de cache después de mutaciones
+ * - Manejo de estados de carga y error integrado
+ *
+ * @hook
+ *
+ * @param {PacienteSearchParams} params - Parámetros de búsqueda y paginación
+ * @param {number} [params.page=0] - Número de página (0-indexed)
+ * @param {number} [params.size=10] - Elementos por página
+ * @param {string} [params.nombre] - Filtrar por nombre
+ * @param {string} [params.especie] - Filtrar por especie
+ * @param {string} [params.propietarioId] - Filtrar por propietario
+ *
+ * @returns {Object} Estado y funciones de pacientes
+ * @returns {PageResponse<Paciente>} returns.pacientesPage - Respuesta paginada completa
+ * @returns {Paciente[]} returns.pacientes - Array de pacientes
+ * @returns {boolean} returns.isLoading - Si está cargando datos
+ * @returns {Error} returns.error - Error si ocurrió
+ * @returns {Function} returns.refetch - Función para recargar datos
+ * @returns {Function} returns.createPaciente - Función para crear paciente
+ * @returns {Function} returns.updatePaciente - Función para actualizar paciente
+ * @returns {Function} returns.deletePaciente - Función para eliminar paciente
+ * @returns {boolean} returns.isCreating - Si está creando
+ * @returns {boolean} returns.isUpdating - Si está actualizando
+ * @returns {boolean} returns.isDeleting - Si está eliminando
+ *
+ * @example
+ * ```tsx
+ * function PacientesList() {
+ *   const {
+ *     pacientes,
+ *     isLoading,
+ *     deletePaciente,
+ *     isDeleting
+ *   } = usePacientes({ page: 0, size: 10, especie: 'Canino' });
+ *
+ *   if (isLoading) return <LoadingCards />;
+ *
+ *   return (
+ *     <div className="grid gap-4">
+ *       {pacientes.map(p => (
+ *         <PacienteCard
+ *           key={p.id}
+ *           paciente={p}
+ *           onDelete={deletePaciente}
+ *         />
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link usePaciente}
+ * @see {@link useAllPacientes}
  */
 export function usePacientes(params: PacienteSearchParams = {}) {
   const { handleError, showSuccess } = useApiError();
@@ -77,7 +128,33 @@ export function usePacientes(params: PacienteSearchParams = {}) {
 }
 
 /**
- * Hook para obtener un paciente por ID
+ * Hook para obtener un paciente por ID.
+ *
+ * Útil para páginas de detalle donde se necesita un paciente específico.
+ * Solo ejecuta la query si hay un ID válido.
+ *
+ * @hook
+ *
+ * @param {string | undefined} id - ID del paciente
+ *
+ * @returns {Object} Paciente y estado de carga
+ * @returns {Paciente} returns.paciente - Datos del paciente
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Error} returns.error - Error si ocurrió
+ * @returns {Function} returns.refetch - Recargar datos
+ *
+ * @example
+ * ```tsx
+ * function PacienteDetalle({ id }: { id: string }) {
+ *   const { paciente, isLoading, error } = usePaciente(id);
+ *
+ *   if (isLoading) return <Skeleton />;
+ *   if (error) return <ErrorState />;
+ *   if (!paciente) return <NotFound />;
+ *
+ *   return <PacienteView paciente={paciente} />;
+ * }
+ * ```
  */
 export function usePaciente(id: string | undefined) {
   const { handleError } = useApiError();
@@ -106,8 +183,41 @@ export function usePaciente(id: string | undefined) {
 }
 
 /**
- * Hook para obtener todos los pacientes (sin paginación)
- * Útil para dropdowns y selects
+ * Hook para obtener todos los pacientes sin paginación.
+ *
+ * Útil para dropdowns y selects donde se necesitan todos los pacientes.
+ * Tiene un staleTime de 1 minuto para minimizar peticiones.
+ *
+ * @hook
+ *
+ * @returns {Object} Pacientes y estado de carga
+ * @returns {Paciente[]} returns.pacientes - Array de todos los pacientes
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Error} returns.error - Error si ocurrió
+ *
+ * @example
+ * ```tsx
+ * function PacienteSelect({ onSelect }: { onSelect: (id: string) => void }) {
+ *   const { pacientes, isLoading } = useAllPacientes();
+ *
+ *   if (isLoading) return <Skeleton />;
+ *
+ *   return (
+ *     <Select onValueChange={onSelect}>
+ *       <SelectTrigger>
+ *         <SelectValue placeholder="Seleccionar paciente" />
+ *       </SelectTrigger>
+ *       <SelectContent>
+ *         {pacientes.map(p => (
+ *           <SelectItem key={p.id} value={p.id}>
+ *             {p.nombre} ({p.especie})
+ *           </SelectItem>
+ *         ))}
+ *       </SelectContent>
+ *     </Select>
+ *   );
+ * }
+ * ```
  */
 export function useAllPacientes() {
   const {

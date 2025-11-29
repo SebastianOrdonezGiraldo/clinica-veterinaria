@@ -4,7 +4,51 @@ import { Propietario, PageResponse } from '@core/types';
 import { useApiError } from '@shared/hooks/useApiError';
 
 /**
- * Hook personalizado para gestionar propietarios con React Query
+ * Hook personalizado para gestionar propietarios con React Query.
+ *
+ * Proporciona funcionalidades CRUD completas para propietarios con:
+ * - Cache automático de datos
+ * - Refetch automático en background
+ * - Invalidación de cache después de mutaciones
+ * - Manejo de estados de carga y error
+ *
+ * @hook
+ *
+ * @param {PropietarioSearchParams} params - Parámetros de búsqueda y paginación
+ * @param {number} [params.page=0] - Número de página (0-indexed)
+ * @param {number} [params.size=10] - Elementos por página
+ * @param {string} [params.nombre] - Filtrar por nombre
+ * @param {string} [params.documento] - Filtrar por documento
+ *
+ * @returns {Object} Estado y funciones de propietarios
+ * @returns {PageResponse<Propietario>} returns.propietariosPage - Respuesta paginada completa
+ * @returns {Propietario[]} returns.propietarios - Array de propietarios
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Function} returns.createPropietario - Crear propietario
+ * @returns {Function} returns.updatePropietario - Actualizar propietario
+ * @returns {Function} returns.deletePropietario - Eliminar propietario
+ *
+ * @example
+ * ```tsx
+ * function PropietariosList() {
+ *   const {
+ *     propietarios,
+ *     isLoading,
+ *     createPropietario,
+ *     deletePropietario
+ *   } = usePropietarios({ page: 0, size: 10 });
+ *
+ *   if (isLoading) return <LoadingCards />;
+ *
+ *   return (
+ *     <div>
+ *       {propietarios.map(p => <PropietarioCard key={p.id} propietario={p} />)}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @see {@link useAllPropietarios}
  */
 export function usePropietarios(params: PropietarioSearchParams = {}) {
   const { handleError, showSuccess } = useApiError();
@@ -67,7 +111,32 @@ export function usePropietarios(params: PropietarioSearchParams = {}) {
 }
 
 /**
- * Hook para obtener todos los propietarios (sin paginación)
+ * Hook para obtener todos los propietarios sin paginación.
+ *
+ * Útil para dropdowns y selects donde se necesitan todos los propietarios.
+ * Tiene un staleTime de 1 minuto para minimizar peticiones.
+ *
+ * @hook
+ *
+ * @returns {Object} Propietarios y estado de carga
+ * @returns {Propietario[]} returns.propietarios - Array de todos los propietarios
+ * @returns {boolean} returns.isLoading - Si está cargando
+ * @returns {Error} returns.error - Error si ocurrió
+ *
+ * @example
+ * ```tsx
+ * function PropietarioSelect() {
+ *   const { propietarios, isLoading } = useAllPropietarios();
+ *
+ *   return (
+ *     <Select>
+ *       {propietarios.map(p => (
+ *         <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+ *       ))}
+ *     </Select>
+ *   );
+ * }
+ * ```
  */
 export function useAllPropietarios() {
   const {
