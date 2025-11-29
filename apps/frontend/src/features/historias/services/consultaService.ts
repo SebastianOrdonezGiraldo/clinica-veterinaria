@@ -140,12 +140,31 @@ export const consultaService = {
 
   async create(data: ConsultaDTO): Promise<Consulta> {
     // Convertir IDs de string a number para el backend
-    const payload = {
-      ...data,
+    // Limpiar valores undefined para evitar problemas de serialización
+    const payload: any = {
       pacienteId: Number(data.pacienteId),
       profesionalId: Number(data.profesionalId),
       fecha: data.fecha || new Date().toISOString(),
     };
+
+    // Solo agregar campos que tengan valores válidos (no undefined, null, o string vacío)
+    if (data.frecuenciaCardiaca !== undefined && data.frecuenciaCardiaca !== null && data.frecuenciaCardiaca !== '') {
+      payload.frecuenciaCardiaca = typeof data.frecuenciaCardiaca === 'number' ? data.frecuenciaCardiaca : Number(data.frecuenciaCardiaca);
+    }
+    if (data.frecuenciaRespiratoria !== undefined && data.frecuenciaRespiratoria !== null && data.frecuenciaRespiratoria !== '') {
+      payload.frecuenciaRespiratoria = typeof data.frecuenciaRespiratoria === 'number' ? data.frecuenciaRespiratoria : Number(data.frecuenciaRespiratoria);
+    }
+    if (data.temperatura !== undefined && data.temperatura !== null && data.temperatura !== '') {
+      payload.temperatura = typeof data.temperatura === 'number' ? data.temperatura : Number(data.temperatura);
+    }
+    if (data.pesoKg !== undefined && data.pesoKg !== null && data.pesoKg !== '') {
+      payload.pesoKg = typeof data.pesoKg === 'number' ? data.pesoKg : Number(data.pesoKg);
+    }
+    if (data.examenFisico && data.examenFisico.trim()) payload.examenFisico = data.examenFisico.trim();
+    if (data.diagnostico && data.diagnostico.trim()) payload.diagnostico = data.diagnostico.trim();
+    if (data.tratamiento && data.tratamiento.trim()) payload.tratamiento = data.tratamiento.trim();
+    if (data.observaciones && data.observaciones.trim()) payload.observaciones = data.observaciones.trim();
+
     const response = await axios.post<any>('/consultas', payload);
     return normalizeConsulta(response.data);
   },

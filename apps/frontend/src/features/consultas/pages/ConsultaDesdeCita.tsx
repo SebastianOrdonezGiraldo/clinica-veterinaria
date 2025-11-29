@@ -153,23 +153,32 @@ export default function ConsultaDesdeCita() {
     try {
       setIsLoading(true);
 
-      // Crear la consulta
-      const consultaData = {
+      // Crear la consulta - limpiar valores undefined/vacíos para evitar problemas de serialización
+      const consultaData: any = {
         pacienteId: cita.pacienteId,
         profesionalId: user.id,
         fecha: new Date().toISOString(),
-        frecuenciaCardiaca: data.frecuenciaCardiaca || undefined,
-        frecuenciaRespiratoria: data.frecuenciaRespiratoria || undefined,
-        temperatura: data.temperatura || undefined,
-        pesoKg: data.pesoKg || undefined,
-        examenFisico: data.examenFisico?.trim() || undefined,
-        diagnostico: data.diagnostico?.trim() || undefined,
-        tratamiento: data.tratamiento?.trim() || undefined,
-        observaciones: data.observaciones?.trim() || undefined,
       };
 
+      // Solo agregar campos que tengan valores válidos (no undefined, null, o string vacío)
+      if (data.frecuenciaCardiaca !== undefined && data.frecuenciaCardiaca !== null && data.frecuenciaCardiaca !== '') {
+        consultaData.frecuenciaCardiaca = typeof data.frecuenciaCardiaca === 'number' ? data.frecuenciaCardiaca : Number(data.frecuenciaCardiaca);
+      }
+      if (data.frecuenciaRespiratoria !== undefined && data.frecuenciaRespiratoria !== null && data.frecuenciaRespiratoria !== '') {
+        consultaData.frecuenciaRespiratoria = typeof data.frecuenciaRespiratoria === 'number' ? data.frecuenciaRespiratoria : Number(data.frecuenciaRespiratoria);
+      }
+      if (data.temperatura !== undefined && data.temperatura !== null && data.temperatura !== '') {
+        consultaData.temperatura = typeof data.temperatura === 'number' ? data.temperatura : Number(data.temperatura);
+      }
+      if (data.pesoKg !== undefined && data.pesoKg !== null && data.pesoKg !== '') {
+        consultaData.pesoKg = typeof data.pesoKg === 'number' ? data.pesoKg : Number(data.pesoKg);
+      }
+      if (data.examenFisico?.trim()) consultaData.examenFisico = data.examenFisico.trim();
+      if (data.diagnostico?.trim()) consultaData.diagnostico = data.diagnostico.trim();
+      if (data.tratamiento?.trim()) consultaData.tratamiento = data.tratamiento.trim();
+      if (data.observaciones?.trim()) consultaData.observaciones = data.observaciones.trim();
+
       await consultaService.create(consultaData);
-      toast.success('Consulta registrada exitosamente');
 
       // Marcar cita como atendida si está seleccionado
       if (marcarCitaCompletada && cita.estado !== 'ATENDIDA') {

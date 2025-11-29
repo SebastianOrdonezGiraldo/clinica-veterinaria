@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2, FileText, Pill } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
@@ -10,8 +10,9 @@ import { citaService } from '@features/agenda/services/citaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
+import { consultaService } from '@features/historias/services/consultaService';
 import { useAuth } from '@core/auth/AuthContext';
-import { Cita, Paciente, Propietario, Usuario } from '@core/types';
+import { Cita, Paciente, Propietario, Usuario, Consulta } from '@core/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -40,6 +41,7 @@ export default function CitaDetalle() {
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [propietario, setPropietario] = useState<Propietario | null>(null);
   const [profesional, setProfesional] = useState<Usuario | null>(null);
+  const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -77,6 +79,25 @@ export default function CitaDetalle() {
 
       if (profesionalData.status === 'fulfilled') {
         setProfesional(profesionalData.value);
+      }
+
+      // Cargar consultas del paciente para poder crear prescripciones
+      if (citaData.pacienteId) {
+        try {
+          const consultasData = await consultaService.searchWithFilters({
+            pacienteId: citaData.pacienteId,
+            page: 0,
+            size: 10,
+            sort: 'fecha,desc', // Más recientes primero
+          });
+          setConsultas(consultasData.content || []);
+        } catch (error) {
+          logger.warn('Error al cargar consultas del paciente', {
+            action: 'loadConsultas',
+            pacienteId: citaData.pacienteId,
+          });
+          // No mostramos error, simplemente no habrá consultas disponibles
+        }
       }
     } catch (error: any) {
       logger.error('Error al cargar detalles de la cita', error, {
@@ -148,6 +169,9 @@ export default function CitaDetalle() {
   const puedeIniciarConsulta = (user?.rol === 'VET' || user?.rol === 'ADMIN') && 
                                 cita.estado !== 'CANCELADA' && 
                                 cita.estado !== 'ATENDIDA';
+  const puedeRealizarFormula = (user?.rol === 'VET' || user?.rol === 'ADMIN') && 
+                                (cita.estado === 'ATENDIDA' || consultas.length > 0);
+  const consultaMasReciente = consultas.length > 0 ? consultas[0] : null;
 
   return (
     <div className="space-y-6">
@@ -316,6 +340,27 @@ export default function CitaDetalle() {
               >
                 <FileText className="h-4 w-4" />
                 Iniciar Consulta
+              </Button>
+            )}
+
+            {puedeRealizarFormula && (
+              <Button
+                onClick={() => {
+                  if (consultaMasReciente) {
+                    // Navegar al formulario de prescripción con el consultaId
+                    navigate(`/prescripciones/nuevo?consultaId=${consultaMasReciente.id}`);
+                  } else {
+                    // Si no hay consulta, primero debe crear una
+                    toast.warning('Primero debe crear una consulta para poder realizar una fórmula');
+                    navigate(`/agenda/${cita.id}/consulta`);
+                  }
+                }}
+                disabled={isUpdating}
+                variant="outline"
+                className="gap-2"
+              >
+                <Pill className="h-4 w-4" />
+                Realizar Fórmula
               </Button>
             )}
 

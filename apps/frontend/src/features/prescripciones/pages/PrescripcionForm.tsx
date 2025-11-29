@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
@@ -32,7 +32,9 @@ export default function PrescripcionForm() {
   const logger = useLogger('PrescripcionForm');
   const { handleError, showSuccess } = useApiError();
   const navigate = useNavigate();
-  const [consultaId, setConsultaId] = useState('');
+  const [searchParams] = useSearchParams();
+  const consultaIdFromUrl = searchParams.get('consultaId') || '';
+  const [consultaId, setConsultaId] = useState(consultaIdFromUrl);
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([
     { 
       id: '1', 
@@ -53,6 +55,13 @@ export default function PrescripcionForm() {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Actualizar consultaId si viene de la URL
+  useEffect(() => {
+    if (consultaIdFromUrl) {
+      setConsultaId(consultaIdFromUrl);
+    }
+  }, [consultaIdFromUrl]);
 
   const loadInitialData = async () => {
     try {
