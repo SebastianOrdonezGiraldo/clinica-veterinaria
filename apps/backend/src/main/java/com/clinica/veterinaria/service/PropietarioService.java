@@ -331,7 +331,7 @@ public class PropietarioService {
         if (propietario.getPassword() != null && !propietario.getPassword().trim().isEmpty()) {
             log.warn("✗ El propietario ya tiene una contraseña establecida - Email: {}", email);
             throw new com.clinica.veterinaria.exception.domain.BusinessException(
-                "Este cliente ya tiene una contraseña establecida. Si la olvidaste, contacta con la clínica.");
+                "Este cliente ya tiene una contraseña establecida. Si la olvidaste, usa la opción '¿Olvidaste tu contraseña?' en la página de inicio de sesión para recuperarla.");
         }
         
         // Verificar que el propietario esté activo

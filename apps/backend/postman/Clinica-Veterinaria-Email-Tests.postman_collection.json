@@ -1,0 +1,468 @@
+{
+	"info": {
+		"_postman_id": "clinica-veterinaria-email-tests",
+		"name": "Clínica Veterinaria - Pruebas de Correos",
+		"description": "Colección completa para probar el sistema de correos electrónicos de la Clínica Veterinaria",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "clinica-veterinaria"
+	},
+	"item": [
+		{
+			"name": "1. Autenticación",
+			"item": [
+				{
+					"name": "Login - Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.token) {",
+									"        pm.environment.set('auth_token', response.token);",
+									"        pm.environment.set('user_id', response.user.id);",
+									"        console.log('Token guardado:', response.token.substring(0, 20) + '...');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@clinica.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Inicia sesión como administrador para obtener el token JWT necesario para probar los correos."
+					},
+					"response": []
+				},
+				{
+					"name": "Validar Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"validate"
+							]
+						},
+						"description": "Valida que el token JWT sea válido y esté activo."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticación necesarios para obtener el token JWT."
+		},
+		{
+			"name": "2. Pruebas de Correos",
+			"item": [
+				{
+					"name": "Bienvenida Usuario Sistema",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombre",
+									"value": "Usuario de Prueba",
+									"description": "Nombre del usuario"
+								},
+								{
+									"key": "rol",
+									"value": "Veterinario",
+									"description": "Rol del usuario (Administrador, Veterinario, Recepcionista, Estudiante)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/bienvenida-usuario",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"bienvenida-usuario"
+							]
+						},
+						"description": "Prueba el envío de email de bienvenida cuando se crea un nuevo usuario del sistema (ADMIN, VET, RECEPCION, ESTUDIANTE)."
+					},
+					"response": []
+				},
+				{
+					"name": "Bienvenida Cliente/Propietario",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombre",
+									"value": "Cliente de Prueba",
+									"description": "Nombre del propietario/cliente"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/bienvenida-cliente",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"bienvenida-cliente"
+							]
+						},
+						"description": "Prueba el envío de email de bienvenida cuando se crea un nuevo propietario/cliente con contraseña."
+					},
+					"response": []
+				},
+				{
+					"name": "Cambio Contraseña - Usuario Sistema (Por Usuario)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombre",
+									"value": "Usuario de Prueba",
+									"description": "Nombre del usuario"
+								},
+								{
+									"key": "esResetAdmin",
+									"value": "false",
+									"description": "false = cambio por el usuario, true = reset por admin"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/cambio-password-usuario",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"cambio-password-usuario"
+							]
+						},
+						"description": "Prueba el envío de email cuando un usuario del sistema cambia su propia contraseña."
+					},
+					"response": []
+				},
+				{
+					"name": "Cambio Contraseña - Usuario Sistema (Por Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombre",
+									"value": "Usuario de Prueba",
+									"description": "Nombre del usuario"
+								},
+								{
+									"key": "esResetAdmin",
+									"value": "true",
+									"description": "true = reset por admin, incluye advertencia de seguridad"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/cambio-password-usuario",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"cambio-password-usuario"
+							]
+						},
+						"description": "Prueba el envío de email cuando un administrador resetea la contraseña de un usuario. Incluye advertencia de seguridad."
+					},
+					"response": []
+				},
+				{
+					"name": "Cambio Contraseña - Cliente/Propietario",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombre",
+									"value": "Cliente de Prueba",
+									"description": "Nombre del propietario/cliente"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/cambio-password-cliente",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"cambio-password-cliente"
+							]
+						},
+						"description": "Prueba el envío de email cuando un propietario/cliente establece o cambia su contraseña."
+					},
+					"response": []
+				},
+				{
+					"name": "Confirmación de Cita",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para la prueba"
+								},
+								{
+									"key": "nombrePropietario",
+									"value": "Propietario de Prueba",
+									"description": "Nombre del propietario"
+								},
+								{
+									"key": "nombrePaciente",
+									"value": "Mascota de Prueba",
+									"description": "Nombre de la mascota"
+								},
+								{
+									"key": "profesionalNombre",
+									"value": "Dra. María García",
+									"description": "Nombre del veterinario"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/confirmacion-cita",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"confirmacion-cita"
+							]
+						},
+						"description": "Prueba el envío de email de confirmación cuando se crea una nueva cita."
+					},
+					"response": []
+				},
+				{
+					"name": "Probar Todos los Correos",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "{{test_email}}",
+									"description": "Email de destino para todas las pruebas"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/test/email/todos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"todos"
+							]
+						},
+						"description": "Envía todos los tipos de correos en secuencia (con 1 segundo de espera entre cada uno). Útil para probar todos los correos de una vez."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para probar el envío de diferentes tipos de correos electrónicos."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "tu-email@gmail.com",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

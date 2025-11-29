@@ -85,6 +85,15 @@ export default function ClienteLogin() {
             </Button>
           </form>
 
+          <div className="mt-4 text-center">
+            <Link 
+              to="/cliente/forgot-password"
+              className="text-sm text-primary hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
           <div className="mt-6 text-center space-y-3">
             <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
               <p className="text-xs text-muted-foreground mb-2">

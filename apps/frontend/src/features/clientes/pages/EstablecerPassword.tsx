@@ -52,6 +52,13 @@ export default function EstablecerPassword() {
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Error al establecer la contraseña';
       toast.error(errorMessage);
+      
+      // Si el error indica que ya tiene contraseña, mostrar información adicional
+      if (errorMessage.includes('ya tiene una contraseña establecida')) {
+        toast.info('Usa la opción "¿Olvidaste tu contraseña?" en el login para recuperarla', {
+          duration: 5000,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +120,16 @@ export default function EstablecerPassword() {
             <CardDescription>
               Crea una contraseña para acceder al portal del cliente
             </CardDescription>
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg mt-2">
+              <p className="text-xs text-muted-foreground">
+                <strong>Nota:</strong> Esta opción es solo para clientes que agendaron una cita sin contraseña. 
+                Si ya tienes una contraseña y la olvidaste, usa{' '}
+                <Link to="/cliente/forgot-password" className="text-primary hover:underline font-medium">
+                  "¿Olvidaste tu contraseña?"
+                </Link>
+                {' '}en la página de login.
+              </p>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

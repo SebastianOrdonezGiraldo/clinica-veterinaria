@@ -328,6 +328,46 @@ public class EmailService {
     }
 
     /**
+     * Envía un email con enlace de recuperación de contraseña.
+     * 
+     * @param email Email del usuario/propietario
+     * @param nombre Nombre del usuario/propietario
+     * @param resetUrl URL completa con el token de recuperación
+     * @param userType Tipo de usuario: "USUARIO" o "PROPIETARIO"
+     * @return true si el email se envió exitosamente
+     */
+    public boolean enviarEmailRecuperacionPassword(String email, String nombre, String resetUrl, String userType) {
+        try {
+            log.info("📧 Enviando email de recuperación de contraseña a: {}", email);
+            
+            Context context = new Context(new Locale("es", "ES"));
+            context.setVariable("nombre", nombre);
+            context.setVariable("resetUrl", resetUrl);
+            context.setVariable("userType", userType);
+            context.setVariable("clinicaNombre", "Clínica Veterinaria Universitaria Humboldt");
+            
+            String finalLogoUrl = logoUrl != null && !logoUrl.isEmpty() 
+                ? logoUrl 
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/images/logo-clinica.webp" : "");
+            context.setVariable("logoUrl", finalLogoUrl);
+            context.setVariable("baseUrl", baseUrl);
+            
+            // Construir URL del login según el tipo
+            String loginUrl = "USUARIO".equals(userType)
+                ? (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/login" : "http://localhost:5173/login")
+                : (baseUrl != null && !baseUrl.isEmpty() ? baseUrl + "/cliente/login" : "http://localhost:5173/cliente/login");
+            context.setVariable("loginUrl", loginUrl);
+
+            String subject = "Recuperación de contraseña - Clínica Veterinaria";
+            
+            return enviarEmailHtml(email, subject, "email/recuperacion-password", context);
+        } catch (Exception e) {
+            log.error("✗ Error al enviar email de recuperación de contraseña: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
      * Método auxiliar para enviar emails HTML usando plantillas Thymeleaf.
      * 
      * @param to Dirección de correo del destinatario

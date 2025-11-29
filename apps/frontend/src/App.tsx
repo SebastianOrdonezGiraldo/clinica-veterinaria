@@ -14,6 +14,8 @@ import { PageLoader } from "@shared/components/common/PageLoader";
 import Login from "@features/auth/pages/Login";
 import LandingPage from "@features/landing/pages/LandingPage";
 import AgendarCitaPublica from "@features/agenda/pages/AgendarCitaPublica";
+import ForgotPassword from "@features/auth/pages/ForgotPassword";
+import ResetPassword from "@features/auth/pages/ResetPassword";
 
 // Lazy loading de páginas - Mejora el tiempo de carga inicial
 // Solo se cargan cuando el usuario navega a ellas
@@ -86,6 +88,8 @@ const App = () => (
               <Route path="/" element={<HomeRoute />} />
               <Route path="/login" element={<AppRoutes />} />
               <Route path="/agendar-cita" element={<AgendarCitaPublica />} />
+              <Route path="/forgot-password" element={<ForgotPassword userType="usuario" />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               
               {/* Rutas del portal del cliente - Lazy loaded */}
               <Route 
@@ -93,6 +97,22 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <ClienteLogin />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/cliente/forgot-password" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ForgotPassword userType="cliente" />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/cliente/reset-password" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ResetPassword />
                   </Suspense>
                 } 
               />
