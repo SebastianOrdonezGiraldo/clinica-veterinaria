@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
  * 
  * <p><strong>Campos principales:</strong></p>
  * <ul>
- *   <li><b>Identificación:</b> Nombre, microchip (opcional)</li>
+ *   <li><b>Identificación:</b> Nombre</li>
  *   <li><b>Características:</b> Especie, raza, sexo (M/F), edad en meses</li>
  *   <li><b>Estado físico:</b> Peso actual (kg)</li>
  *   <li><b>Notas:</b> Información adicional, alergias, condiciones especiales</li>
@@ -72,9 +72,6 @@ public class PacienteDTO {
     @Positive(message = "El peso debe ser positivo")
     private BigDecimal pesoKg;
 
-    @Size(max = 50, message = "El microchip no puede exceder 50 caracteres")
-    private String microchip;
-
     private String notas;
 
     private Boolean activo;
@@ -123,7 +120,6 @@ public class PacienteDTO {
             .sexo(paciente.getSexo())
             .edadMeses(paciente.getEdadMeses())
             .pesoKg(paciente.getPesoKg())
-            .microchip(paciente.getMicrochip())
             .notas(paciente.getNotas())
             .activo(paciente.getActivo())
             .propietarioId(paciente.getPropietario().getId())

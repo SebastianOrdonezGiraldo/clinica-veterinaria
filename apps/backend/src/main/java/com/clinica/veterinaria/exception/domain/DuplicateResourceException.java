@@ -5,12 +5,11 @@ package com.clinica.veterinaria.exception.domain;
  * 
  * <p>Esta excepción debe usarse cuando se violan restricciones de unicidad,
  * como intentar crear un usuario con un email que ya está registrado, o
- * un paciente con un microchip duplicado.</p>
+ * un propietario con un documento duplicado.</p>
  * 
  * <p><strong>Casos de uso:</strong></p>
  * <ul>
  *   <li>Email de usuario duplicado</li>
- *   <li>Microchip de paciente duplicado</li>
  *   <li>Documento de propietario duplicado</li>
  *   <li>Cualquier violación de constraint UNIQUE</li>
  * </ul>
@@ -52,8 +51,8 @@ public class DuplicateResourceException extends RuntimeException {
      * // Mensaje: "Usuario ya existe con email: admin@clinica.com"
      * </pre>
      * 
-     * @param resourceName Nombre del recurso (Usuario, Paciente, etc.)
-     * @param fieldName Nombre del campo duplicado (email, microchip, etc.)
+     * @param resourceName Nombre del recurso (Usuario, Propietario, etc.)
+     * @param fieldName Nombre del campo duplicado (email, documento, etc.)
      * @param fieldValue Valor duplicado
      */
     public DuplicateResourceException(String resourceName, String fieldName, Object fieldValue) {

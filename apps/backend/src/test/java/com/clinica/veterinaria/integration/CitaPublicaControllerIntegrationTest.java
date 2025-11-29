@@ -142,7 +142,6 @@ class CitaPublicaControllerIntegrationTest extends BaseIntegrationTest {
                 .sexo("M")
                 .edadMeses(48)
                 .pesoKg(new BigDecimal("35.0"))
-                .microchip("987654321098765")
                 .notas("Muy activo")
                 .build();
 

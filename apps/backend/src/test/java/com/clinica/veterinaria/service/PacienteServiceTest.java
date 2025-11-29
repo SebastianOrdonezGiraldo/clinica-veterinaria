@@ -69,7 +69,6 @@ class PacienteServiceTest {
             .sexo("M")
             .edadMeses(36)
             .pesoKg(new BigDecimal("30.5"))
-            .microchip("123456789")
             .propietario(propietario)
             .activo(true)
             .build();

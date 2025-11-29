@@ -3,7 +3,6 @@ package com.clinica.veterinaria.service;
 import com.clinica.veterinaria.dto.PacienteDTO;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
-import com.clinica.veterinaria.exception.domain.DuplicateResourceException;
 import com.clinica.veterinaria.exception.domain.InvalidDataException;
 import com.clinica.veterinaria.exception.domain.ResourceNotFoundException;
 import com.clinica.veterinaria.logging.IAuditLogger;
@@ -31,7 +30,7 @@ import java.util.stream.Collectors;
  * 
  * <p><strong>Información gestionada de cada paciente:</strong></p>
  * <ul>
- *   <li><b>Identificación:</b> Nombre, microchip (opcional)</li>
+ *   <li><b>Identificación:</b> Nombre</li>
  *   <li><b>Características:</b> Especie, raza, sexo, edad (en meses)</li>
  *   <li><b>Estado:</b> Peso actual (kg), estado activo/inactivo</li>
  *   <li><b>Relaciones:</b> Propietario asociado</li>
@@ -216,21 +215,19 @@ public class PacienteService {
      *   <li>ID del propietario (debe existir)</li>
      * </ul>
      * 
-     * <p><strong>Datos opcionales:</strong></p>
-     * <ul>
-     *   <li>Raza, sexo, edad (meses)</li>
-     *   <li>Peso actual (kg)</li>
-     *   <li>Número de microchip</li>
-     *   <li>Notas clínicas o administrativas</li>
-     * </ul>
-     * 
-     * <p><strong>Validaciones de negocio:</strong></p>
-     * <ul>
-     *   <li>Propietario debe existir</li>
-     *   <li>Microchip debe ser único (si se proporciona)</li>
-     *   <li>Edad debe ser razonable (máximo 300 meses = 25 años)</li>
-     *   <li>Peso debe ser positivo y razonable</li>
-     * </ul>
+ * <p><strong>Datos opcionales:</strong></p>
+ * <ul>
+ *   <li>Raza, sexo, edad (meses)</li>
+ *   <li>Peso actual (kg)</li>
+ *   <li>Notas clínicas o administrativas</li>
+ * </ul>
+ * 
+ * <p><strong>Validaciones de negocio:</strong></p>
+ * <ul>
+ *   <li>Propietario debe existir</li>
+ *   <li>Edad debe ser razonable (máximo 300 meses = 25 años)</li>
+ *   <li>Peso debe ser positivo y razonable</li>
+ * </ul>
      * 
      * <p><strong>Registro de auditoría:</strong> Se registra automáticamente la creación
      * con información del paciente y propietario para trazabilidad.</p>
@@ -239,10 +236,9 @@ public class PacienteService {
      * 
      * @param dto Datos del nuevo paciente. No puede ser null. Debe incluir nombre,
      *            especie y propietarioId válido.
-     * @return DTO con los datos del paciente creado, incluyendo ID asignado.
-     * @throws ResourceNotFoundException si el propietario no existe.
-     * @throws DuplicateResourceException si el microchip ya está registrado.
-     * @throws InvalidDataException si los datos no cumplen reglas de negocio.
+ * @return DTO con los datos del paciente creado, incluyendo ID asignado.
+ * @throws ResourceNotFoundException si el propietario no existe.
+ * @throws InvalidDataException si los datos no cumplen reglas de negocio.
      * @see AuditLogger#logCreate(String, Long, String)
      */
     @CacheEvict(value = "pacientes", allEntries = true)
@@ -257,22 +253,14 @@ public class PacienteService {
                 return new ResourceNotFoundException("Propietario", "id", dto.getPropietarioId());
             });
         
-        // VALIDACIÓN 2: Microchip único (si se proporciona)
-        if (dto.getMicrochip() != null && !dto.getMicrochip().trim().isEmpty()) {
-            pacienteRepository.findByMicrochip(dto.getMicrochip()).ifPresent(p -> {
-                log.error("✗ Microchip duplicado: {}", dto.getMicrochip());
-                throw new DuplicateResourceException("Paciente", "microchip", dto.getMicrochip());
-            });
-        }
-        
-        // VALIDACIÓN 3: Edad razonable (máximo 25 años = 300 meses)
+        // VALIDACIÓN 2: Edad razonable (máximo 25 años = 300 meses)
         if (dto.getEdadMeses() != null && dto.getEdadMeses() > 300) {
             log.error("✗ Edad inválida: {} meses", dto.getEdadMeses());
             throw new InvalidDataException("edadMeses", dto.getEdadMeses(), 
                 "La edad no puede exceder 300 meses (25 años)");
         }
         
-        // VALIDACIÓN 4: Peso razonable (máximo 500 kg para animales grandes)
+        // VALIDACIÓN 3: Peso razonable (máximo 500 kg para animales grandes)
         if (dto.getPesoKg() != null && (dto.getPesoKg().doubleValue() > 500 || dto.getPesoKg().doubleValue() <= 0)) {
             log.error("✗ Peso inválido: {} kg", dto.getPesoKg());
             throw new InvalidDataException("pesoKg", dto.getPesoKg(), 
@@ -286,7 +274,6 @@ public class PacienteService {
             .sexo(dto.getSexo())
             .edadMeses(dto.getEdadMeses())
             .pesoKg(dto.getPesoKg())
-            .microchip(dto.getMicrochip())
             .notas(dto.getNotas())
             .propietario(propietario)
             .activo(true)
@@ -319,13 +306,12 @@ public class PacienteService {
      *   <li>Notas y observaciones</li>
      * </ul>
      * 
-     * <p><strong>Validaciones de negocio:</strong></p>
-     * <ul>
-     *   <li>Paciente debe existir</li>
-     *   <li>Propietario (si se cambia) debe existir</li>
-     *   <li>Microchip debe ser único (si se modifica)</li>
-     *   <li>Edad y peso deben ser razonables</li>
-     * </ul>
+ * <p><strong>Validaciones de negocio:</strong></p>
+ * <ul>
+ *   <li>Paciente debe existir</li>
+ *   <li>Propietario (si se cambia) debe existir</li>
+ *   <li>Edad y peso deben ser razonables</li>
+ * </ul>
      * 
      * <p><strong>Auditoría:</strong> Registra los valores anteriores y nuevos para
      * mantener trazabilidad completa de los cambios.</p>
@@ -334,10 +320,9 @@ public class PacienteService {
      * 
      * @param id ID del paciente a actualizar. No puede ser null.
      * @param dto Nuevos datos del paciente. No puede ser null.
-     * @return DTO con los datos actualizados del paciente.
-     * @throws ResourceNotFoundException si el paciente o el nuevo propietario no existen.
-     * @throws DuplicateResourceException si el microchip ya está registrado (en otro paciente).
-     * @throws InvalidDataException si los datos no cumplen reglas de negocio.
+ * @return DTO con los datos actualizados del paciente.
+ * @throws ResourceNotFoundException si el paciente o el nuevo propietario no existen.
+ * @throws InvalidDataException si los datos no cumplen reglas de negocio.
      * @see AuditLogger#logUpdate(String, Long, String, String)
      */
     @CacheEvict(value = "pacientes", allEntries = true)
@@ -368,24 +353,14 @@ public class PacienteService {
             paciente.setPropietario(propietario);
         }
         
-        // VALIDACIÓN 3: Microchip único (si se modificó y se proporciona)
-        if (dto.getMicrochip() != null && !dto.getMicrochip().trim().isEmpty()) {
-            if (!dto.getMicrochip().equals(paciente.getMicrochip())) {
-                pacienteRepository.findByMicrochip(dto.getMicrochip()).ifPresent(p -> {
-                    log.error("✗ Microchip duplicado: {}", dto.getMicrochip());
-                    throw new DuplicateResourceException("Paciente", "microchip", dto.getMicrochip());
-                });
-            }
-        }
-        
-        // VALIDACIÓN 4: Edad razonable
+        // VALIDACIÓN 3: Edad razonable
         if (dto.getEdadMeses() != null && dto.getEdadMeses() > 300) {
             log.error("✗ Edad inválida: {} meses", dto.getEdadMeses());
             throw new InvalidDataException("edadMeses", dto.getEdadMeses(), 
                 "La edad no puede exceder 300 meses (25 años)");
         }
         
-        // VALIDACIÓN 5: Peso razonable
+        // VALIDACIÓN 4: Peso razonable
         if (dto.getPesoKg() != null && (dto.getPesoKg().doubleValue() > 500 || dto.getPesoKg().doubleValue() <= 0)) {
             log.error("✗ Peso inválido: {} kg", dto.getPesoKg());
             throw new InvalidDataException("pesoKg", dto.getPesoKg(), 
@@ -398,7 +373,6 @@ public class PacienteService {
         paciente.setSexo(dto.getSexo());
         paciente.setEdadMeses(dto.getEdadMeses());
         paciente.setPesoKg(dto.getPesoKg());
-        paciente.setMicrochip(dto.getMicrochip());
         paciente.setNotas(dto.getNotas());
 
         paciente = pacienteRepository.save(paciente);

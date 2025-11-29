@@ -23,7 +23,7 @@ import java.util.List;
  * 
  * <p><strong>Información gestionada:</strong></p>
  * <ul>
- *   <li><b>Identificación:</b> Nombre, microchip (opcional, para identificación única)</li>
+ *   <li><b>Identificación:</b> Nombre</li>
  *   <li><b>Características:</b> Especie, raza, sexo (M/F), edad en meses</li>
  *   <li><b>Estado físico:</b> Peso actual en kilogramos</li>
  *   <li><b>Notas:</b> Información adicional, alergias, condiciones especiales</li>
@@ -100,10 +100,6 @@ public class Paciente {
     @Positive(message = "El peso debe ser positivo")
     @Column(name = "peso_kg", precision = 5, scale = 2)
     private BigDecimal pesoKg;
-
-    @Size(max = 50, message = "El microchip no puede exceder 50 caracteres")
-    @Column(length = 50)
-    private String microchip;
 
     @Column(length = 500)
     private String notas;

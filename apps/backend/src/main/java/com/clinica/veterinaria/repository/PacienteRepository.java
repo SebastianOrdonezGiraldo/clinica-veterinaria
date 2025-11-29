@@ -9,13 +9,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Repositorio JPA para la entidad {@link Paciente}.
  * 
  * <p>Proporciona métodos de acceso a datos para pacientes (mascotas), incluyendo
- * búsquedas por propietario, nombre, especie, microchip y estado. Incluye métodos
+ * búsquedas por propietario, nombre, especie y estado. Incluye métodos
  * personalizados con queries JPQL para optimizar consultas con relaciones.</p>
  * 
  * <p><strong>Funcionalidades principales:</strong></p>
@@ -23,7 +22,6 @@ import java.util.Optional;
  *   <li>Búsquedas por propietario (todas las mascotas de un cliente)</li>
  *   <li>Búsqueda por nombre (case-insensitive, parcial)</li>
  *   <li>Filtros por especie y estado activo</li>
- *   <li>Búsqueda por microchip (identificación única)</li>
  *   <li>Consultas con propietario cargado (JOIN FETCH)</li>
  *   <li>Soporte de paginación y filtros múltiples</li>
  * </ul>
@@ -65,13 +63,6 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
      * @return Lista de pacientes activos de esa especie
      */
     List<Paciente> findByEspecieAndActivo(String especie, Boolean activo);
-
-    /**
-     * Busca paciente por microchip
-     * @param microchip Número de microchip
-     * @return Optional con el paciente si existe
-     */
-    Optional<Paciente> findByMicrochip(String microchip);
 
     /**
      * Busca pacientes activos

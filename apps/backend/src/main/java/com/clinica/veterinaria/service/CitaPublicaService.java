@@ -155,7 +155,6 @@ public class CitaPublicaService {
                 .sexo(request.getPacienteNuevo().getSexo())
                 .edadMeses(request.getPacienteNuevo().getEdadMeses())
                 .pesoKg(request.getPacienteNuevo().getPesoKg())
-                .microchip(request.getPacienteNuevo().getMicrochip())
                 .notas(request.getPacienteNuevo().getNotas())
                 .propietarioId(propietarioId)
                 .build();

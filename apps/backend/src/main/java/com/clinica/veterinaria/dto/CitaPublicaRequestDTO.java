@@ -124,9 +124,6 @@ public class CitaPublicaRequestDTO {
 
         private java.math.BigDecimal pesoKg;
 
-        @Size(max = 50, message = "El microchip no puede exceder 50 caracteres")
-        private String microchip;
-
         @Size(max = 500, message = "Las notas no pueden exceder 500 caracteres")
         private String notas;
     }
