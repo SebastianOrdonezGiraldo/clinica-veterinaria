@@ -646,8 +646,7 @@ export default function LandingPage() {
               <h2 className="text-balance text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
                 Agenda la salud de tu mascota{' '}
                 <span className="relative inline-block">
-                  hoy mismo
-                  <span className="absolute -z-0 bottom-2 left-0 h-3 w-full bg-white/30" />
+                  hoy mismo<span className="absolute z-0 bottom-2 left-0 h-3 w-full bg-white/30" />
                 </span>
               </h2>
               <p className="mt-4 text-pretty text-lg leading-relaxed opacity-95">
