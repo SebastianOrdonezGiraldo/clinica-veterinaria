@@ -9,13 +9,13 @@ import { Textarea } from '@shared/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Skeleton } from '@shared/components/ui/skeleton';
 import { Breadcrumbs } from '@shared/components/common/Breadcrumbs';
-import { toast } from 'sonner';
 import { prescripcionService, ItemPrescripcionDTO } from '@features/prescripciones/services/prescripcionService';
 import { consultaService } from '@features/historias/services/consultaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { Consulta, Paciente, Propietario } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
 
 interface Medicamento {
   id: string;
@@ -30,6 +30,7 @@ interface Medicamento {
 
 export default function PrescripcionForm() {
   const logger = useLogger('PrescripcionForm');
+  const { handleError, showSuccess } = useApiError();
   const navigate = useNavigate();
   const [consultaId, setConsultaId] = useState('');
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>([
@@ -68,7 +69,7 @@ export default function PrescripcionForm() {
       logger.error('Error al cargar datos del formulario de prescripción', error, {
         action: 'loadData',
       });
-      toast.error('Error al cargar los datos');
+      handleError(error, 'Error al cargar los datos');
     } finally {
       setIsLoadingData(false);
     }
@@ -105,7 +106,7 @@ export default function PrescripcionForm() {
     e.preventDefault();
     
     if (!consultaId) {
-      toast.error('Debe seleccionar una consulta');
+      handleError(new Error('Debe seleccionar una consulta'), 'Debe seleccionar una consulta');
       return;
     }
 
@@ -115,7 +116,7 @@ export default function PrescripcionForm() {
     );
 
     if (medicamentosValidos.length === 0) {
-      toast.error('Debe agregar al menos un medicamento con todos los datos completos');
+      handleError(new Error('Debe agregar al menos un medicamento con todos los datos completos'), 'Debe agregar al menos un medicamento con todos los datos completos');
       return;
     }
 
@@ -138,7 +139,7 @@ export default function PrescripcionForm() {
         items,
       });
 
-      toast.success('Prescripción creada exitosamente');
+      showSuccess('Prescripción creada exitosamente');
       navigate('/prescripciones');
     } catch (error: any) {
       logger.error('Error al crear prescripción', error, {
@@ -146,20 +147,7 @@ export default function PrescripcionForm() {
         consultaId: selectedConsulta,
         pacienteId: selectedPaciente,
       });
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para crear prescripciones');
-      } else if (statusCode === 404) {
-        toast.error('La consulta no existe');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al crear la prescripción. Por favor, intenta nuevamente');
-      }
+      handleError(error, 'Error al crear la prescripción');
     } finally {
       setIsLoading(false);
     }

@@ -10,7 +10,6 @@ import { Textarea } from '@shared/components/ui/textarea';
 import { Skeleton } from '@shared/components/ui/skeleton';
 import { Checkbox } from '@shared/components/ui/checkbox';
 import { Label } from '@shared/components/ui/label';
-import { toast } from 'sonner';
 import { useAuth } from '@core/auth/AuthContext';
 import { citaService } from '@features/agenda/services/citaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
@@ -22,6 +21,7 @@ import { HistorialRapido } from '../components/HistorialRapido';
 import { Cita, Paciente, Propietario } from '@core/types';
 import { AxiosError } from 'axios';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
 
 const consultaSchema = z.object({
   frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
@@ -38,6 +38,7 @@ type ConsultaFormData = z.infer<typeof consultaSchema>;
 
 export default function ConsultaDesdeCita() {
   const logger = useLogger('ConsultaDesdeCita');
+  const { handleError, showSuccess, showWarning } = useApiError();
   const { citaId } = useParams<{ citaId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -74,20 +75,20 @@ export default function ConsultaDesdeCita() {
       // Validar que el usuario tenga permisos (VET o ADMIN)
       if (user?.rol !== 'VET' && user?.rol !== 'ADMIN') {
         setError('Solo los veterinarios pueden crear consultas');
-        toast.error('No tienes permisos para crear consultas');
+        handleError(new Error('No tienes permisos para crear consultas'));
         return;
       }
 
       // Validar que la cita esté en un estado válido para crear consulta
       if (citaData.estado === 'CANCELADA') {
         setError('No se puede crear una consulta para una cita cancelada');
-        toast.error('La cita está cancelada');
+        handleError(new Error('La cita está cancelada'));
         return;
       }
 
       if (citaData.estado === 'ATENDIDA') {
         setError('Esta cita ya fue atendida');
-        toast.warning('La cita ya fue atendida anteriormente');
+        showWarning('La cita ya fue atendida anteriormente');
         // No retornamos, permitimos crear otra consulta si es necesario
       }
 
@@ -117,10 +118,10 @@ export default function ConsultaDesdeCita() {
         setError('Cita no encontrada');
       } else if (statusCode === 403) {
         setError('No tienes permisos para ver esta cita');
-        toast.error('No tienes permisos para ver esta cita');
+        handleError(error, 'No tienes permisos para ver esta cita');
       } else {
         setError(errorMessage);
-        toast.error(errorMessage);
+        handleError(error, errorMessage);
       }
     } finally {
       setIsLoadingData(false);
@@ -129,7 +130,7 @@ export default function ConsultaDesdeCita() {
 
   const onSubmit = async (data: ConsultaFormData) => {
     if (!cita || !paciente || !user?.id) {
-      toast.error('Error: Faltan datos necesarios');
+      handleError(new Error('Faltan datos necesarios'), 'Error: Faltan datos necesarios');
       return;
     }
 
@@ -145,7 +146,7 @@ export default function ConsultaDesdeCita() {
       data.observaciones;
 
     if (!hasData) {
-      toast.error('Error: Debes completar al menos un campo de la consulta');
+      handleError(new Error('Debes completar al menos un campo de la consulta'), 'Error: Debes completar al menos un campo de la consulta');
       return;
     }
 
@@ -174,7 +175,7 @@ export default function ConsultaDesdeCita() {
       if (marcarCitaCompletada && cita.estado !== 'ATENDIDA') {
         try {
           await citaService.updateEstado(cita.id, 'ATENDIDA');
-          toast.success('Cita marcada como atendida');
+          showSuccess('Cita marcada como atendida');
         } catch (error) {
           logger.warn('Error al marcar cita como atendida después de guardar consulta', {
             action: 'updateCitaEstado',
@@ -184,6 +185,7 @@ export default function ConsultaDesdeCita() {
         }
       }
 
+      showSuccess('Consulta registrada exitosamente');
       // Navegar de vuelta al detalle de la cita
       navigate(`/agenda/${citaId}`);
     } catch (error) {
@@ -192,19 +194,7 @@ export default function ConsultaDesdeCita() {
         citaId: citaId,
         pacienteId: cita?.pacienteId,
       });
-      const axiosError = error as AxiosError<{ message?: string }>;
-      const statusCode = axiosError?.response?.status;
-      const errorMessage = axiosError?.response?.data?.message;
-
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para crear consultas');
-      } else if (statusCode === 404) {
-        toast.error('El paciente no existe');
-      } else {
-        toast.error(errorMessage || 'Error al registrar la consulta. Por favor, intenta nuevamente');
-      }
+      handleError(error, 'Error al registrar la consulta');
     } finally {
       setIsLoading(false);
     }

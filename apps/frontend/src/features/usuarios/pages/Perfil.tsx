@@ -10,10 +10,10 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Badge } from '@shared/components/ui/badge';
 import { Separator } from '@shared/components/ui/separator';
-import { toast } from 'sonner';
 import { usuarioService, UsuarioUpdateDTO } from '@features/usuarios/services/usuarioService';
 import { Usuario, Rol } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
 
 const roleLabels: Record<Rol, string> = {
   ADMIN: 'Administrador',
@@ -52,6 +52,7 @@ type PerfilFormData = z.infer<typeof perfilSchema>;
 
 export default function Perfil() {
   const logger = useLogger('Perfil');
+  const { handleError, showSuccess } = useApiError();
   const { user, updateUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -81,7 +82,7 @@ export default function Perfil() {
 
   const onSubmit = async (data: PerfilFormData) => {
     if (!user) {
-      toast.error('No se pudo obtener la información del usuario');
+      handleError(new Error('No se pudo obtener la información del usuario'), 'No se pudo obtener la información del usuario');
       return;
     }
 
@@ -90,13 +91,13 @@ export default function Perfil() {
 
       // Validaciones adicionales
       if (!data.nombre || !data.nombre.trim()) {
-        toast.error('El nombre es requerido');
+        handleError(new Error('El nombre es requerido'), 'El nombre es requerido');
         setIsSubmitting(false);
         return;
       }
 
       if (!data.email || !data.email.trim()) {
-        toast.error('El email es requerido');
+        handleError(new Error('El email es requerido'), 'El email es requerido');
         setIsSubmitting(false);
         return;
       }
@@ -104,13 +105,13 @@ export default function Perfil() {
       // Validar contraseña si se proporciona
       if (data.password && data.password.trim()) {
         if (data.password.trim().length < 6) {
-          toast.error('La contraseña debe tener al menos 6 caracteres');
+          handleError(new Error('La contraseña debe tener al menos 6 caracteres'), 'La contraseña debe tener al menos 6 caracteres');
           setIsSubmitting(false);
           return;
         }
 
         if (data.password !== data.confirmPassword) {
-          toast.error('Las contraseñas no coinciden');
+          handleError(new Error('Las contraseñas no coinciden'), 'Las contraseñas no coinciden');
           setIsSubmitting(false);
           return;
         }
@@ -136,7 +137,7 @@ export default function Perfil() {
       // Actualizar el usuario en el contexto de autenticación
       updateUser(updatedUser);
 
-      toast.success('Perfil actualizado exitosamente');
+      showSuccess('Perfil actualizado exitosamente');
       
       // Limpiar campos de contraseña
       reset({
@@ -150,20 +151,7 @@ export default function Perfil() {
         action: 'updatePerfil',
         userId: user?.id,
       });
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para realizar esta acción');
-      } else if (statusCode === 409 || errorMessage?.includes('ya está registrado')) {
-        toast.error('El email ya está registrado en el sistema');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al actualizar el perfil. Por favor, intenta nuevamente');
-      }
+      handleError(error, 'Error al actualizar el perfil');
     } finally {
       setIsSubmitting(false);
     }

@@ -32,6 +32,7 @@ type ConsultaFormData = z.infer<typeof consultaSchema>;
 
 export default function ConsultaForm() {
   const logger = useLogger('ConsultaForm');
+  const { handleError, showSuccess } = useApiError();
   const { pacienteId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -133,32 +134,14 @@ export default function ConsultaForm() {
       };
 
       await consultaService.create(consultaData);
-      toast.success('Consulta registrada exitosamente');
+      showSuccess('Consulta registrada exitosamente');
       navigate(`/historias/${pacienteId}`);
     } catch (error: any) {
       logger.error('Error al guardar consulta', error, {
         action: 'saveConsulta',
         pacienteId: pacienteId,
       });
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 400) {
-        // Error de validación del backend
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para crear consultas');
-      } else if (statusCode === 404) {
-        toast.error('El paciente no existe');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-        toast.error('La solicitud tardó demasiado. Por favor, intenta nuevamente');
-      } else if (error?.message?.includes('Network Error')) {
-        toast.error('Error de conexión. Verifica tu conexión a internet');
-      } else {
-        toast.error(errorMessage || 'Error al registrar la consulta. Por favor, intenta nuevamente');
-      }
+      handleError(error, 'Error al registrar la consulta');
     } finally {
       setIsLoading(false);
     }

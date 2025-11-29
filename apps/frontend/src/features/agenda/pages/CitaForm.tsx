@@ -11,13 +11,13 @@ import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Textarea } from '@shared/components/ui/textarea';
 import { Skeleton } from '@shared/components/ui/skeleton';
-import { toast } from 'sonner';
 import { citaService, EstadoCita } from '@features/agenda/services/citaService';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Paciente, Propietario, Usuario, Cita } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
 import { sanitizeText } from '@shared/utils/sanitize';
 
 const citaSchema = z.object({
@@ -35,6 +35,7 @@ type CitaFormData = z.infer<typeof citaSchema>;
 
 export default function CitaForm() {
   const logger = useLogger('CitaForm');
+  const { handleError, showSuccess, showInfo } = useApiError();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,7 +86,7 @@ export default function CitaForm() {
         if (paciente) {
           setValue('pacienteId', paciente.id);
           setValue('propietarioId', paciente.propietarioId);
-          toast.success(`Paciente "${paciente.nombre}" seleccionado`);
+          showInfo(`Paciente "${paciente.nombre}" seleccionado`);
         }
         // Limpiar el state para evitar seleccionarlo de nuevo
         window.history.replaceState({}, document.title);
@@ -102,7 +103,7 @@ export default function CitaForm() {
         const propietario = propietariosData.find(p => p.id === state.propietarioId);
         if (propietario) {
           setValue('propietarioId', propietario.id);
-          toast.success(`Propietario "${propietario.nombre}" seleccionado`);
+          showInfo(`Propietario "${propietario.nombre}" seleccionado`);
         }
         // Limpiar el state para evitar seleccionarlo de nuevo
         window.history.replaceState({}, document.title);
@@ -168,8 +169,7 @@ export default function CitaForm() {
         citaId: id,
         isEdit,
       });
-      const errorMessage = error?.response?.data?.message || 'Error al cargar los datos';
-      toast.error(errorMessage);
+      handleError(error, 'Error al cargar los datos');
     } finally {
       setIsLoadingData(false);
     }
@@ -260,9 +260,8 @@ export default function CitaForm() {
         const pacienteConflicto = pacientes.find(p => p.id === validacion.citaConflicto!.pacienteId);
         const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
         
-        toast.error(
-          `El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`,
-          { duration: 5000 }
+        handleError(
+          new Error(`El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`)
         );
         setIsValidating(false);
         setIsLoading(false);
@@ -284,9 +283,8 @@ export default function CitaForm() {
         const pacienteConflicto = pacientes.find(p => p.id === validacionFinal.citaConflicto!.pacienteId);
         const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
         
-        toast.error(
-          `El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`,
-          { duration: 5000 }
+        handleError(
+          new Error(`El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`)
         );
         setIsValidating(false);
         setIsLoading(false);
@@ -308,12 +306,13 @@ export default function CitaForm() {
 
       if (isEdit && id) {
         await citaService.update(id, citaData);
-        toast.success('Cita actualizada exitosamente');
       } else {
         await citaService.create(citaData);
-        toast.success('Cita agendada exitosamente');
       }
       
+      showSuccess(
+        isEdit ? 'Cita actualizada exitosamente' : 'Cita creada exitosamente'
+      );
       navigate('/agenda');
     } catch (error: any) {
       logger.error('Error al guardar cita', error, {
@@ -322,20 +321,7 @@ export default function CitaForm() {
         pacienteId: data.pacienteId,
         profesionalId: data.profesionalId,
       });
-      const statusCode = error?.response?.status;
-      const errorMessage = error?.response?.data?.message;
-      
-      if (statusCode === 400) {
-        toast.error(errorMessage || 'Error de validación: Verifica que todos los campos sean correctos');
-      } else if (statusCode === 403) {
-        toast.error('No tienes permisos para crear o editar citas');
-      } else if (statusCode === 404) {
-        toast.error('La cita o alguno de los recursos relacionados no existe');
-      } else if (statusCode === 500) {
-        toast.error('Error del servidor. Por favor, intenta nuevamente');
-      } else {
-        toast.error(errorMessage || 'Error al guardar la cita. Por favor, intenta nuevamente');
-      }
+      handleError(error, isEdit ? 'Error al actualizar la cita' : 'Error al crear la cita');
     } finally {
       setIsLoading(false);
       setIsValidating(false);
