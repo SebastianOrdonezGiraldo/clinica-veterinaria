@@ -243,7 +243,8 @@ export default function CitaForm() {
       setIsLoading(true);
       setIsValidating(true);
       
-      // Combinar fecha y hora en formato ISO
+      // Combinar fecha y hora en formato ISO sin zona horaria (hora local)
+      // El backend interpretará esto como hora local del servidor
       const fechaHora = `${data.fecha}T${data.hora}:00`;
       
       // Validar disponibilidad antes de crear/actualizar
