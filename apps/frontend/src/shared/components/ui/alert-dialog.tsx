@@ -4,12 +4,58 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { cn } from "@shared/utils/utils";
 import { buttonVariants } from "@shared/components/ui/button";
 
+/**
+ * Componente AlertDialog principal.
+ *
+ * Diálogo modal para confirmaciones y alertas importantes.
+ * A diferencia de Dialog, requiere una acción explícita del usuario
+ * y no se cierra al hacer clic fuera.
+ *
+ * @component
+ *
+ * @example
+ * ```tsx
+ * <AlertDialog>
+ *   <AlertDialogTrigger asChild>
+ *     <Button variant="destructive">Eliminar</Button>
+ *   </AlertDialogTrigger>
+ *   <AlertDialogContent>
+ *     <AlertDialogHeader>
+ *       <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+ *       <AlertDialogDescription>
+ *         Esta acción no se puede deshacer.
+ *       </AlertDialogDescription>
+ *     </AlertDialogHeader>
+ *     <AlertDialogFooter>
+ *       <AlertDialogCancel>Cancelar</AlertDialogCancel>
+ *       <AlertDialogAction>Confirmar</AlertDialogAction>
+ *     </AlertDialogFooter>
+ *   </AlertDialogContent>
+ * </AlertDialog>
+ * ```
+ *
+ * @see {@link AlertDialogContent}
+ * @see {@link AlertDialogAction}
+ * @see {@link AlertDialogCancel}
+ */
 const AlertDialog = AlertDialogPrimitive.Root;
 
+/**
+ * Elemento que activa la apertura del AlertDialog.
+ * @component
+ */
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 
+/**
+ * Portal para renderizar el AlertDialog fuera del DOM tree.
+ * @component
+ */
 const AlertDialogPortal = AlertDialogPrimitive.Portal;
 
+/**
+ * Overlay oscuro detrás del AlertDialog.
+ * @component
+ */
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
@@ -25,6 +71,11 @@ const AlertDialogOverlay = React.forwardRef<
 ));
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
+/**
+ * Contenedor principal del AlertDialog.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
@@ -43,16 +94,31 @@ const AlertDialogContent = React.forwardRef<
 ));
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
+/**
+ * Encabezado del AlertDialog.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
 
+/**
+ * Pie del AlertDialog para botones de acción.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
 );
 AlertDialogFooter.displayName = "AlertDialogFooter";
 
+/**
+ * Título del AlertDialog.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
@@ -61,6 +127,11 @@ const AlertDialogTitle = React.forwardRef<
 ));
 AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
 
+/**
+ * Descripción del AlertDialog.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogDescription = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
@@ -69,6 +140,12 @@ const AlertDialogDescription = React.forwardRef<
 ));
 AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayName;
 
+/**
+ * Botón de acción principal del AlertDialog.
+ * Cierra el dialog y ejecuta la acción confirmada.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
@@ -77,6 +154,12 @@ const AlertDialogAction = React.forwardRef<
 ));
 AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
 
+/**
+ * Botón de cancelación del AlertDialog.
+ * Cierra el dialog sin ejecutar ninguna acción.
+ * @component
+ * @see {@link AlertDialog}
+ */
 const AlertDialogCancel = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>

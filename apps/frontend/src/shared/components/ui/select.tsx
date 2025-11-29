@@ -4,12 +4,53 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@shared/utils/utils";
 
+/**
+ * Componente Select principal.
+ *
+ * Sistema de selección accesible basado en Radix UI con soporte para
+ * teclado, scroll y posicionamiento inteligente.
+ *
+ * @component
+ *
+ * @example
+ * ```tsx
+ * <Select>
+ *   <SelectTrigger>
+ *     <SelectValue placeholder="Selecciona una opción" />
+ *   </SelectTrigger>
+ *   <SelectContent>
+ *     <SelectItem value="option1">Opción 1</SelectItem>
+ *     <SelectItem value="option2">Opción 2</SelectItem>
+ *   </SelectContent>
+ * </Select>
+ * ```
+ *
+ * @see {@link SelectTrigger}
+ * @see {@link SelectContent}
+ * @see {@link SelectItem}
+ */
 const Select = SelectPrimitive.Root;
 
+/**
+ * Componente para agrupar items de Select.
+ * @component
+ */
 const SelectGroup = SelectPrimitive.Group;
 
+/**
+ * Componente para mostrar el valor seleccionado o placeholder.
+ * @component
+ */
 const SelectValue = SelectPrimitive.Value;
 
+/**
+ * Componente trigger para abrir el Select.
+ *
+ * Botón que muestra el valor seleccionado y abre el dropdown al hacer clic.
+ *
+ * @component
+ * @see {@link Select}
+ */
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
@@ -30,6 +71,10 @@ const SelectTrigger = React.forwardRef<
 ));
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
+/**
+ * Botón para scroll hacia arriba en listas largas.
+ * @component
+ */
 const SelectScrollUpButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
@@ -44,6 +89,10 @@ const SelectScrollUpButton = React.forwardRef<
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
 
+/**
+ * Botón para scroll hacia abajo en listas largas.
+ * @component
+ */
 const SelectScrollDownButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
@@ -58,6 +107,14 @@ const SelectScrollDownButton = React.forwardRef<
 ));
 SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName;
 
+/**
+ * Contenedor del dropdown con las opciones.
+ *
+ * Se posiciona automáticamente y soporta animaciones de entrada/salida.
+ *
+ * @component
+ * @see {@link Select}
+ */
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
@@ -90,6 +147,10 @@ const SelectContent = React.forwardRef<
 ));
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
+/**
+ * Etiqueta para grupos de opciones.
+ * @component
+ */
 const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
@@ -98,6 +159,14 @@ const SelectLabel = React.forwardRef<
 ));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
+/**
+ * Item individual seleccionable.
+ *
+ * Muestra un indicador de check cuando está seleccionado.
+ *
+ * @component
+ * @see {@link Select}
+ */
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
@@ -121,6 +190,10 @@ const SelectItem = React.forwardRef<
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
+/**
+ * Separador visual entre grupos de opciones.
+ * @component
+ */
 const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
