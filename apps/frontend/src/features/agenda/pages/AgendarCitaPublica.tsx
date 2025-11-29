@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2, Lock, LogIn, KeyRound } from 'lucide-react';
+import { Calendar, Clock, User, Mail, Phone, MapPin, FileText, Dog, UserPlus, CheckCircle2, Lock, LogIn, ArrowRight, ArrowLeft, Sparkles, AlertCircle, Info, Badge as BadgeIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { citaPublicaService, CitaPublicaRequestDTO } from '@features/agenda/services/citaPublicaService';
 import { Usuario } from '@core/types';
 import { Skeleton } from '@shared/components/ui/skeleton';
+import { Badge } from '@shared/components/ui/badge';
+import { Alert, AlertDescription } from '@shared/components/ui/alert';
 import { useLogger } from '@shared/hooks/useLogger';
 
 const citaPublicaSchema = z.object({
@@ -34,7 +36,7 @@ const citaPublicaSchema = z.object({
   propietarioTelefono: z.string().optional(),
   propietarioDocumento: z.string().optional(),
   propietarioDireccion: z.string().optional(),
-  propietarioPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').optional().or(z.literal('')),
+  propietarioPassword: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   // Datos nuevos de paciente
   pacienteNombre: z.string().optional(),
   pacienteEspecie: z.string().optional(),
@@ -48,7 +50,7 @@ const citaPublicaSchema = z.object({
   if (data.tipoRegistro === 'existente') {
     return !!data.propietarioId && !!data.pacienteId;
   } else {
-    return !!data.propietarioNombre && !!data.propietarioEmail && !!data.pacienteNombre && !!data.pacienteEspecie;
+    return !!data.propietarioNombre && !!data.propietarioEmail && !!data.propietarioPassword && !!data.pacienteNombre && !!data.pacienteEspecie;
   }
 }, {
   message: 'Complete todos los campos requeridos',
@@ -64,9 +66,10 @@ export default function AgendarCitaPublica() {
   const [isLoadingVets, setIsLoadingVets] = useState(true);
   const [citaCreada, setCitaCreada] = useState(false);
   const [citaId, setCitaId] = useState<string | null>(null);
-  const [emailSinPassword, setEmailSinPassword] = useState<string | null>(null);
   const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
   const [isLoadingHoras, setIsLoadingHoras] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<Partial<CitaPublicaFormData>>({});
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CitaPublicaFormData>({
     resolver: zodResolver(citaPublicaSchema),
@@ -241,9 +244,7 @@ export default function AgendarCitaPublica() {
             telefono: data.propietarioTelefono || undefined,
             documento: data.propietarioDocumento || undefined,
             direccion: data.propietarioDireccion || undefined,
-            password: data.propietarioPassword && data.propietarioPassword.length >= 6 
-              ? data.propietarioPassword 
-              : undefined,
+            password: data.propietarioPassword,
           },
           pacienteNuevo: {
             nombre: data.pacienteNombre!,
@@ -262,12 +263,6 @@ export default function AgendarCitaPublica() {
       setCitaId(cita.id);
       setCitaCreada(true);
       
-      // Si se registró un nuevo propietario sin contraseña, guardar el email
-      if (tipoRegistro === 'nuevo' && data.propietarioEmail && 
-          (!data.propietarioPassword || data.propietarioPassword.length < 6)) {
-        setEmailSinPassword(data.propietarioEmail);
-      }
-      
       toast.success('¡Cita agendada exitosamente!');
     } catch (error: any) {
       logger.error('Error al agendar cita pública', error, {
@@ -285,77 +280,199 @@ export default function AgendarCitaPublica() {
 
   if (citaCreada) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-2xl">
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-800">¡Cita Agendada Exitosamente!</CardTitle>
-            <CardDescription className="text-lg mt-2">
-              Su cita ha sido registrada con el ID: <strong>{citaId}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-center text-muted-foreground">
-              Recibirá una confirmación por correo electrónico. Por favor, llegue 10 minutos antes de su cita.
-            </p>
-            
-            {emailSinPassword && (
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <KeyRound className="h-5 w-5 text-blue-600 mt-0.5" />
+      <div className="min-h-screen bg-gradient-to-b from-primary/5 via-white to-primary/5 py-12 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-white shadow-2xl overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-green-500 to-green-600"></div>
+            <CardHeader className="text-center pt-8 pb-6">
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-green-500 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                  <div className="relative h-20 w-20 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-xl">
+                    <CheckCircle2 className="h-12 w-12 text-white" />
+                  </div>
+                </div>
+              </div>
+              <CardTitle className="text-3xl lg:text-4xl font-bold text-green-800 mb-2">
+                ¡Cita Agendada Exitosamente!
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Su cita ha sido registrada con el ID:{' '}
+                <Badge variant="outline" className="text-base px-3 py-1 font-mono">
+                  {citaId}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pb-8">
+              <Alert className="border-green-200 bg-green-50">
+                <Info className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Recibirá una confirmación por correo electrónico. Por favor, llegue 10 minutos antes de su cita.
+                </AlertDescription>
+              </Alert>
+              
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-white shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0 shadow-md">
+                      <Lock className="h-6 w-6 text-white" />
+                    </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-900 mb-1">
-                        ¿Quieres acceder al portal del cliente?
+                      <h4 className="font-bold text-lg mb-2 text-foreground">
+                        Accede al portal del cliente
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                        Ya puedes iniciar sesión en el portal del cliente con tu email y la contraseña que ingresaste para ver tus citas y mascotas.
                       </p>
-                      <p className="text-sm text-blue-800 mb-3">
-                        Establece una contraseña para ver tus citas y mascotas desde tu cuenta.
-                      </p>
-                      <Link to={`/cliente/establecer-password?email=${encodeURIComponent(emailSinPassword)}`}>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                          <Lock className="h-4 w-4 mr-2" />
-                          Establecer Contraseña
+                      <Link to="/cliente/login">
+                        <Button className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all">
+                          <LogIn className="h-4 w-4 mr-2" />
+                          Ir al Portal del Cliente
                         </Button>
                       </Link>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
-            
-            <div className="flex justify-center gap-4 flex-wrap">
-              <Button onClick={() => window.location.reload()}>
-                Agendar Otra Cita
-              </Button>
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
-                Volver al Inicio
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <Button 
+                  onClick={() => window.location.reload()}
+                  size="lg"
+                  className="shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Agendar Otra Cita
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => window.location.href = '/'}
+                  className="shadow-md hover:shadow-lg transition-all"
+                >
+                  Volver al Inicio
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
+  const steps = [
+    { number: 1, title: 'Información de la Cita', icon: Calendar },
+    { number: 2, title: tipoRegistro === 'nuevo' ? 'Datos del Cliente' : 'Datos Existentes', icon: User },
+    { number: 3, title: tipoRegistro === 'nuevo' ? 'Datos de la Mascota' : 'Confirmar', icon: Dog },
+  ];
+
+  // Validar paso actual antes de avanzar
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(fechaSeleccionada && profesionalSeleccionado && watch('hora') && watch('motivo') && tipoRegistro);
+      case 2:
+        if (tipoRegistro === 'nuevo') {
+          return !!(watch('propietarioNombre') && watch('propietarioEmail') && watch('propietarioPassword'));
+        } else {
+          return !!(watch('propietarioId') && watch('pacienteId'));
+        }
+      case 3:
+        if (tipoRegistro === 'nuevo') {
+          return !!(watch('pacienteNombre') && watch('pacienteEspecie'));
+        }
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+    } else {
+      toast.error('Por favor, complete todos los campos requeridos antes de continuar');
+    }
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const canGoNext = validateStep(currentStep);
+
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">Agendar una Cita</h1>
-        <p className="text-muted-foreground">
-          Complete el formulario para agendar una cita con nuestros veterinarios
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-white to-primary/5 py-8 px-4">
+      <div className="container mx-auto max-w-4xl">
+        {/* Header mejorado */}
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">Agendar Cita</span>
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-bold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Agendar una Cita
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Complete el formulario para agendar una cita con nuestros veterinarios
+          </p>
+        </div>
+
+        {/* Indicador de progreso */}
+        <Card className="mb-6 border-2 border-primary/10 shadow-lg bg-white/90 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                const isActive = currentStep >= step.number;
+                const isCurrent = currentStep === step.number;
+                
+                return (
+                  <div key={step.number} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 ${
+                        isActive 
+                          ? 'bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg scale-110' 
+                          : 'bg-muted text-muted-foreground'
+                      } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}>
+                        <Icon className="h-6 w-6" />
+                        {isActive && currentStep > step.number && (
+                          <CheckCircle2 className="absolute -top-1 -right-1 h-5 w-5 text-green-500 bg-white rounded-full" />
+                        )}
+                      </div>
+                      <div className={`mt-2 text-xs font-medium text-center max-w-[100px] ${
+                        isActive ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {step.title}
+                      </div>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`flex-1 h-1 mx-2 rounded-full transition-all duration-300 ${
+                        currentStep > step.number ? 'bg-gradient-to-r from-primary to-primary/70' : 'bg-muted'
+                      }`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Información de la Cita */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        {/* Paso 1: Información de la Cita y Tipo de Registro */}
+        {currentStep === 1 && (
+          <>
+          <Card className="border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
               Información de la Cita
             </CardTitle>
+            <CardDescription className="text-base mt-2">
+              Seleccione la fecha, hora y veterinario para su cita
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -379,11 +496,19 @@ export default function AgendarCitaPublica() {
                   <p className="text-sm text-destructive">{errors.fecha.message}</p>
                 )}
                 {fechaSeleccionada && esDomingo(fechaSeleccionada) && (
-                  <p className="text-sm text-destructive">Los domingos la clínica está cerrada</p>
+                  <Alert className="mt-2 border-destructive/50 bg-destructive/10">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <AlertDescription className="text-sm text-destructive">
+                      Los domingos la clínica está cerrada. Por favor, seleccione otro día.
+                    </AlertDescription>
+                  </Alert>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Horarios: Lunes-Viernes 8am-12m y 2pm-6pm | Sábados 8am-12m | Domingos cerrado
-                </p>
+                <Alert className="mt-2 border-primary/20 bg-primary/5">
+                  <Info className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-xs">
+                    <strong>Horarios disponibles:</strong> Lunes-Viernes 8am-12m y 2pm-6pm | Sábados 8am-12m | Domingos cerrado
+                  </AlertDescription>
+                </Alert>
               </div>
 
               <div className="space-y-2">
@@ -430,19 +555,28 @@ export default function AgendarCitaPublica() {
                   <p className="text-sm text-destructive">{errors.hora.message}</p>
                 )}
                 {horasOcupadas.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {horasOcupadas.length} hora(s) ocupada(s) excluida(s)
-                  </p>
+                  <Alert className="mt-2 border-amber-200 bg-amber-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-xs text-amber-800">
+                      {horasOcupadas.length} hora(s) ocupada(s) excluida(s) de las opciones disponibles
+                    </AlertDescription>
+                  </Alert>
                 )}
                 {fechaSeleccionada && esSabado(fechaSeleccionada) && (
-                  <p className="text-xs text-muted-foreground">
-                    Sábados: solo disponible de 8:00 AM a 12:00 PM
-                  </p>
+                  <Alert className="mt-2 border-blue-200 bg-blue-50">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-xs text-blue-800">
+                      <strong>Nota:</strong> Sábados: solo disponible de 8:00 AM a 12:00 PM
+                    </AlertDescription>
+                  </Alert>
                 )}
                 {fechaSeleccionada && !esSabado(fechaSeleccionada) && !esDomingo(fechaSeleccionada) && (
-                  <p className="text-xs text-muted-foreground">
-                    Horarios disponibles: 8:00 AM - 12:00 PM y 2:00 PM - 6:00 PM
-                  </p>
+                  <Alert className="mt-2 border-green-200 bg-green-50">
+                    <Info className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-xs text-green-800">
+                      Horarios disponibles: 8:00 AM - 12:00 PM y 2:00 PM - 6:00 PM
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             </div>
@@ -505,13 +639,15 @@ export default function AgendarCitaPublica() {
         </Card>
 
         {/* Tipo de Registro */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
+        <Card className="border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center shadow-md">
+                <UserPlus className="h-5 w-5 text-white" />
+              </div>
               Tipo de Registro
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base mt-2">
               ¿Ya está registrado en nuestro sistema o es su primera vez?
             </CardDescription>
           </CardHeader>
@@ -534,31 +670,45 @@ export default function AgendarCitaPublica() {
               </div>
             </RadioGroup>
             {tipoRegistro === 'existente' && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800 mb-2">
-                  Si ya tienes una cuenta con contraseña, puedes iniciar sesión para ver tus citas y mascotas.
-                </p>
-                <a
-                  href="/cliente/login"
-                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Iniciar sesión
-                </a>
-              </div>
+              <Alert className="mt-4 border-primary/20 bg-primary/5">
+                <LogIn className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm text-foreground">
+                      Si ya tienes una cuenta con contraseña, puedes iniciar sesión para ver tus citas y mascotas.
+                    </p>
+                    <Link to="/cliente/login">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Iniciar sesión
+                      </Button>
+                    </Link>
+                  </div>
+                </AlertDescription>
+              </Alert>
             )}
           </CardContent>
         </Card>
+        </>
+        )}
 
-        {tipoRegistro === 'nuevo' ? (
+        {/* Paso 2: Datos del Cliente */}
+        {currentStep === 2 && (
           <>
+            {tipoRegistro === 'nuevo' ? (
+              <>
             {/* Datos del Propietario */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
+            <Card className="border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
                   Datos del Propietario
                 </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Complete sus datos de contacto
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -629,7 +779,7 @@ export default function AgendarCitaPublica() {
                 <div className="space-y-2">
                   <Label htmlFor="propietarioPassword">
                     <Lock className="inline h-4 w-4 mr-1" />
-                    Contraseña (opcional)
+                    Contraseña *
                   </Label>
                   <Input
                     id="propietarioPassword"
@@ -637,189 +787,251 @@ export default function AgendarCitaPublica() {
                     placeholder="Mínimo 6 caracteres"
                     {...register('propietarioPassword')}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Si proporcionas una contraseña, podrás iniciar sesión después para ver tus citas y mascotas.
-                  </p>
+                  <Alert className="border-green-200 bg-green-50">
+                    <Info className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-xs text-green-800">
+                      Con esta contraseña podrás iniciar sesión en el portal del cliente para ver tus citas y mascotas.
+                    </AlertDescription>
+                  </Alert>
                   {errors.propietarioPassword && (
                     <p className="text-sm text-destructive">{errors.propietarioPassword.message}</p>
                   )}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Datos del Paciente */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Dog className="h-5 w-5" />
-                  Datos de la Mascota
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteNombre">Nombre de la Mascota *</Label>
-                    <Input
-                      id="pacienteNombre"
-                      placeholder="Max"
-                      {...register('pacienteNombre')}
-                    />
-                    {errors.pacienteNombre && (
-                      <p className="text-sm text-destructive">{errors.pacienteNombre.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteEspecie">Especie *</Label>
-                    <Select
-                      value={watch('pacienteEspecie')}
-                      onValueChange={(value) => setValue('pacienteEspecie', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione especie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Perro">Perro</SelectItem>
-                        <SelectItem value="Gato">Gato</SelectItem>
-                        <SelectItem value="Ave">Ave</SelectItem>
-                        <SelectItem value="Roedor">Roedor</SelectItem>
-                        <SelectItem value="Reptil">Reptil</SelectItem>
-                        <SelectItem value="Otro">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.pacienteEspecie && (
-                      <p className="text-sm text-destructive">{errors.pacienteEspecie.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteRaza">Raza</Label>
-                    <Input
-                      id="pacienteRaza"
-                      placeholder="Labrador"
-                      {...register('pacienteRaza')}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteSexo">Sexo</Label>
-                    <Select
-                      value={watch('pacienteSexo')}
-                      onValueChange={(value) => setValue('pacienteSexo', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">Macho</SelectItem>
-                        <SelectItem value="F">Hembra</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteEdadMeses">Edad (meses)</Label>
-                    <Input
-                      id="pacienteEdadMeses"
-                      type="number"
-                      min="0"
-                      placeholder="36"
-                      {...register('pacienteEdadMeses')}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pacientePesoKg">Peso (kg)</Label>
-                    <Input
-                      id="pacientePesoKg"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="30.5"
-                      {...register('pacientePesoKg')}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pacienteMicrochip">Microchip</Label>
-                    <Input
-                      id="pacienteMicrochip"
-                      placeholder="123456789012345"
-                      {...register('pacienteMicrochip')}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pacienteNotas">
-                    <FileText className="inline h-4 w-4 mr-1" />
-                    Notas Adicionales
-                  </Label>
-                  <Textarea
-                    id="pacienteNotas"
-                    placeholder="Alergias, condiciones especiales, etc."
-                    {...register('pacienteNotas')}
-                    rows={2}
-                  />
-                </div>
-              </CardContent>
-            </Card>
           </>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Datos Existentes</CardTitle>
-              <CardDescription>
-                Si ya está registrado, por favor contacte a la clínica para obtener sus IDs de propietario y paciente.
+            ) : (
+              <Card className="border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+                  <CardTitle className="flex items-center gap-3 text-2xl">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md">
+                      <BadgeIcon className="h-5 w-5 text-white" />
+                    </div>
+                    Datos Existentes
+                  </CardTitle>
+                  <CardDescription className="text-base mt-2">
+                    Si ya está registrado, por favor contacte a la clínica para obtener sus IDs de propietario y paciente.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="propietarioId">ID de Propietario *</Label>
+                      <Input
+                        id="propietarioId"
+                        placeholder="Ingrese su ID de propietario"
+                        {...register('propietarioId')}
+                      />
+                      {errors.propietarioId && (
+                        <p className="text-sm text-destructive">{errors.propietarioId.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pacienteId">ID de Paciente *</Label>
+                      <Input
+                        id="pacienteId"
+                        placeholder="Ingrese el ID de su mascota"
+                        {...register('pacienteId')}
+                      />
+                      {errors.pacienteId && (
+                        <p className="text-sm text-destructive">{errors.pacienteId.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Paso 3: Datos de la Mascota (solo para nuevos) */}
+        {currentStep === 3 && tipoRegistro === 'nuevo' && (
+          <Card className="border-2 border-primary/10 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-primary/10">
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-secondary to-secondary/70 flex items-center justify-center shadow-md">
+                  <Dog className="h-5 w-5 text-white" />
+                </div>
+                Datos de la Mascota
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Información sobre su mascota
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="propietarioId">ID de Propietario *</Label>
+                  <Label htmlFor="pacienteNombre">Nombre de la Mascota *</Label>
                   <Input
-                    id="propietarioId"
-                    placeholder="Ingrese su ID de propietario"
-                    {...register('propietarioId')}
+                    id="pacienteNombre"
+                    placeholder="Max"
+                    {...register('pacienteNombre')}
                   />
-                  {errors.propietarioId && (
-                    <p className="text-sm text-destructive">{errors.propietarioId.message}</p>
+                  {errors.pacienteNombre && (
+                    <p className="text-sm text-destructive">{errors.pacienteNombre.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pacienteId">ID de Paciente *</Label>
-                  <Input
-                    id="pacienteId"
-                    placeholder="Ingrese el ID de su mascota"
-                    {...register('pacienteId')}
-                  />
-                  {errors.pacienteId && (
-                    <p className="text-sm text-destructive">{errors.pacienteId.message}</p>
+                  <Label htmlFor="pacienteEspecie">Especie *</Label>
+                  <Select
+                    value={watch('pacienteEspecie')}
+                    onValueChange={(value) => setValue('pacienteEspecie', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione especie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Perro">Perro</SelectItem>
+                      <SelectItem value="Gato">Gato</SelectItem>
+                      <SelectItem value="Ave">Ave</SelectItem>
+                      <SelectItem value="Roedor">Roedor</SelectItem>
+                      <SelectItem value="Reptil">Reptil</SelectItem>
+                      <SelectItem value="Otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.pacienteEspecie && (
+                    <p className="text-sm text-destructive">{errors.pacienteEspecie.message}</p>
                   )}
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pacienteRaza">Raza</Label>
+                  <Input
+                    id="pacienteRaza"
+                    placeholder="Labrador"
+                    {...register('pacienteRaza')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pacienteSexo">Sexo</Label>
+                  <Select
+                    value={watch('pacienteSexo')}
+                    onValueChange={(value) => setValue('pacienteSexo', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Macho</SelectItem>
+                      <SelectItem value="F">Hembra</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pacienteEdadMeses">Edad (meses)</Label>
+                  <Input
+                    id="pacienteEdadMeses"
+                    type="number"
+                    min="0"
+                    placeholder="36"
+                    {...register('pacienteEdadMeses')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pacientePesoKg">Peso (kg)</Label>
+                  <Input
+                    id="pacientePesoKg"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="30.5"
+                    {...register('pacientePesoKg')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pacienteMicrochip">Microchip</Label>
+                  <Input
+                    id="pacienteMicrochip"
+                    placeholder="123456789012345"
+                    {...register('pacienteMicrochip')}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pacienteNotas">
+                  <FileText className="inline h-4 w-4 mr-1" />
+                  Notas Adicionales
+                </Label>
+                <Textarea
+                  id="pacienteNotas"
+                  placeholder="Alergias, condiciones especiales, etc."
+                  {...register('pacienteNotas')}
+                  rows={2}
+                />
               </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => window.location.href = '/'}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Agendando...' : 'Agendar Cita'}
-          </Button>
+        {/* Navegación entre pasos */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-primary/10">
+          <div className="flex gap-4 w-full sm:w-auto">
+            {currentStep > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevious}
+                className="flex-1 sm:flex-initial"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Anterior
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => window.location.href = '/'}
+              className="flex-1 sm:flex-initial"
+            >
+              Cancelar
+            </Button>
+          </div>
+          
+          {currentStep < (tipoRegistro === 'existente' ? 2 : steps.length) ? (
+            <Button 
+              type="button"
+              onClick={handleNext}
+              disabled={!canGoNext}
+              size="lg"
+              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            >
+              Siguiente
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          ) : (
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              size="lg"
+              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Agendando...
+                </>
+              ) : (
+                <>
+                  Agendar Cita
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </form>
+      </div>
     </div>
   );
 }

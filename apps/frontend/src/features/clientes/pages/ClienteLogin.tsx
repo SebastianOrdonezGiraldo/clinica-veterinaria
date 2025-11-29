@@ -85,7 +85,19 @@ export default function ClienteLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center space-y-2">
+          <div className="mt-6 text-center space-y-3">
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-2">
+                ¿Agendaste una cita sin contraseña?
+              </p>
+              <Link 
+                to="/cliente/establecer-password" 
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                Establece tu contraseña aquí
+              </Link>
+            </div>
+            
             <p className="text-sm text-muted-foreground">
               ¿No tienes cuenta?{' '}
               <Link to="/agendar-cita" className="text-primary hover:underline">
