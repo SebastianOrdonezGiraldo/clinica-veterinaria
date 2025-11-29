@@ -1,19 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, Plus, Filter, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter, AlertCircle, ChevronLeft, ChevronRight, Search, CheckCircle, XCircle, Eye, MoreVertical } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Calendar } from '@shared/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { Input } from '@shared/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shared/components/ui/dropdown-menu';
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { citaService, EstadoCita } from '@features/agenda/services/citaService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Cita, Usuario, PageResponse } from '@core/types';
 import { toast } from 'sonner';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
@@ -21,89 +24,125 @@ const statusColors = {
   EN_PROCESO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   COMPLETADA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
   CANCELADA: 'bg-status-cancelled/10 text-status-cancelled border-status-cancelled/20',
-  ATENDIDA: 'bg-status-completed/10 text-status-completed border-status-completed/20', // Alias para compatibilidad
+  ATENDIDA: 'bg-status-completed/10 text-status-completed border-status-completed/20',
 };
 
 /**
- * Componente Agenda - Gestión de citas con paginación backend
+ * Componente Agenda - Gestión de citas con mejoras UX
  * 
  * MEJORAS IMPLEMENTADAS:
- * - ✓ Paginación del lado del servidor (no carga todas las citas)
- * - ✓ Filtros por fecha, estado y profesional en backend
- * - ✓ Solo carga citas del día seleccionado (eficiente)
- * - ✓ Las relaciones (paciente, propietario) vienen del backend
- * 
- * PATRONES APLICADOS:
- * - Observer Pattern: useEffect reacciona a cambios de fecha y filtros
- * - Strategy Pattern: Backend selecciona query apropiado
+ * - ✓ Paginación del lado del servidor
+ * - ✓ Filtros por fecha, estado y profesional
+ * - ✓ Calendario con indicadores de días con citas
+ * - ✓ Estadísticas del día (resumen por estado)
+ * - ✓ Acciones rápidas en cada cita
+ * - ✓ Búsqueda rápida por nombre
  */
 export default function Agenda() {
   const logger = useLogger('Agenda');
+  const { handleError, showSuccess } = useApiError();
   const navigate = useNavigate();
   
   // ESTADO: Fecha y filtros
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filtroVet, setFiltroVet] = useState<string>('todos');
   const [filtroEstado, setFiltroEstado] = useState<EstadoCita | 'todos'>('todos');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   // ESTADO: Paginación backend
   const [citasPage, setCitasPage] = useState<PageResponse<Cita> | null>(null);
-  const [currentPage, setCurrentPage] = useState(0); // 0-indexed para backend
+  const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 20;
   
   // ESTADO: Veterinarios para filtro
   const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
   
+  // ESTADO: Fechas con citas para el calendario
+  const [fechasConCitas, setFechasConCitas] = useState<Set<string>>(new Set());
+  const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
+  
   // ESTADO: UI
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingCitaId, setUpdatingCitaId] = useState<string | null>(null);
 
   // EFECTO: Cargar veterinarios una sola vez
   useEffect(() => {
     loadVeterinarios();
   }, []);
 
+  // EFECTO: Cargar fechas con citas del mes actual para el calendario
+  useEffect(() => {
+    loadFechasConCitas();
+  }, [selectedDate, filtroVet]);
+
   // EFECTO: Cargar citas cuando cambian fecha, filtros o página
-  // PATRÓN: Observer - Reacciona a cambios de dependencias
   useEffect(() => {
     loadCitas();
   }, [selectedDate, filtroVet, filtroEstado, currentPage]);
 
   /**
+   * Carga las fechas del mes que tienen citas para marcar en el calendario
+   */
+  const loadFechasConCitas = async () => {
+    try {
+      setIsLoadingCalendar(true);
+      const inicioMes = startOfMonth(selectedDate);
+      const finMes = endOfMonth(selectedDate);
+      
+      const searchParams = {
+        fechaInicio: startOfDay(inicioMes).toISOString(),
+        fechaFin: endOfDay(finMes).toISOString(),
+        profesionalId: filtroVet !== 'todos' ? filtroVet : undefined,
+        page: 0,
+        size: 1000, // Cargar todas las citas del mes
+        sort: 'fecha,asc',
+      };
+      
+      const result = await citaService.searchWithFilters(searchParams);
+      const fechas = new Set<string>();
+      
+      result.content.forEach(cita => {
+        const fecha = new Date(cita.fecha);
+        const fechaStr = format(fecha, 'yyyy-MM-dd');
+        fechas.add(fechaStr);
+      });
+      
+      setFechasConCitas(fechas);
+    } catch (error) {
+      logger.warn('Error al cargar fechas con citas para calendario', {
+        action: 'loadFechasConCitas',
+      });
+    } finally {
+      setIsLoadingCalendar(false);
+    }
+  };
+
+  /**
    * Carga la lista de veterinarios para el filtro
-   * Se ejecuta una sola vez al montar el componente
    */
   const loadVeterinarios = async () => {
     try {
-      // Usar getVeterinarios() en lugar de getAll() para evitar problemas de permisos
       const veterinariosData = await usuarioService.getVeterinarios();
       setVeterinarios(veterinariosData);
     } catch (error) {
       logger.warn('Error al cargar veterinarios para filtro', {
         action: 'loadVeterinarios',
       });
-      // No es crítico, solo afecta el filtro
     }
   };
 
   /**
    * Carga citas del día seleccionado con filtros
-   * 
-   * VENTAJAS:
-   * - Solo carga citas del día (eficiente)
-   * - Filtros aplicados en BD (rápido)
-   * - Las relaciones vienen incluidas desde el backend
    */
   const loadCitas = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Calcular rango de fechas del día seleccionado
       const fechaInicio = startOfDay(selectedDate).toISOString();
       const fechaFin = endOfDay(selectedDate).toISOString();
       
-      // Construir parámetros de búsqueda
       const searchParams = {
         fechaInicio,
         fechaFin,
@@ -133,15 +172,75 @@ export default function Agenda() {
   };
 
   /**
+   * Maneja el cambio de estado de una cita
+   */
+  const handleUpdateEstado = async (citaId: string, nuevoEstado: EstadoCita) => {
+    try {
+      setUpdatingCitaId(citaId);
+      await citaService.updateEstado(citaId, nuevoEstado);
+      showSuccess(`Cita ${nuevoEstado === 'CONFIRMADA' ? 'confirmada' : nuevoEstado === 'CANCELADA' ? 'cancelada' : 'actualizada'} exitosamente`);
+      await loadCitas();
+      await loadFechasConCitas(); // Actualizar calendario
+    } catch (error: any) {
+      handleError(error, 'Error al actualizar el estado de la cita');
+    } finally {
+      setUpdatingCitaId(null);
+    }
+  };
+
+  /**
    * Maneja el cambio de fecha del calendario
-   * Resetea la página a 0 cuando cambia la fecha
    */
   const handleDateChange = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      setCurrentPage(0); // Resetear paginación
+      setCurrentPage(0);
     }
   };
+
+  /**
+   * Función para marcar días con citas en el calendario
+   */
+  const modifiers = {
+    hasAppointments: (date: Date) => {
+      const fechaStr = format(date, 'yyyy-MM-dd');
+      return fechasConCitas.has(fechaStr);
+    },
+  };
+
+  const modifiersClassNames = {
+    hasAppointments: 'bg-primary/20 border-primary border-2 font-semibold',
+  };
+
+  /**
+   * Filtrar citas por búsqueda
+   */
+  const citasFiltradas = useMemo(() => {
+    if (!citasPage?.content || !searchQuery.trim()) {
+      return citasPage?.content || [];
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    return citasPage.content.filter(cita => 
+      (cita.pacienteNombre?.toLowerCase().includes(query)) ||
+      (cita.propietarioNombre?.toLowerCase().includes(query)) ||
+      (cita.motivo?.toLowerCase().includes(query))
+    );
+  }, [citasPage?.content, searchQuery]);
+
+  /**
+   * Calcular estadísticas del día
+   */
+  const estadisticas = useMemo(() => {
+    const citas = citasPage?.content || [];
+    return {
+      total: citas.length,
+      pendientes: citas.filter(c => c.estado === 'PENDIENTE').length,
+      confirmadas: citas.filter(c => c.estado === 'CONFIRMADA').length,
+      atendidas: citas.filter(c => c.estado === 'ATENDIDA').length,
+      canceladas: citas.filter(c => c.estado === 'CANCELADA').length,
+    };
+  }, [citasPage?.content]);
 
   return (
     <div className="space-y-6">
@@ -156,7 +255,52 @@ export default function Agenda() {
         </Button>
       </div>
 
-      <Card className="mb-6">
+      {/* Estadísticas del día */}
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-foreground">{estadisticas.total}</div>
+              <div className="text-sm text-muted-foreground mt-1">Total</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-status-pending">{estadisticas.pendientes}</div>
+              <div className="text-sm text-muted-foreground mt-1">Pendientes</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-status-confirmed">{estadisticas.confirmadas}</div>
+              <div className="text-sm text-muted-foreground mt-1">Confirmadas</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-status-completed">{estadisticas.atendidas}</div>
+              <div className="text-sm text-muted-foreground mt-1">Atendidas</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-status-cancelled">{estadisticas.canceladas}</div>
+              <div className="text-sm text-muted-foreground mt-1">Canceladas</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
@@ -164,7 +308,7 @@ export default function Agenda() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Fecha</label>
               <Popover>
@@ -179,14 +323,31 @@ export default function Agenda() {
                     mode="single"
                     selected={selectedDate}
                     onSelect={handleDateChange}
+                    modifiers={modifiers}
+                    modifiersClassNames={modifiersClassNames}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
             </div>
             <div>
+              <label className="text-sm font-medium mb-2 block">Búsqueda</label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div>
               <label className="text-sm font-medium mb-2 block">Veterinario</label>
-              <Select value={filtroVet} onValueChange={setFiltroVet}>
+              <Select value={filtroVet} onValueChange={(value) => {
+                setFiltroVet(value);
+                setCurrentPage(0);
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -202,7 +363,7 @@ export default function Agenda() {
               <label className="text-sm font-medium mb-2 block">Estado</label>
               <Select value={filtroEstado} onValueChange={(value) => {
                 setFiltroEstado(value as EstadoCita | 'todos');
-                setCurrentPage(0); // Resetear paginación al cambiar filtro
+                setCurrentPage(0);
               }}>
                 <SelectTrigger>
                   <SelectValue />
@@ -211,8 +372,7 @@ export default function Agenda() {
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="PENDIENTE">Pendiente</SelectItem>
                   <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
-                  <SelectItem value="EN_PROCESO">En Proceso</SelectItem>
-                  <SelectItem value="COMPLETADA">Completada</SelectItem>
+                  <SelectItem value="ATENDIDA">Atendida</SelectItem>
                   <SelectItem value="CANCELADA">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
@@ -222,6 +382,7 @@ export default function Agenda() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Calendario */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -234,17 +395,26 @@ export default function Agenda() {
               mode="single"
               selected={selectedDate}
               onSelect={handleDateChange}
+              modifiers={modifiers}
+              modifiersClassNames={modifiersClassNames}
               className="rounded-md border"
             />
+            <div className="mt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded border-2 border-primary bg-primary/20"></div>
+                <span>Días con citas</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
+        {/* Lista de citas */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Citas del Día ({citasPage?.totalElements || 0})
+                Citas del Día ({citasFiltradas.length})
               </div>
               {citasPage && citasPage.totalPages > 1 && (
                 <div className="flex items-center gap-2">
@@ -285,42 +455,100 @@ export default function Agenda() {
                   Reintentar
                 </Button>
               </div>
-            ) : citasPage && citasPage.content.length > 0 ? (
+            ) : citasFiltradas.length > 0 ? (
               <div className="space-y-3">
-                {citasPage.content.map((cita) => (
-                <div
-                  key={cita.id}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/agenda/${cita.id}`)}
-                >
-                  <div className="flex flex-col items-center justify-center w-20 h-20 rounded-lg bg-primary/10 flex-shrink-0">
-                    <span className="text-xs text-muted-foreground">Hora</span>
-                    <span className="text-lg font-bold text-primary">
-                      {new Date(cita.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-foreground">{cita.pacienteNombre || 'N/A'}</h4>
+                {citasFiltradas.map((cita) => (
+                  <div
+                    key={cita.id}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                  >
+                    <div 
+                      className="flex flex-col items-center justify-center w-20 h-20 rounded-lg bg-primary/10 flex-shrink-0 cursor-pointer"
+                      onClick={() => navigate(`/agenda/${cita.id}`)}
+                    >
+                      <span className="text-xs text-muted-foreground">Hora</span>
+                      <span className="text-lg font-bold text-primary">
+                        {new Date(cita.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      Propietario: {cita.propietarioNombre || 'N/A'}
-                    </p>
-                    {cita.motivo && (
-                      <p className="text-sm text-muted-foreground mt-1">{cita.motivo}</p>
-                    )}
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => navigate(`/agenda/${cita.id}`)}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-foreground">{cita.pacienteNombre || 'N/A'}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        Propietario: {cita.propietarioNombre || 'N/A'}
+                      </p>
+                      {cita.motivo && (
+                        <p className="text-sm text-muted-foreground mt-1 truncate">{cita.motivo}</p>
+                      )}
+                    </div>
+                    <Badge className={statusColors[cita.estado as keyof typeof statusColors]}>
+                      {cita.estado.replace(/_/g, ' ')}
+                    </Badge>
+                    {/* Acciones rápidas */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          disabled={updatingCitaId === cita.id}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/agenda/${cita.id}`);
+                        }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Detalle
+                        </DropdownMenuItem>
+                        {cita.estado === 'PENDIENTE' && (
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateEstado(cita.id, 'CONFIRMADA');
+                            }}
+                            disabled={updatingCitaId === cita.id}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Confirmar
+                          </DropdownMenuItem>
+                        )}
+                        {cita.estado !== 'CANCELADA' && cita.estado !== 'ATENDIDA' && (
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('¿Estás seguro de cancelar esta cita?')) {
+                                handleUpdateEstado(cita.id, 'CANCELADA');
+                              }
+                            }}
+                            disabled={updatingCitaId === cita.id}
+                            className="text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Cancelar
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <Badge className={statusColors[cita.estado as keyof typeof statusColors]}>
-                    {cita.estado.replace(/_/g, ' ')}
-                  </Badge>
-                </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-12">
                 <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground">No hay citas para esta fecha</h3>
-                <p className="text-muted-foreground mt-1">Selecciona otra fecha o ajusta los filtros</p>
+                <h3 className="text-lg font-medium text-foreground">
+                  {searchQuery ? 'No se encontraron citas' : 'No hay citas para esta fecha'}
+                </h3>
+                <p className="text-muted-foreground mt-1">
+                  {searchQuery ? 'Intenta con otros términos de búsqueda' : 'Selecciona otra fecha o ajusta los filtros'}
+                </p>
               </div>
             )}
           </CardContent>

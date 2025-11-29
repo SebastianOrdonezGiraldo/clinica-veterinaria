@@ -62,7 +62,6 @@ export interface Paciente {
   edadMeses?: number;
   pesoKg?: number;
   propietarioId: string;
-  microchip?: string;
   notas?: string;
   activo?: boolean;
   propietarioNombre?: string;

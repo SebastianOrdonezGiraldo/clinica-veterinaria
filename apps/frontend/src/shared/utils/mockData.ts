@@ -17,10 +17,10 @@ export const mockPropietarios: Propietario[] = [
 ];
 
 export const mockPacientes: Paciente[] = [
-  { id: '1', nombre: 'Max', especie: 'Canino', raza: 'Golden Retriever', sexo: 'M', edadMeses: 24, pesoKg: 28, propietarioId: '1', microchip: 'MX001' },
-  { id: '2', nombre: 'Luna', especie: 'Felino', raza: 'Siamés', sexo: 'F', edadMeses: 18, pesoKg: 3.5, propietarioId: '2', microchip: 'LN001' },
+  { id: '1', nombre: 'Max', especie: 'Canino', raza: 'Golden Retriever', sexo: 'M', edadMeses: 24, pesoKg: 28, propietarioId: '1' },
+  { id: '2', nombre: 'Luna', especie: 'Felino', raza: 'Siamés', sexo: 'F', edadMeses: 18, pesoKg: 3.5, propietarioId: '2' },
   { id: '3', nombre: 'Rocky', especie: 'Canino', raza: 'Bulldog', sexo: 'M', edadMeses: 36, pesoKg: 22, propietarioId: '3' },
-  { id: '4', nombre: 'Mia', especie: 'Felino', raza: 'Persa', sexo: 'F', edadMeses: 12, pesoKg: 4.2, propietarioId: '4', microchip: 'MI001' },
+  { id: '4', nombre: 'Mia', especie: 'Felino', raza: 'Persa', sexo: 'F', edadMeses: 12, pesoKg: 4.2, propietarioId: '4' },
   { id: '5', nombre: 'Toby', especie: 'Canino', raza: 'Labrador', sexo: 'M', edadMeses: 6, pesoKg: 15, propietarioId: '1' },
   { id: '6', nombre: 'Bella', especie: 'Canino', raza: 'Beagle', sexo: 'F', edadMeses: 30, pesoKg: 12, propietarioId: '2' },
 ];

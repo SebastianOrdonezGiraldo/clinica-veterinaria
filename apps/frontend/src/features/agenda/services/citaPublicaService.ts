@@ -28,7 +28,6 @@ export interface CitaPublicaRequestDTO {
     sexo?: string;
     edadMeses?: number;
     pesoKg?: number;
-    microchip?: string;
     notas?: string;
   };
 }

@@ -9,7 +9,6 @@ export interface PacienteDTO {
   edadMeses?: number;
   pesoKg?: number;
   propietarioId: string;
-  microchip?: string;
   notas?: string;
 }
 

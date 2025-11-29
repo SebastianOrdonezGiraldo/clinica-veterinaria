@@ -200,12 +200,6 @@ export default function HistoriaDetalle() {
               <p className="font-medium">{paciente.pesoKg ? `${paciente.pesoKg} kg` : 'N/A'}</p>
             </div>
           </div>
-          {paciente.microchip && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">Microchip</p>
-              <p className="font-medium">{paciente.microchip}</p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

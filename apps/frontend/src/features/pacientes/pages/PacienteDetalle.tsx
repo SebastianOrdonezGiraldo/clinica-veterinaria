@@ -150,12 +150,6 @@ export default function PacienteDetalle() {
                 <span className="text-muted-foreground">Peso</span>
                 <span className="font-medium">{paciente.pesoKg ? `${paciente.pesoKg} kg` : 'N/A'}</span>
               </div>
-              {paciente.microchip && (
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="text-muted-foreground">Microchip</span>
-                  <span className="font-medium">{paciente.microchip}</span>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

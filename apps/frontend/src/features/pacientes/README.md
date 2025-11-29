@@ -55,7 +55,7 @@ pacientes/
 
 - **Funcionalidad:**
   - Formulario completo validado
-  - Campos: nombre, especie, raza, sexo, edad, peso, microchip, notas
+  - Campos: nombre, especie, raza, sexo, edad, peso, notas
   - Selección de propietario
   - Validaciones con Zod
 
@@ -121,7 +121,6 @@ interface Paciente {
   edadMeses?: number;
   pesoKg?: number;
   propietarioId: string;
-  microchip?: string;
   observaciones?: string;
   propietario?: Propietario;
 }

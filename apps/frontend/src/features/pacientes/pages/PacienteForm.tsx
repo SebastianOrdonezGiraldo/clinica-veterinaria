@@ -25,7 +25,6 @@ const pacienteSchema = z.object({
   edadMeses: z.number().int().positive().optional(),
   pesoKg: z.number().positive().optional(),
   propietarioId: z.string().min(1, 'Propietario es requerido'),
-  microchip: z.string().max(50).optional(),
   notas: z.string().max(500).optional(),
 });
 
@@ -70,7 +69,6 @@ export default function PacienteForm() {
           edadMeses: paciente.edadMeses || undefined,
           pesoKg: paciente.pesoKg || undefined,
           propietarioId: String(paciente.propietarioId),
-          microchip: paciente.microchip || '',
           notas: paciente.notas || '',
         });
       }
@@ -119,7 +117,6 @@ export default function PacienteForm() {
         ...data,
         nombre: sanitizeText(data.nombre),
         raza: data.raza ? sanitizeText(data.raza) : undefined,
-        microchip: data.microchip ? sanitizeText(data.microchip) : undefined,
         notas: data.notas ? sanitizeText(data.notas) : undefined,
         propietarioId: data.propietarioId, // Ya es string
       };
@@ -303,15 +300,6 @@ export default function PacienteForm() {
                   step="0.1"
                   {...register('pesoKg', { valueAsNumber: true })}
                   placeholder="Peso en kilogramos"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="microchip">Microchip</Label>
-                <Input
-                  id="microchip"
-                  {...register('microchip')}
-                  placeholder="Número de microchip"
                 />
               </div>
             </div>
