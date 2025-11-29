@@ -50,7 +50,6 @@ import {
   Clock,
   Calendar,
   Menu,
-  X,
   ChevronUp,
   Mail,
   Send,
@@ -355,7 +354,7 @@ function useScrollReveal() {
 }
 
 // Custom hook for animated counter
-function useAnimatedCounter(end: number, duration: number = 2000, isVisible: boolean) {
+function useAnimatedCounter(end: number, isVisible: boolean, duration: number = 2000) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -388,11 +387,11 @@ function ScrollReveal({
   children, 
   className = '',
   delay = 0 
-}: { 
+}: Readonly<{ 
   children: React.ReactNode; 
   className?: string;
   delay?: number;
-}) {
+}>) {
   const { ref, isVisible } = useScrollReveal();
 
   return (
@@ -417,14 +416,14 @@ function AnimatedStat({
   label, 
   icon: Icon,
   isVisible 
-}: { 
+}: Readonly<{ 
   numero: number; 
   sufijo: string; 
   label: string; 
   icon: React.ElementType;
   isVisible: boolean;
-}) {
-  const count = useAnimatedCounter(numero, 2000, isVisible);
+}>) {
+  const count = useAnimatedCounter(numero, isVisible, 2000);
 
   return (
     <div className="text-center group">
@@ -1169,8 +1168,8 @@ export default function LandingPage() {
                 className="w-full"
               >
                 <CarouselContent className="-ml-2 md:-ml-4">
-                  {testimonios.map((testimonio, index) => (
-                    <CarouselItem key={index} className="pl-2 md:basis-1/2 md:pl-4 lg:basis-1/2">
+                  {testimonios.map((testimonio) => (
+                    <CarouselItem key={`${testimonio.nombre}-${testimonio.mascota}`} className="pl-2 md:basis-1/2 md:pl-4 lg:basis-1/2">
                       <Card className="h-full border-2 border-primary/10 bg-white transition-all duration-300 hover:border-primary/30 hover:shadow-lg">
                         <CardContent className="flex h-full flex-col p-6">
                           <Quote className="mb-4 h-8 w-8 text-primary/30" />
@@ -1187,7 +1186,7 @@ export default function LandingPage() {
                             </div>
                             <div className="ml-auto flex gap-0.5">
                               {Array.from({ length: testimonio.rating }).map((_, i) => (
-                                <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <Star key={`star-${testimonio.nombre}-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                               ))}
                             </div>
                           </div>
@@ -1317,8 +1316,8 @@ export default function LandingPage() {
               <Card className="border-2 border-primary/10 bg-white shadow-xl">
                 <CardContent className="p-6 lg:p-8">
                   <Accordion type="single" collapsible className="w-full">
-                    {preguntasFrecuentes.map((faq, index) => (
-                      <AccordionItem key={index} value={`item-${index}`} className="border-primary/10">
+                    {preguntasFrecuentes.map((faq) => (
+                      <AccordionItem key={faq.pregunta} value={faq.pregunta} className="border-primary/10">
                         <AccordionTrigger className="text-left hover:text-primary hover:no-underline">
                           <div className="flex items-center gap-3">
                             <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
