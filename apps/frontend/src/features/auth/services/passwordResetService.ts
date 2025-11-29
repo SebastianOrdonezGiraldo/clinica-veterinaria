@@ -22,6 +22,8 @@ export interface ResetPasswordResponse {
 
 export interface ValidateTokenResponse {
   valid: boolean;
+  expiresAt?: string;
+  expiresInHours?: number;
 }
 
 export const passwordResetService = {
@@ -59,13 +61,13 @@ export const passwordResetService = {
   },
 
   /**
-   * Valida si un token de recuperación es válido
+   * Valida si un token de recuperación es válido y obtiene información adicional
    */
-  async validateToken(token: string): Promise<boolean> {
+  async validateToken(token: string): Promise<ValidateTokenResponse> {
     const response = await axios.get<ValidateTokenResponse>(
       `/public/password/validate-token?token=${encodeURIComponent(token)}`
     );
-    return response.data.valid;
+    return response.data;
   },
 };
 

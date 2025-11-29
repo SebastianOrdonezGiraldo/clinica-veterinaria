@@ -47,6 +47,9 @@ public abstract class BaseIntegrationTest {
     protected ConsultaRepository consultaRepository;
 
     @Autowired
+    protected PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
     protected PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -62,10 +65,18 @@ public abstract class BaseIntegrationTest {
     @BeforeEach
     void baseSetUp() {
         // Limpiar base de datos en el orden correcto (respetando claves foráneas)
+        passwordResetTokenRepository.deleteAll();
         consultaRepository.deleteAll();
         citaRepository.deleteAll();
         pacienteRepository.deleteAll();
         propietarioRepository.deleteAll();
+        
+        // Eliminar usuarios específicos si existen (para evitar conflictos en ejecución paralela)
+        usuarioRepository.findByEmail("admin@test.com").ifPresent(usuarioRepository::delete);
+        usuarioRepository.findByEmail("vet@test.com").ifPresent(usuarioRepository::delete);
+        usuarioRepository.findByEmail("recepcion@test.com").ifPresent(usuarioRepository::delete);
+        
+        // Limpiar todos los demás usuarios
         usuarioRepository.deleteAll();
 
         // Crear usuarios de prueba

@@ -110,20 +110,18 @@ public class PasswordResetController {
     }
 
     /**
-     * Valida si un token de recuperación es válido.
+     * Valida si un token de recuperación es válido y retorna información adicional.
      * 
      * @param token Token a validar
-     * @return true si el token es válido, false en caso contrario
+     * @return Información del token (válido, fecha de expiración)
      */
     @GetMapping("/validate-token")
-    public ResponseEntity<Map<String, Boolean>> validarToken(@RequestParam String token) {
+    public ResponseEntity<Map<String, Object>> validarToken(@RequestParam String token) {
         log.info("GET /api/public/password/validate-token");
         
-        boolean isValid = passwordResetService.validarToken(token);
+        Map<String, Object> tokenInfo = passwordResetService.obtenerInfoToken(token);
         
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("valid", isValid);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(tokenInfo);
     }
 }
 

@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -301,6 +304,35 @@ public class PasswordResetService {
         return tokenRepository.findByToken(token)
             .map(PasswordResetToken::isValid)
             .orElse(false);
+    }
+
+    /**
+     * Obtiene información completa del token (válido, fecha de expiración).
+     * 
+     * @param token Token a consultar
+     * @return Map con información del token
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> obtenerInfoToken(@NonNull String token) {
+        Map<String, Object> info = new HashMap<>();
+        
+        Optional<PasswordResetToken> tokenOpt = tokenRepository.findByToken(token);
+        
+        if (tokenOpt.isPresent()) {
+            PasswordResetToken resetToken = tokenOpt.get();
+            info.put("valid", resetToken.isValid());
+            info.put("expiresAt", resetToken.getExpiresAt());
+            info.put("expiresInHours", java.time.Duration.between(
+                LocalDateTime.now(), 
+                resetToken.getExpiresAt()
+            ).toHours());
+        } else {
+            info.put("valid", false);
+            info.put("expiresAt", null);
+            info.put("expiresInHours", 0);
+        }
+        
+        return info;
     }
 
     /**

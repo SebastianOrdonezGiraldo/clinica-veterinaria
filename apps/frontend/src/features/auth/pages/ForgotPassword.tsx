@@ -5,8 +5,9 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { toast } from 'sonner';
-import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle2, RefreshCw, Loader2 } from 'lucide-react';
 import { passwordResetService } from '../services/passwordResetService';
+import { useCountdown } from '@shared/hooks/useCountdown';
 
 interface ForgotPasswordProps {
   userType?: 'usuario' | 'cliente';
@@ -17,6 +18,11 @@ export default function ForgotPassword({ userType = 'usuario' }: ForgotPasswordP
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
+  
+  // Countdown de 60 segundos para reenvío
+  const { seconds, start, reset } = useCountdown(60, () => {
+    toast.info('Ya puedes solicitar otro email de recuperación');
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +36,35 @@ export default function ForgotPassword({ userType = 'usuario' }: ForgotPasswordP
       }
       
       setIsSuccess(true);
+      reset(); // Resetear contador
+      start(); // Iniciar countdown para reenvío
       toast.success('Si el email existe, recibirás un enlace de recuperación en breve.');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al solicitar recuperación de contraseña');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (seconds > 0) {
+      toast.warning(`Espera ${seconds} segundos antes de solicitar otro email`);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (userType === 'cliente') {
+        await passwordResetService.forgotPasswordCliente(email);
+      } else {
+        await passwordResetService.forgotPasswordUsuario(email);
+      }
+      
+      reset();
+      start();
+      toast.success('Email de recuperación reenviado');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al reenviar email');
     } finally {
       setIsLoading(false);
     }
@@ -56,11 +88,15 @@ export default function ForgotPassword({ userType = 'usuario' }: ForgotPasswordP
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
+            <div className="p-4 bg-muted rounded-lg space-y-3">
               <p className="text-sm text-muted-foreground">
                 Si el email <strong>{email}</strong> existe en nuestro sistema, 
                 recibirás un enlace de recuperación en breve.
               </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                <span>Revisa tu bandeja de entrada y carpeta de spam</span>
+              </div>
             </div>
             <div className="space-y-2">
               <Button 
@@ -71,13 +107,26 @@ export default function ForgotPassword({ userType = 'usuario' }: ForgotPasswordP
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => {
-                  setIsSuccess(false);
-                  setEmail('');
-                }}
+                onClick={handleResend}
+                disabled={isLoading || seconds > 0}
                 className="w-full"
               >
-                Enviar otro email
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Reenviando...
+                  </>
+                ) : seconds > 0 ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Reenviar en {seconds}s
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Reenviar Email
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
@@ -123,7 +172,17 @@ export default function ForgotPassword({ userType = 'usuario' }: ForgotPasswordP
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Enviar Enlace de Recuperación
+                </>
+              )}
             </Button>
           </form>
 

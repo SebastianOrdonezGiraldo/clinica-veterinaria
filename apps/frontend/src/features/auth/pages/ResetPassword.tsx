@@ -5,7 +5,7 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { toast } from 'sonner';
-import { Lock, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Lock, CheckCircle2, AlertCircle, ArrowLeft, Loader2, Clock } from 'lucide-react';
 import { passwordResetService } from '../services/passwordResetService';
 
 export default function ResetPassword() {
@@ -19,7 +19,32 @@ export default function ResetPassword() {
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const navigate = useNavigate();
+  
+  // Countdown para mostrar tiempo restante
+  const [countdownSeconds, setCountdownSeconds] = useState(0);
+  
+  useEffect(() => {
+    if (expiresAt) {
+      const updateCountdown = () => {
+        const remaining = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+        setCountdownSeconds(remaining);
+      };
+      
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [expiresAt]);
+  
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}h ${minutes}m ${secs}s`;
+  };
 
   useEffect(() => {
     const validateToken = async () => {
@@ -30,9 +55,14 @@ export default function ResetPassword() {
       }
 
       try {
-        const valid = await passwordResetService.validateToken(token);
-        setIsValid(valid);
-        if (!valid) {
+        const tokenInfo = await passwordResetService.validateToken(token);
+        setIsValid(tokenInfo.valid);
+        
+        if (tokenInfo.valid && tokenInfo.expiresAt) {
+          setExpiresAt(new Date(tokenInfo.expiresAt));
+        }
+        
+        if (!tokenInfo.valid) {
           toast.error('El enlace de recuperación no es válido o ha expirado');
         }
       } catch (error: any) {
@@ -82,7 +112,8 @@ export default function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
-            <div className="text-center">
+            <div className="text-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
               <p className="text-muted-foreground">Validando enlace de recuperación...</p>
             </div>
           </CardContent>
@@ -186,6 +217,16 @@ export default function ResetPassword() {
               Ingresa tu nueva contraseña
             </CardDescription>
           </div>
+          {expiresAt && countdownSeconds > 0 && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-center gap-2 text-sm text-blue-700">
+                <Clock className="h-4 w-4" />
+                <span>
+                  Este enlace expira en <strong>{formatTime(countdownSeconds)}</strong>
+                </span>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -230,8 +271,17 @@ export default function ResetPassword() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
+            <Button type="submit" className="w-full" disabled={isLoading || countdownSeconds <= 0}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restableciendo...
+                </>
+              ) : countdownSeconds <= 0 ? (
+                'Enlace Expirado'
+              ) : (
+                'Restablecer Contraseña'
+              )}
             </Button>
           </form>
 
