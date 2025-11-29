@@ -214,9 +214,9 @@ export default function AgendarCitaPublica() {
     try {
       setIsLoading(true);
 
-      // Combinar fecha y hora en formato ISO
-      const fechaHora = new Date(`${data.fecha}T${data.hora}`);
-      const fechaISO = fechaHora.toISOString();
+      // Combinar fecha y hora en formato ISO sin conversión a UTC
+      // El backend espera LocalDateTime, por lo que debemos preservar la hora local
+      const fechaISO = `${data.fecha}T${data.hora}:00`;
 
       let request: CitaPublicaRequestDTO;
 

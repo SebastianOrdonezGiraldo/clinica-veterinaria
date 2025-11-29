@@ -240,7 +240,7 @@ export default function ClienteDashboard() {
                     <Button
                       variant="outline"
                       className="mt-4"
-                      onClick={() => navigate('/agendar-cita')}
+                      onClick={() => navigate('/cliente/agendar-cita')}
                     >
                       Agendar una cita
                     </Button>
@@ -445,7 +445,7 @@ export default function ClienteDashboard() {
                       onClick={() => navigate('/agendar-cita')}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Registrar mascota al agendar cita
+                      Registrar mascota (formulario público)
                     </Button>
                   </div>
                 )}
@@ -495,7 +495,7 @@ export default function ClienteDashboard() {
                 <div className="space-y-2">
                   <Button
                     className="w-full"
-                    onClick={() => navigate('/agendar-cita')}
+                    onClick={() => navigate('/cliente/agendar-cita')}
                   >
                     <Calendar className="h-4 w-4 mr-2" />
                     Agendar Nueva Cita

@@ -2,6 +2,26 @@ import axios from '@core/api/axios';
 import { Cita, Paciente, Propietario } from '@core/types';
 
 /**
+ * Helper para normalizar IDs de pacientes (convertir números a strings)
+ */
+const normalizePaciente = (paciente: any): Paciente => ({
+  ...paciente,
+  id: String(paciente.id),
+  propietarioId: String(paciente.propietarioId),
+});
+
+/**
+ * Helper para normalizar IDs de citas (convertir números a strings)
+ */
+const normalizeCita = (cita: any): Cita => ({
+  ...cita,
+  id: String(cita.id),
+  pacienteId: String(cita.pacienteId),
+  propietarioId: String(cita.propietarioId),
+  profesionalId: String(cita.profesionalId),
+});
+
+/**
  * Servicio para que los clientes vean sus citas y mascotas
  */
 export const clienteService = {
@@ -10,7 +30,10 @@ export const clienteService = {
    */
   async getMiPerfil(): Promise<Propietario> {
     const response = await axios.get<Propietario>('/clientes/mi-perfil');
-    return response.data;
+    return {
+      ...response.data,
+      id: String(response.data.id),
+    };
   },
 
   /**
@@ -18,7 +41,7 @@ export const clienteService = {
    */
   async getMisCitas(): Promise<Cita[]> {
     const response = await axios.get<Cita[]>('/clientes/mis-citas');
-    return response.data;
+    return response.data.map(normalizeCita);
   },
 
   /**
@@ -26,7 +49,7 @@ export const clienteService = {
    */
   async getMisMascotas(): Promise<Paciente[]> {
     const response = await axios.get<Paciente[]>('/clientes/mis-mascotas');
-    return response.data;
+    return response.data.map(normalizePaciente);
   },
 
   /**

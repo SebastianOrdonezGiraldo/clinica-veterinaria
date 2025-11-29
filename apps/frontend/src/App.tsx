@@ -28,6 +28,8 @@ const Agenda = lazy(() => import("@features/agenda/pages/Agenda"));
 const CitaForm = lazy(() => import("@features/agenda/pages/CitaForm"));
 const CitaDetalle = lazy(() => import("@features/agenda/pages/CitaDetalle"));
 const ClienteDashboard = lazy(() => import("@features/clientes/pages/ClienteDashboard"));
+const ClienteLogin = lazy(() => import("@features/clientes/pages/ClienteLogin"));
+const AgendarCitaCliente = lazy(() => import("@features/clientes/pages/AgendarCitaCliente"));
 const EstablecerPassword = lazy(() => import("@features/clientes/pages/EstablecerPassword"));
 const HistoriasClinicas = lazy(() => import("@features/historias/pages/HistoriasClinicas"));
 const HistoriaDetalle = lazy(() => import("@features/historias/pages/HistoriaDetalle"));
@@ -87,6 +89,14 @@ const App = () => (
               
               {/* Rutas del portal del cliente - Lazy loaded */}
               <Route 
+                path="/cliente/login" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ClienteLogin />
+                  </Suspense>
+                } 
+              />
+              <Route 
                 path="/cliente/establecer-password" 
                 element={
                   <Suspense fallback={<PageLoader />}>
@@ -100,6 +110,16 @@ const App = () => (
                   <ClienteProtectedRoute>
                     <Suspense fallback={<PageLoader />}>
                       <ClienteDashboard />
+                    </Suspense>
+                  </ClienteProtectedRoute>
+                }
+              />
+              <Route
+                path="/cliente/agendar-cita"
+                element={
+                  <ClienteProtectedRoute>
+                    <Suspense fallback={<PageLoader />}>
+                      <AgendarCitaCliente />
                     </Suspense>
                   </ClienteProtectedRoute>
                 }
