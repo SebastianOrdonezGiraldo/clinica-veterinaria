@@ -273,16 +273,28 @@ export default function ProductoForm() {
                           type="number"
                           step="1"
                           min="0"
-                          {...field}
-                          value={field.value ?? ''}
+                          value={field.value === 0 ? '' : (field.value ?? '')}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === '') {
+                            if (value === '' || value === '-') {
+                              // Permitir campo vacío temporalmente
+                              return;
+                            }
+                            const intValue = parseInt(value, 10);
+                            if (!isNaN(intValue) && intValue >= 0) {
+                              field.onChange(intValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '-') {
                               field.onChange(0);
                             } else {
                               const intValue = parseInt(value, 10);
                               if (!isNaN(intValue) && intValue >= 0) {
                                 field.onChange(intValue);
+                              } else {
+                                field.onChange(0);
                               }
                             }
                           }}
@@ -307,17 +319,21 @@ export default function ProductoForm() {
                           type="number"
                           step="1"
                           min="0"
-                          {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === '') {
+                            if (value === '' || value === '-') {
                               field.onChange(undefined);
                             } else {
                               const intValue = parseInt(value, 10);
                               if (!isNaN(intValue) && intValue >= 0) {
                                 field.onChange(intValue);
                               }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              field.onChange(undefined);
                             }
                           }}
                         />
@@ -339,17 +355,21 @@ export default function ProductoForm() {
                           type="number"
                           step="1"
                           min="0"
-                          {...field}
                           value={field.value ?? ''}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === '') {
+                            if (value === '' || value === '-') {
                               field.onChange(undefined);
                             } else {
                               const intValue = parseInt(value, 10);
                               if (!isNaN(intValue) && intValue >= 0) {
                                 field.onChange(intValue);
                               }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              field.onChange(undefined);
                             }
                           }}
                         />
@@ -373,8 +393,31 @@ export default function ProductoForm() {
                           type="number"
                           step="0.01"
                           min="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value === 0 ? '' : (field.value ?? '')}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '-') {
+                              // Permitir campo vacío temporalmente
+                              return;
+                            }
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              field.onChange(numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '-') {
+                              field.onChange(0);
+                            } else {
+                              const numValue = parseFloat(value);
+                              if (!isNaN(numValue) && numValue >= 0) {
+                                field.onChange(numValue);
+                              } else {
+                                field.onChange(0);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>Precio de compra</FormDescription>
@@ -394,9 +437,31 @@ export default function ProductoForm() {
                           type="number"
                           step="0.01"
                           min="0"
-                          {...field}
-                          value={field.value ?? ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          value={field.value === 0 ? '' : (field.value ?? '')}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '-') {
+                              // Permitir campo vacío temporalmente
+                              return;
+                            }
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              field.onChange(numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || value === '-') {
+                              field.onChange(undefined);
+                            } else {
+                              const numValue = parseFloat(value);
+                              if (!isNaN(numValue) && numValue >= 0) {
+                                field.onChange(numValue);
+                              } else {
+                                field.onChange(undefined);
+                              }
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormDescription>Precio de venta (opcional)</FormDescription>
