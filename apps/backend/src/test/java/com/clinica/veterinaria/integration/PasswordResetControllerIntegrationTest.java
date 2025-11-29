@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
+import jakarta.persistence.EntityManager;
 
 import java.time.LocalDateTime;
 
@@ -41,6 +42,9 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private Usuario testUsuario;
     private Propietario testPropietario;
@@ -142,8 +146,9 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").exists());
 
-        // Forzar flush y refrescar desde la base de datos
-        tokenRepository.flush();
+        // Forzar flush y limpiar el contexto de persistencia para refrescar desde la BD
+        entityManager.flush();
+        entityManager.clear();
         PasswordResetToken tokenActualizado = tokenRepository.findByToken(tokenValido.getToken()).orElse(null);
         assertNotNull(tokenActualizado, "El token debe existir");
         assertTrue(tokenActualizado.getUsado(), "El token debe estar marcado como usado");
@@ -236,8 +241,9 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
                 .content(toJson(request)))
             .andExpect(status().isOk());
 
-        // Forzar flush para asegurar que el token se marca como usado
-        tokenRepository.flush();
+        // Forzar flush y limpiar el contexto de persistencia para refrescar desde la BD
+        entityManager.flush();
+        entityManager.clear();
 
         // Segunda vez - debe fallar porque el token ya fue usado
         mockMvc.perform(post("/api/public/password/reset")
@@ -308,6 +314,12 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("POST /api/public/password/forgot-usuario - Debe invalidar tokens anteriores")
     void testForgotPasswordUsuario_InvalidarTokensAnteriores() throws Exception {
+        // Asegurar que el usuario tiene contraseña establecida
+        testUsuario.setPassword(passwordEncoder.encode("password123"));
+        testUsuario = usuarioRepository.save(testUsuario);
+        entityManager.flush();
+        entityManager.clear();
+
         // Crear un token anterior válido
         PasswordResetToken tokenAnterior = PasswordResetToken.builder()
             .token("anterior-token-123")
@@ -317,6 +329,7 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
             .usado(false)
             .build();
         tokenAnterior = tokenRepository.save(tokenAnterior);
+        entityManager.flush();
         
         // Verificar que el token se guardó correctamente
         assertNotNull(tokenAnterior.getId());
@@ -333,7 +346,8 @@ class PasswordResetControllerIntegrationTest extends BaseIntegrationTest {
             .andExpect(status().isOk());
 
         // Refrescar el token desde la base de datos
-        tokenRepository.flush();
+        entityManager.flush();
+        entityManager.clear();
         PasswordResetToken tokenAnteriorActualizado = tokenRepository.findByToken("anterior-token-123").orElse(null);
         
         // El token anterior debería estar marcado como usado
