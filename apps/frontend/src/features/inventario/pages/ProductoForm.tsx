@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Plus } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Textarea } from '@shared/components/ui/textarea';
@@ -37,7 +37,7 @@ export default function ProductoForm() {
   const productoId = id ? parseInt(id) : null;
 
   const { data: producto, isLoading: isLoadingProducto } = useProducto(productoId);
-  const { data: categorias = [] } = useCategorias();
+  const { data: categorias = [], isLoading: isLoadingCategorias } = useCategorias();
   const { mutate: createProducto, isPending: isCreating } = useCreateProducto();
   const { mutate: updateProducto, isPending: isUpdating } = useUpdateProducto();
 
@@ -184,24 +184,64 @@ export default function ProductoForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Categoría *</FormLabel>
-                      <Select
-                        value={field.value?.toString()}
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar categoría" />
+                      {isLoadingCategorias ? (
+                        <div className="space-y-2">
+                          <SelectTrigger disabled>
+                            <SelectValue placeholder="Cargando categorías..." />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categorias.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id.toString()}>
-                              {cat.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
+                        </div>
+                      ) : categorias.length === 0 ? (
+                        <div className="space-y-2">
+                          <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 p-4">
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+                              <strong>No hay categorías disponibles.</strong> Debes crear al menos una categoría antes de crear un producto.
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate('/inventario/categorias/nueva')}
+                              className="gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Crear Categoría
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </div>
+                      ) : (
+                        <>
+                          <Select
+                            value={field.value?.toString()}
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar categoría" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categorias.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.id.toString()}>
+                                  {cat.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => navigate('/inventario/categorias/nueva')}
+                            >
+                              + Crear nueva categoría
+                            </Button>
+                          </FormDescription>
+                          <FormMessage />
+                        </>
+                      )}
                     </FormItem>
                   )}
                 />
