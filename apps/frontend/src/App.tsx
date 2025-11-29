@@ -45,6 +45,14 @@ const Reportes = lazy(() => import("@features/reportes/pages/Reportes"));
 const SeguridadRoles = lazy(() => import("@features/usuarios/pages/SeguridadRoles"));
 const SeguridadUsuarios = lazy(() => import("@features/usuarios/pages/SeguridadUsuarios"));
 const Perfil = lazy(() => import("@features/usuarios/pages/Perfil"));
+const Categorias = lazy(() => import("@features/inventario/pages/Categorias"));
+const CategoriaForm = lazy(() => import("@features/inventario/pages/CategoriaForm"));
+const Proveedores = lazy(() => import("@features/inventario/pages/Proveedores"));
+const ProveedorForm = lazy(() => import("@features/inventario/pages/ProveedorForm"));
+const Productos = lazy(() => import("@features/inventario/pages/Productos"));
+const ProductoForm = lazy(() => import("@features/inventario/pages/ProductoForm"));
+const Movimientos = lazy(() => import("@features/inventario/pages/Movimientos"));
+const MovimientoForm = lazy(() => import("@features/inventario/pages/MovimientoForm"));
 const NotFound = lazy(() => import("@shared/components/common/NotFound"));
 
 const queryClient = new QueryClient();
@@ -363,6 +371,95 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <Perfil />
+                  </Suspense>
+                } 
+              />
+              {/* Rutas de Inventario */}
+              <Route 
+                path="/inventario/categorias" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Categorias />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/categorias/nueva" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CategoriaForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/categorias/:id/editar" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CategoriaForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/proveedores" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Proveedores />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/proveedores/nuevo" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProveedorForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/proveedores/:id/editar" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProveedorForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/productos" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Productos />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/productos/nuevo" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProductoForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/productos/:id/editar" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProductoForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/movimientos" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Movimientos />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/inventario/movimientos/:tipo" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <MovimientoForm />
                   </Suspense>
                 } 
               />
