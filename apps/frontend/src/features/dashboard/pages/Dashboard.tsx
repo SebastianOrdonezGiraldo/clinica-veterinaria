@@ -1,11 +1,17 @@
-import { Calendar, Dog, Users, Activity, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Dog, Users, Activity, Clock, CheckCircle2, TrendingUp, Syringe, Package, Pill, AlertCircle, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
 import { Skeleton } from '@shared/components/ui/skeleton';
+import { Button } from '@shared/components/ui/button';
+import { Input } from '@shared/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { useAuth } from '@core/auth/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
+import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed',
@@ -17,7 +23,42 @@ const statusColors = {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { stats, isLoading } = useDashboard();
+  const [filtroFecha, setFiltroFecha] = useState<string>('hoy');
+  const [fechaInicio, setFechaInicio] = useState<string>('');
+  const [fechaFin, setFechaFin] = useState<string>('');
+
+  // Calcular filtros según selección
+  const getFilters = () => {
+    const hoy = new Date();
+    let inicio: string | undefined;
+    let fin: string | undefined;
+
+    switch (filtroFecha) {
+      case 'hoy':
+        const hoyStr = format(hoy, 'yyyy-MM-dd');
+        inicio = hoyStr;
+        fin = hoyStr;
+        break;
+      case 'semana':
+        inicio = format(subDays(hoy, 7), 'yyyy-MM-dd');
+        fin = format(hoy, 'yyyy-MM-dd');
+        break;
+      case 'mes':
+        inicio = format(startOfMonth(hoy), 'yyyy-MM-dd');
+        fin = format(endOfMonth(hoy), 'yyyy-MM-dd');
+        break;
+      case 'personalizado':
+        inicio = fechaInicio || undefined;
+        fin = fechaFin || undefined;
+        break;
+      default:
+        break;
+    }
+
+    return { fechaInicio: inicio, fechaFin: fin };
+  };
+
+  const { stats, isLoading } = useDashboard(getFilters());
 
   if (isLoading) {
     return (
@@ -58,6 +99,42 @@ export default function Dashboard() {
     { title: 'Propietarios', value: stats.totalPropietarios.toString(), icon: Users, color: 'text-info', link: '/propietarios' },
   ];
 
+  // Tarjetas adicionales si están disponibles
+  const additionalCards = [];
+  if (stats.vacunacionesProximas !== undefined) {
+    additionalCards.push({ 
+      title: 'Vacunaciones Próximas', 
+      value: stats.vacunacionesProximas.toString(), 
+      icon: Syringe, 
+      color: 'text-primary', 
+      link: '/vacunaciones?tab=proximas',
+      badge: stats.vacunacionesVencidas && stats.vacunacionesVencidas > 0 
+        ? { text: `${stats.vacunacionesVencidas} vencidas`, variant: 'destructive' as const }
+        : undefined
+    });
+  }
+  if (stats.productosStockBajo !== undefined) {
+    additionalCards.push({ 
+      title: 'Productos Stock Bajo', 
+      value: stats.productosStockBajo.toString(), 
+      icon: Package, 
+      color: 'text-destructive', 
+      link: '/inventario/productos',
+      badge: stats.productosStockBajo > 0 
+        ? { text: 'Revisar', variant: 'destructive' as const }
+        : undefined
+    });
+  }
+  if (stats.prescripcionesMes !== undefined) {
+    additionalCards.push({ 
+      title: 'Prescripciones Mes', 
+      value: stats.prescripcionesMes.toString(), 
+      icon: Pill, 
+      color: 'text-info', 
+      link: '/prescripciones' 
+    });
+  }
+
   // Mapear próximas citas al formato esperado
   const upcomingAppointments = stats.proximasCitas.map(cita => ({
     id: cita.id,
@@ -69,9 +146,43 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Bienvenido, {user?.nombre}</h1>
-        <p className="text-muted-foreground mt-1">Resumen de actividades del día</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Bienvenido, {user?.nombre}</h1>
+          <p className="text-muted-foreground mt-1">Resumen de actividades</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          <Select value={filtroFecha} onValueChange={setFiltroFecha}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filtrar por fecha" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoy">Hoy</SelectItem>
+              <SelectItem value="semana">Última semana</SelectItem>
+              <SelectItem value="mes">Este mes</SelectItem>
+              <SelectItem value="personalizado">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {filtroFecha === 'personalizado' && (
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                placeholder="Desde"
+                className="w-[140px]"
+              />
+              <Input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                placeholder="Hasta"
+                className="w-[140px]"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -89,6 +200,30 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+        {additionalCards.map((stat) => (
+          <Card 
+            key={stat.title}
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate(stat.link)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold">{stat.value}</div>
+                {stat.badge && (
+                  <Badge variant={stat.badge.variant} className="text-xs">
+                    {stat.badge.text}
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -138,42 +273,63 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div 
-                className="flex gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-                onClick={() => navigate('/historias')}
-              >
-                <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Consulta completada</p>
-                  <p className="text-xs text-muted-foreground">Max - Hace 15 minutos</p>
-                </div>
-              </div>
-              <div 
-                className="flex gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-                onClick={() => navigate('/agenda')}
-              >
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Nueva cita agendada</p>
-                  <p className="text-xs text-muted-foreground">Luna - Hace 1 hora</p>
-                </div>
-              </div>
-              <div 
-                className="flex gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-                onClick={() => navigate('/pacientes')}
-              >
-                <div className="h-8 w-8 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
-                  <Dog className="h-4 w-4 text-info" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Nuevo paciente registrado</p>
-                  <p className="text-xs text-muted-foreground">Toby - Hace 2 horas</p>
-                </div>
-              </div>
+              {stats.actividadReciente && stats.actividadReciente.length > 0 ? (
+                stats.actividadReciente.map((actividad, index) => {
+                  const getIcon = () => {
+                    switch (actividad.tipo) {
+                      case 'CONSULTA':
+                        return <CheckCircle2 className="h-4 w-4 text-secondary" />;
+                      case 'CITA':
+                        return <Calendar className="h-4 w-4 text-primary" />;
+                      case 'PACIENTE':
+                        return <Dog className="h-4 w-4 text-info" />;
+                      case 'PRESCRIPCION':
+                        return <Pill className="h-4 w-4 text-primary" />;
+                      case 'VACUNACION':
+                        return <Syringe className="h-4 w-4 text-primary" />;
+                      default:
+                        return <Activity className="h-4 w-4 text-muted-foreground" />;
+                    }
+                  };
+
+                  const getBgColor = () => {
+                    switch (actividad.tipo) {
+                      case 'CONSULTA':
+                        return 'bg-secondary/10';
+                      case 'CITA':
+                        return 'bg-primary/10';
+                      case 'PACIENTE':
+                        return 'bg-info/10';
+                      case 'PRESCRIPCION':
+                        return 'bg-primary/10';
+                      case 'VACUNACION':
+                        return 'bg-primary/10';
+                      default:
+                        return 'bg-muted';
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
+                      onClick={() => actividad.link && navigate(actividad.link)}
+                    >
+                      <div className={`h-8 w-8 rounded-full ${getBgColor()} flex items-center justify-center flex-shrink-0`}>
+                        {getIcon()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{actividad.descripcion}</p>
+                        <p className="text-xs text-muted-foreground">{actividad.fecha}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay actividad reciente
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -187,7 +343,11 @@ export default function Dashboard() {
               <TrendingUp className="h-5 w-5 text-primary" />
               Consultas por Día
             </CardTitle>
-            <CardDescription>Últimos 7 días</CardDescription>
+            <CardDescription>
+              {filtroFecha === 'hoy' ? 'Últimos 7 días' : 
+               filtroFecha === 'semana' ? 'Última semana' :
+               filtroFecha === 'mes' ? 'Este mes' : 'Período seleccionado'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -246,6 +406,133 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráficos adicionales */}
+      {stats.citasPorEstado && stats.citasPorEstado.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Citas por Estado
+              </CardTitle>
+              <CardDescription>Distribución de citas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.citasPorEstado} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" className="text-xs" />
+                  <YAxis dataKey="estado" type="category" className="text-xs" width={80} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '0.5rem'
+                    }}
+                  />
+                  <Bar dataKey="cantidad" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {stats.tendenciasConsultas && stats.tendenciasConsultas.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Tendencias de Consultas
+                </CardTitle>
+                <CardDescription>Últimos 30 días</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={stats.tendenciasConsultas}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="fecha" className="text-xs" angle={-45} textAnchor="end" height={80} />
+                    <YAxis className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '0.5rem'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="consultas" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Alertas y recordatorios */}
+      {(stats.vacunacionesVencidas && stats.vacunacionesVencidas > 0) || 
+       (stats.productosStockBajo && stats.productosStockBajo > 0) ? (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Alertas y Recordatorios
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.vacunacionesVencidas && stats.vacunacionesVencidas > 0 && (
+                <div 
+                  className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors"
+                  onClick={() => navigate('/vacunaciones?tab=vencidas')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Syringe className="h-5 w-5 text-destructive" />
+                    <div>
+                      <p className="font-medium text-destructive">
+                        {stats.vacunacionesVencidas} vacunación{stats.vacunacionesVencidas > 1 ? 'es' : ''} vencida{stats.vacunacionesVencidas > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Requieren atención inmediata
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Ver
+                  </Button>
+                </div>
+              )}
+              {stats.productosStockBajo && stats.productosStockBajo > 0 && (
+                <div 
+                  className="flex items-center justify-between p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 cursor-pointer hover:bg-orange-500/20 transition-colors"
+                  onClick={() => navigate('/inventario/productos')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium text-orange-600">
+                        {stats.productosStockBajo} producto{stats.productosStockBajo > 1 ? 's' : ''} con stock bajo
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Revisar inventario
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Ver
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

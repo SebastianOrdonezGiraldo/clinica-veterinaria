@@ -46,12 +46,37 @@ public class DashboardController {
     /**
      * Obtiene todas las estadísticas del dashboard.
      * 
+     * @param fechaInicio Fecha de inicio para filtros (opcional, formato: yyyy-MM-dd)
+     * @param fechaFin Fecha de fin para filtros (opcional, formato: yyyy-MM-dd)
      * @return DTO con todas las estadísticas del dashboard
      */
     @GetMapping("/stats")
-    public ResponseEntity<DashboardStatsDTO> getStats() {
-        log.info("GET /api/dashboard/stats");
-        DashboardStatsDTO stats = dashboardService.getDashboardStats();
+    public ResponseEntity<DashboardStatsDTO> getStats(
+        @RequestParam(required = false) String fechaInicio,
+        @RequestParam(required = false) String fechaFin
+    ) {
+        log.info("GET /api/dashboard/stats - fechaInicio: {}, fechaFin: {}", fechaInicio, fechaFin);
+        
+        java.time.LocalDate inicio = null;
+        java.time.LocalDate fin = null;
+        
+        if (fechaInicio != null && !fechaInicio.isEmpty()) {
+            try {
+                inicio = java.time.LocalDate.parse(fechaInicio);
+            } catch (Exception e) {
+                log.warn("Fecha de inicio inválida: {}", fechaInicio);
+            }
+        }
+        
+        if (fechaFin != null && !fechaFin.isEmpty()) {
+            try {
+                fin = java.time.LocalDate.parse(fechaFin);
+            } catch (Exception e) {
+                log.warn("Fecha de fin inválida: {}", fechaFin);
+            }
+        }
+        
+        DashboardStatsDTO stats = dashboardService.getDashboardStats(inicio, fin);
         return ResponseEntity.ok(stats);
     }
 }

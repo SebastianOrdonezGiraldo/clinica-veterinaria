@@ -40,6 +40,10 @@ public class DashboardStatsDTO {
     private Long pacientesActivos;
     private Long consultasPendientes;
     private Long totalPropietarios;
+    private Long vacunacionesProximas;
+    private Long vacunacionesVencidas;
+    private Long productosStockBajo;
+    private Long prescripcionesMes;
 
     /**
      * Próximas citas de hoy (máximo 4)
@@ -55,6 +59,21 @@ public class DashboardStatsDTO {
      * Distribución de pacientes por especie
      */
     private List<DistribucionEspecieDTO> distribucionEspecies;
+
+    /**
+     * Citas por estado (para gráfico)
+     */
+    private List<CitasPorEstadoDTO> citasPorEstado;
+
+    /**
+     * Tendencias de consultas (últimos 30 días)
+     */
+    private List<TendenciaConsultaDTO> tendenciasConsultas;
+
+    /**
+     * Actividad reciente
+     */
+    private List<ActividadRecienteDTO> actividadReciente;
 
     /**
      * DTO para próxima cita
@@ -95,6 +114,45 @@ public class DashboardStatsDTO {
         private String nombre;
         private Long valor;
         private String color;
+    }
+
+    /**
+     * DTO para citas por estado
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CitasPorEstadoDTO {
+        private String estado;
+        private Long cantidad;
+        private String color;
+    }
+
+    /**
+     * DTO para tendencias de consultas
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TendenciaConsultaDTO {
+        private String fecha;
+        private Long consultas;
+    }
+
+    /**
+     * DTO para actividad reciente
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ActividadRecienteDTO {
+        private String tipo; // CONSULTA, CITA, PACIENTE, PRESCRIPCION, VACUNACION
+        private String descripcion;
+        private String fecha;
+        private String link;
     }
 }
 

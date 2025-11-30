@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { dashboardService, DashboardStats } from '../services/dashboardService';
+import { dashboardService, DashboardStats, DashboardFilters } from '../services/dashboardService';
 import { useApiError } from '@shared/hooks/useApiError';
 
 /**
@@ -9,8 +9,9 @@ import { useApiError } from '@shared/hooks/useApiError';
  * - Refetch automático cada 30 segundos para datos actualizados
  * - Cache de 15 segundos para evitar llamadas innecesarias
  * - Manejo automático de errores
+ * - Soporte para filtros por fecha
  */
-export function useDashboard() {
+export function useDashboard(filters?: DashboardFilters) {
   const { handleError } = useApiError();
 
   const {
@@ -19,8 +20,8 @@ export function useDashboard() {
     error,
     refetch,
   } = useQuery<DashboardStats>({
-    queryKey: ['dashboard', 'stats'],
-    queryFn: () => dashboardService.getStats(),
+    queryKey: ['dashboard', 'stats', filters],
+    queryFn: () => dashboardService.getStats(filters),
     staleTime: 15000, // 15 segundos - datos frescos
     gcTime: 2 * 60 * 1000, // 2 minutos en cache
     refetchInterval: 30000, // Refetch automático cada 30 segundos
