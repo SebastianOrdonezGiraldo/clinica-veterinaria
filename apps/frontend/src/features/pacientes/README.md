@@ -183,7 +183,6 @@ npm run test:e2e -- features/pacientes
 
 ## 📝 Mejoras Futuras
 
-- [ ] Subida de fotos de pacientes
 - [ ] Gráficos de evolución de peso
 - [ ] Alertas de vacunación
 - [ ] Exportar historial a PDF
