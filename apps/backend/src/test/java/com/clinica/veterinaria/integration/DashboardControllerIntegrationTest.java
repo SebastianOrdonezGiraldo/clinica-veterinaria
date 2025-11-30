@@ -106,7 +106,14 @@ class DashboardControllerIntegrationTest extends BaseIntegrationTest {
             .andExpect(jsonPath("$.totalPropietarios").exists())
             .andExpect(jsonPath("$.proximasCitas").isArray())
             .andExpect(jsonPath("$.consultasPorDia").isArray())
-            .andExpect(jsonPath("$.distribucionEspecies").isArray());
+            .andExpect(jsonPath("$.distribucionEspecies").isArray())
+            .andExpect(jsonPath("$.vacunacionesProximas").exists())
+            .andExpect(jsonPath("$.vacunacionesVencidas").exists())
+            .andExpect(jsonPath("$.productosStockBajo").exists())
+            .andExpect(jsonPath("$.prescripcionesMes").exists())
+            .andExpect(jsonPath("$.citasPorEstado").isArray())
+            .andExpect(jsonPath("$.tendenciasConsultas").isArray())
+            .andExpect(jsonPath("$.actividadReciente").isArray());
     }
 
     @Test
@@ -138,6 +145,21 @@ class DashboardControllerIntegrationTest extends BaseIntegrationTest {
             .andExpect(jsonPath("$.distribucionEspecies", hasSize(3))) // Caninos, Felinos, Otros
             .andExpect(jsonPath("$.distribucionEspecies[0].nombre").exists())
             .andExpect(jsonPath("$.distribucionEspecies[0].valor").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/dashboard/stats - Debe aceptar filtros de fecha")
+    void testObtenerEstadisticas_ConFiltrosFecha() throws Exception {
+        String fechaInicio = "2025-01-01";
+        String fechaFin = "2025-01-31";
+
+        mockMvc.perform(get("/api/dashboard/stats")
+                .param("fechaInicio", fechaInicio)
+                .param("fechaFin", fechaFin)
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.citasHoy").exists())
+            .andExpect(jsonPath("$.consultasPorDia").isArray());
     }
 }
 

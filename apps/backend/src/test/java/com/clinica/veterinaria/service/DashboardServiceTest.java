@@ -6,10 +6,8 @@ import com.clinica.veterinaria.entity.Consulta;
 import com.clinica.veterinaria.entity.Paciente;
 import com.clinica.veterinaria.entity.Propietario;
 import com.clinica.veterinaria.entity.Usuario;
-import com.clinica.veterinaria.repository.CitaRepository;
-import com.clinica.veterinaria.repository.ConsultaRepository;
-import com.clinica.veterinaria.repository.PacienteRepository;
-import com.clinica.veterinaria.repository.PropietarioRepository;
+import com.clinica.veterinaria.repository.*;
+import com.clinica.veterinaria.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +44,15 @@ class DashboardServiceTest {
 
     @Mock
     private ConsultaRepository consultaRepository;
+
+    @Mock
+    private VacunacionRepository vacunacionRepository;
+
+    @Mock
+    private ProductoRepository productoRepository;
+
+    @Mock
+    private PrescripcionRepository prescripcionRepository;
 
     @InjectMocks
     private DashboardService dashboardService;
@@ -143,6 +150,16 @@ class DashboardServiceTest {
             .thenReturn(Arrays.asList(propietario));
         when(consultaRepository.findByFechaBetween(any(), any()))
             .thenReturn(Arrays.asList(consulta1));
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList(cita1, cita2));
 
         // Act
         DashboardStatsDTO resultado = dashboardService.getDashboardStats();
@@ -156,12 +173,25 @@ class DashboardServiceTest {
         assertNotNull(resultado.getProximasCitas());
         assertNotNull(resultado.getConsultasPorDia());
         assertNotNull(resultado.getDistribucionEspecies());
+        assertNotNull(resultado.getCitasPorEstado());
+        assertNotNull(resultado.getTendenciasConsultas());
+        assertNotNull(resultado.getActividadReciente());
         
-        // Se llama 2 veces: una en getDashboardStats y otra en getProximasCitas
-        verify(citaRepository, times(2)).findByFechaBetween(any(), any());
+        // Verificar nuevas métricas
+        assertNotNull(resultado.getVacunacionesProximas());
+        assertNotNull(resultado.getVacunacionesVencidas());
+        assertNotNull(resultado.getProductosStockBajo());
+        assertNotNull(resultado.getPrescripcionesMes());
+        
+        // Se llama múltiples veces: en getDashboardStats, getProximasCitas y getActividadReciente
+        verify(citaRepository, atLeast(2)).findByFechaBetween(any(), any());
         // Se llama 2 veces: una en getDashboardStats y otra en getDistribucionEspecies
         verify(pacienteRepository, times(2)).findByActivo(true);
         verify(propietarioRepository, times(1)).findByActivo(true);
+        verify(vacunacionRepository, times(1)).findProximasAVencer(any(), any());
+        verify(vacunacionRepository, times(1)).findVencidas(any());
+        verify(productoRepository, times(1)).findProductosConStockBajo();
+        verify(prescripcionRepository, times(1)).findByFechaEmisionBetween(any(), any());
     }
 
     @Test
@@ -217,6 +247,16 @@ class DashboardServiceTest {
             .thenReturn(Arrays.asList(propietario));
         when(consultaRepository.findByFechaBetween(any(), any()))
             .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList());
 
         // Act
         DashboardStatsDTO resultado = dashboardService.getDashboardStats();
@@ -252,6 +292,16 @@ class DashboardServiceTest {
         when(propietarioRepository.findByActivo(true))
             .thenReturn(Arrays.asList());
         when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
             .thenReturn(Arrays.asList());
 
         // Act
@@ -304,6 +354,16 @@ class DashboardServiceTest {
             .thenReturn(Arrays.asList(propietario));
         when(consultaRepository.findByFechaBetween(any(), any()))
             .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList());
 
         // Act
         DashboardStatsDTO resultado = dashboardService.getDashboardStats();
@@ -318,6 +378,309 @@ class DashboardServiceTest {
                 assertTrue(fecha1.isBefore(fecha2) || fecha1.isEqual(fecha2));
             }
         }
+    }
+
+    @Test
+    @DisplayName("Debe obtener estadísticas con filtros de fecha")
+    void testGetDashboardStats_ConFiltrosFecha() {
+        // Arrange
+        LocalDate fechaInicio = LocalDate.now().minusDays(7);
+        LocalDate fechaFin = LocalDate.now();
+
+        when(citaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList(cita1, cita2));
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1, paciente2));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList(cita1, cita2));
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList(consulta1));
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList(cita1, cita2));
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats(fechaInicio, fechaFin);
+
+        // Assert
+        assertNotNull(resultado);
+        // Se llama múltiples veces: en getConsultasPorDia, getTendenciasConsultas y getActividadReciente
+        verify(consultaRepository, atLeast(1)).findByFechaBetween(any(), any());
+    }
+
+    @Test
+    @DisplayName("Debe calcular vacunaciones próximas y vencidas")
+    void testGetDashboardStats_Vacunaciones() {
+        // Arrange
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicioHoy = hoy.atStartOfDay();
+        LocalDateTime finHoy = hoy.atTime(LocalTime.MAX);
+
+        Vacuna vacuna = Vacuna.builder()
+            .id(1L)
+            .nombre("Antirrábica")
+            .especie("Canino")
+            .activo(true)
+            .build();
+
+        Vacunacion vacunacionProxima = Vacunacion.builder()
+            .id(1L)
+            .paciente(paciente1)
+            .vacuna(vacuna)
+            .proximaDosis(hoy.plusDays(15))
+            .build();
+
+        Vacunacion vacunacionVencida = Vacunacion.builder()
+            .id(2L)
+            .paciente(paciente2)
+            .vacuna(vacuna)
+            .proximaDosis(hoy.minusDays(5))
+            .build();
+
+        when(citaRepository.findByFechaBetween(inicioHoy, finHoy))
+            .thenReturn(Arrays.asList());
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1, paciente2));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList());
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList(vacunacionProxima));
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList(vacunacionVencida));
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList());
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats();
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals(1L, resultado.getVacunacionesProximas());
+        assertEquals(1L, resultado.getVacunacionesVencidas());
+    }
+
+    @Test
+    @DisplayName("Debe calcular productos con stock bajo")
+    void testGetDashboardStats_ProductosStockBajo() {
+        // Arrange
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicioHoy = hoy.atStartOfDay();
+        LocalDateTime finHoy = hoy.atTime(LocalTime.MAX);
+
+        CategoriaProducto categoria = CategoriaProducto.builder()
+            .id(1L)
+            .nombre("Medicamentos")
+            .build();
+
+        Producto productoStockBajo = Producto.builder()
+            .id(1L)
+            .nombre("Medicamento A")
+            .stockActual(java.math.BigDecimal.valueOf(5))
+            .stockMinimo(java.math.BigDecimal.valueOf(10))
+            .activo(true)
+            .categoria(categoria)
+            .build();
+
+        when(citaRepository.findByFechaBetween(inicioHoy, finHoy))
+            .thenReturn(Arrays.asList());
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList());
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList(productoStockBajo));
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList());
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats();
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals(1L, resultado.getProductosStockBajo());
+    }
+
+    @Test
+    @DisplayName("Debe calcular prescripciones del mes")
+    void testGetDashboardStats_PrescripcionesMes() {
+        // Arrange
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicioHoy = hoy.atStartOfDay();
+        LocalDateTime finHoy = hoy.atTime(LocalTime.MAX);
+
+        Prescripcion prescripcion = Prescripcion.builder()
+            .id(1L)
+            .fechaEmision(LocalDateTime.now().minusDays(5))
+            .consulta(consulta1)
+            .build();
+
+        when(citaRepository.findByFechaBetween(inicioHoy, finHoy))
+            .thenReturn(Arrays.asList());
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList());
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList(consulta1));
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList(prescripcion));
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList());
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList(consulta1));
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats();
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals(1L, resultado.getPrescripcionesMes());
+    }
+
+    @Test
+    @DisplayName("Debe obtener citas por estado")
+    void testGetDashboardStats_CitasPorEstado() {
+        // Arrange
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicioHoy = hoy.atStartOfDay();
+        LocalDateTime finHoy = hoy.atTime(LocalTime.MAX);
+
+        Cita citaConfirmada = Cita.builder()
+            .id(3L)
+            .fecha(fechaHoy.plusHours(1))
+            .estado(Cita.EstadoCita.CONFIRMADA)
+            .paciente(paciente1)
+            .propietario(propietario)
+            .build();
+
+        Cita citaAtendida = Cita.builder()
+            .id(4L)
+            .fecha(fechaHoy.minusDays(1))
+            .estado(Cita.EstadoCita.ATENDIDA)
+            .paciente(paciente2)
+            .propietario(propietario)
+            .build();
+
+        when(citaRepository.findByFechaBetween(inicioHoy, finHoy))
+            .thenReturn(Arrays.asList(cita1, cita2));
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1, paciente2));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList(cita1, cita2));
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList(cita1, cita2, citaConfirmada, citaAtendida));
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats();
+
+        // Assert
+        assertNotNull(resultado);
+        assertNotNull(resultado.getCitasPorEstado());
+        assertTrue(resultado.getCitasPorEstado().size() > 0);
+        
+        // Verificar que hay citas por estado
+        boolean tieneConfirmada = resultado.getCitasPorEstado().stream()
+            .anyMatch(c -> c.getEstado().equals("CONFIRMADA") && c.getCantidad() > 0);
+        assertTrue(tieneConfirmada);
+    }
+
+    @Test
+    @DisplayName("Debe obtener actividad reciente")
+    void testGetDashboardStats_ActividadReciente() {
+        // Arrange
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime inicioHoy = hoy.atStartOfDay();
+        LocalDateTime finHoy = hoy.atTime(LocalTime.MAX);
+
+        Consulta consultaReciente = Consulta.builder()
+            .id(2L)
+            .fecha(LocalDateTime.now().minusDays(1))
+            .paciente(paciente1)
+            .profesional(veterinario)
+            .build();
+
+        Prescripcion prescripcionReciente = Prescripcion.builder()
+            .id(1L)
+            .fechaEmision(LocalDateTime.now().minusDays(2))
+            .consulta(consultaReciente)
+            .build();
+
+        when(citaRepository.findByFechaBetween(inicioHoy, finHoy))
+            .thenReturn(Arrays.asList(cita1));
+        when(pacienteRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(paciente1));
+        when(citaRepository.findByEstadoIn(any()))
+            .thenReturn(Arrays.asList(cita1));
+        when(propietarioRepository.findByActivo(true))
+            .thenReturn(Arrays.asList(propietario));
+        when(consultaRepository.findByFechaBetween(any(), any()))
+            .thenReturn(Arrays.asList(consulta1, consultaReciente));
+        when(vacunacionRepository.findProximasAVencer(any(), any()))
+            .thenReturn(Arrays.asList());
+        when(vacunacionRepository.findVencidas(any()))
+            .thenReturn(Arrays.asList());
+        when(productoRepository.findProductosConStockBajo())
+            .thenReturn(Arrays.asList());
+        when(prescripcionRepository.findByFechaEmisionBetween(any(), any()))
+            .thenReturn(Arrays.asList(prescripcionReciente));
+        when(citaRepository.findAll())
+            .thenReturn(Arrays.asList(cita1));
+
+        // Act
+        DashboardStatsDTO resultado = dashboardService.getDashboardStats();
+
+        // Assert
+        assertNotNull(resultado);
+        assertNotNull(resultado.getActividadReciente());
+        assertTrue(resultado.getActividadReciente().size() > 0);
+        assertTrue(resultado.getActividadReciente().size() <= 5);
     }
 }
 
