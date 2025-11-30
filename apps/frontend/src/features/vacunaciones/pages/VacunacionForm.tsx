@@ -37,7 +37,7 @@ export default function VacunacionForm() {
   const pacienteIdFromUrl = searchParams.get('pacienteId') || '';
   const { user } = useAuth();
 
-  const { data: vacunas = [], isLoading: isLoadingVacunas } = useVacunasActivas();
+  const { data: vacunas = [], isLoading: isLoadingVacunas, error: errorVacunas } = useVacunasActivas();
   const { pacientes = [] } = useAllPacientes();
   const { data: profesionales = [] } = useQuery({
     queryKey: ['usuarios', 'veterinarios'],
@@ -74,12 +74,15 @@ export default function VacunacionForm() {
   }, [vacuna, numeroDosis, form]);
 
   // Filtrar vacunas por especie del paciente
+  // Si no hay paciente seleccionado, mostrar todas las vacunas activas
+  // Si hay paciente, mostrar vacunas sin especie específica o que coincidan con la especie del paciente
   const vacunasDisponibles = vacunas.filter(v => {
-    if (!pacienteSeleccionado) return true;
+    if (!v.activo) return false; // Solo mostrar vacunas activas
+    if (!pacienteSeleccionado) return true; // Sin paciente, mostrar todas
     const paciente = pacientes.find(p => p.id === pacienteSeleccionado);
-    if (!paciente) return true;
-    // Si la vacuna no tiene especie específica o coincide con la del paciente
-    return !v.especie || v.especie === paciente.especie;
+    if (!paciente) return true; // Paciente no encontrado, mostrar todas
+    // Si la vacuna no tiene especie específica (null o vacío) o coincide con la del paciente
+    return !v.especie || v.especie.trim() === '' || v.especie === paciente.especie;
   });
 
   const onSubmit = (data: VacunacionFormData) => {
@@ -163,14 +166,45 @@ export default function VacunacionForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {vacunasDisponibles.length === 0 ? (
+                        {isLoadingVacunas ? (
                           <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                            No hay vacunas disponibles para esta especie
+                            Cargando vacunas...
+                          </div>
+                        ) : errorVacunas ? (
+                          <div className="px-2 py-1.5 text-sm text-destructive">
+                            Error al cargar vacunas
+                          </div>
+                        ) : vacunasDisponibles.length === 0 ? (
+                          <div className="px-2 py-1.5">
+                            {vacunas.length === 0 ? (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                  No hay vacunas registradas.
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => navigate('/vacunaciones/vacunas/nueva')}
+                                  className="w-full"
+                                >
+                                  Crear Primera Vacuna
+                                </Button>
+                              </div>
+                            ) : pacienteSeleccionado ? (
+                              <p className="text-sm text-muted-foreground">
+                                No hay vacunas disponibles para esta especie
+                              </p>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                No hay vacunas activas disponibles
+                              </p>
+                            )}
                           </div>
                         ) : (
                           vacunasDisponibles.map((vac) => (
                             <SelectItem key={vac.id} value={vac.id}>
-                              {vac.nombre} {vac.especie ? `(${vac.especie})` : ''} - {vac.numeroDosis} dosis
+                              {vac.nombre} {vac.especie ? `(${vac.especie})` : '(Todas las especies)'} - {vac.numeroDosis} dosis
                             </SelectItem>
                           ))
                         )}
