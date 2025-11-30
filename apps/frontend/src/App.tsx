@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@shared/components/common/ProtectedRoute";
 import { ClienteProtectedRoute } from "@shared/components/common/ClienteProtectedRoute";
 import { AppLayout } from "@shared/components/layout/AppLayout";
 import { PageLoader } from "@shared/components/common/PageLoader";
+import { RouteErrorBoundary } from "@shared/components/common/RouteErrorBoundary";
 
 // Páginas críticas (cargadas inmediatamente - necesarias para login/landing)
 import Login from "@features/auth/pages/Login";
@@ -115,25 +116,31 @@ const App = () => (
               <Route 
                 path="/cliente/forgot-password" 
                 element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ForgotPassword userType="cliente" />
-                  </Suspense>
+                  <RouteErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <ForgotPassword userType="cliente" />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 } 
               />
               <Route 
                 path="/cliente/reset-password" 
                 element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ResetPassword />
-                  </Suspense>
+                  <RouteErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <ResetPassword />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 } 
               />
               <Route 
                 path="/cliente/establecer-password" 
                 element={
-                  <Suspense fallback={<PageLoader />}>
-                    <EstablecerPassword />
-                  </Suspense>
+                  <RouteErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <EstablecerPassword />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 } 
               />
               <Route
@@ -159,7 +166,9 @@ const App = () => (
             
             <Route element={
               <ProtectedRoute>
-                <AppLayout />
+                <RouteErrorBoundary>
+                  <AppLayout />
+                </RouteErrorBoundary>
               </ProtectedRoute>
             }>
               <Route 
