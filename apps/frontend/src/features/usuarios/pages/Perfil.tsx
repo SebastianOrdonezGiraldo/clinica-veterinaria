@@ -3,7 +3,8 @@ import { useAuth } from '@core/auth/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { User, Mail, Shield, Save, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Shield, Save, Loader2, Eye, EyeOff, Bell, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@shared/components/ui/card';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -54,6 +55,7 @@ export default function Perfil() {
   const logger = useLogger('Perfil');
   const { handleError, showSuccess } = useApiError();
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -332,6 +334,17 @@ export default function Perfil() {
                 </Badge>
               </div>
             </div>
+
+            <Separator className="my-4" />
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate('/configuracion/recordatorios')}
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Configurar Recordatorios
+            </Button>
 
             <Separator className="my-4" />
 

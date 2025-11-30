@@ -143,6 +143,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/diagnostico/**").permitAll() // Endpoint de diagnóstico público
+                // WebSocket endpoint (la autenticación se maneja en el interceptor)
+                .requestMatchers("/ws/**").permitAll()
                 // Swagger/OpenAPI - múltiples rutas posibles
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
                 

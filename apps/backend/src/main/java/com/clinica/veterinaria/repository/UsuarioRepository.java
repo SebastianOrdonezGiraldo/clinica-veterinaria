@@ -71,6 +71,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByRolAndActivo(Rol rol, Boolean activo);
 
     /**
+     * Busca usuarios activos por múltiples roles
+     * @param roles Lista de roles a buscar
+     * @param activo Estado de actividad
+     * @return Lista de usuarios activos con esos roles
+     */
+    List<Usuario> findByRolInAndActivo(List<Rol> roles, Boolean activo);
+
+    /**
      * Busca usuarios activos
      * @param activo Estado de actividad
      * @return Lista de usuarios activos

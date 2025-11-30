@@ -30,6 +30,7 @@ public class NotificacionService {
 
     private final NotificacionRepository notificacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final WebSocketNotificationService webSocketNotificationService;
 
     /**
      * Obtiene todas las notificaciones de un usuario
@@ -86,6 +87,20 @@ public class NotificacionService {
         notificacion = notificacionRepository.save(notificacion);
         log.info("Notificación creada exitosamente con ID: {}", notificacion.getId());
         
+        // Enviar notificación por WebSocket
+        try {
+            webSocketNotificationService.enviarNotificacionAUsuario(
+                usuario.getId(),
+                com.clinica.veterinaria.dto.NotificacionWebSocketDTO.fromEntity(notificacion)
+            );
+            // Actualizar contador de notificaciones no leídas
+            long count = notificacionRepository.countByUsuarioIdAndLeidaFalse(usuario.getId());
+            webSocketNotificationService.enviarContadorNotificaciones(usuario.getId(), count);
+        } catch (Exception e) {
+            log.warn("Error al enviar notificación por WebSocket: {}", e.getMessage());
+            // No fallar si WebSocket no está disponible
+        }
+        
         return NotificacionDTO.fromEntity(notificacion);
     }
 
@@ -98,6 +113,14 @@ public class NotificacionService {
         if (updated == 0) {
             throw new RuntimeException("Notificación no encontrada o no pertenece al usuario");
         }
+        
+        // Actualizar contador de notificaciones no leídas por WebSocket
+        try {
+            long count = notificacionRepository.countByUsuarioIdAndLeidaFalse(usuarioId);
+            webSocketNotificationService.enviarContadorNotificaciones(usuarioId, count);
+        } catch (Exception e) {
+            log.warn("Error al actualizar contador por WebSocket: {}", e.getMessage());
+        }
     }
 
     /**
@@ -106,6 +129,13 @@ public class NotificacionService {
     public void marcarTodasComoLeidas(@NonNull Long usuarioId) {
         log.info("Marcando todas las notificaciones como leídas para usuario ID: {}", usuarioId);
         notificacionRepository.marcarTodasComoLeidas(usuarioId);
+        
+        // Actualizar contador de notificaciones no leídas por WebSocket
+        try {
+            webSocketNotificationService.enviarContadorNotificaciones(usuarioId, 0L);
+        } catch (Exception e) {
+            log.warn("Error al actualizar contador por WebSocket: {}", e.getMessage());
+        }
     }
 
     /**

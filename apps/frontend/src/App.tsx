@@ -58,6 +58,7 @@ const Vacunas = lazy(() => import("@features/vacunaciones/pages/Vacunas"));
 const VacunaForm = lazy(() => import("@features/vacunaciones/pages/VacunaForm"));
 const Vacunaciones = lazy(() => import("@features/vacunaciones/pages/Vacunaciones"));
 const VacunacionForm = lazy(() => import("@features/vacunaciones/pages/VacunacionForm"));
+const RecordatoriosConfig = lazy(() => import("@features/configuracion/pages/RecordatoriosConfig"));
 const NotFound = lazy(() => import("@shared/components/common/NotFound"));
 
 const queryClient = new QueryClient();
@@ -384,6 +385,14 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <Perfil />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/configuracion/recordatorios" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <RecordatoriosConfig />
                   </Suspense>
                 } 
               />

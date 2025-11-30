@@ -13,6 +13,7 @@ import { notificacionService, Notificacion } from '@features/notificaciones/serv
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useWebSocket } from '@shared/hooks/useWebSocket';
 
 const tipoIcons = {
   CITA: Calendar,
@@ -58,12 +59,50 @@ export function NotificacionesDropdown() {
     }
   };
 
+  // WebSocket para notificaciones en tiempo real
+  useWebSocket({
+    onNotification: (notification: any) => {
+      // Normalizar notificación del WebSocket
+      const normalizedNotification: Notificacion = {
+        id: String(notification.id),
+        usuarioId: String(notification.usuarioId),
+        titulo: notification.titulo,
+        mensaje: notification.mensaje,
+        tipo: notification.tipo,
+        leida: notification.leida || false,
+        fechaCreacion: notification.fechaCreacion,
+        entidadTipo: notification.entidadTipo,
+        entidadId: notification.entidadId ? String(notification.entidadId) : undefined,
+      };
+      
+      // Agregar nueva notificación al inicio de la lista (evitar duplicados)
+      setNotificaciones((prev) => {
+        const exists = prev.some((n) => n.id === normalizedNotification.id);
+        if (exists) {
+          return prev;
+        }
+        return [normalizedNotification, ...prev];
+      });
+      
+      if (!normalizedNotification.leida) {
+        setNoLeidasCount((prev) => prev + 1);
+      }
+      
+      // Mostrar toast para notificaciones importantes
+      if (normalizedNotification.tipo === 'CITA' || normalizedNotification.tipo === 'SISTEMA') {
+        toast.info(normalizedNotification.titulo, {
+          description: normalizedNotification.mensaje,
+          duration: 5000,
+        });
+      }
+    },
+    onNotificationCount: (count: number) => {
+      setNoLeidasCount(count);
+    },
+  });
+
   useEffect(() => {
     loadNotificaciones();
-    
-    // Recargar notificaciones cada 30 segundos
-    const interval = setInterval(loadNotificaciones, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
