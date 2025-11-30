@@ -13,6 +13,7 @@ import { propietarioService } from '@features/propietarios/services/propietarioS
 import { usuarioService } from '@features/usuarios/services/usuarioService';
 import { Prescripcion, Consulta, Paciente, Usuario, Propietario } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { pdfService } from '@shared/services/pdfService';
 
 export default function PrescripcionDetalle() {
   const logger = useLogger('PrescripcionDetalle');
@@ -154,36 +155,28 @@ export default function PrescripcionDetalle() {
     );
   }
 
-  const handleGeneratePDF = async () => {
-    if (!id) return;
-    
+  const handleGeneratePDF = () => {
+    if (!prescripcion || !consulta || !paciente) {
+      toast.error('Faltan datos para generar el PDF');
+      return;
+    }
+
     try {
       toast.loading('Generando PDF...', { id: 'pdf-generation' });
-      
-      const blob = await prescripcionService.downloadPdf(id);
-      
-      // Crear URL temporal para el blob
-      const url = window.URL.createObjectURL(blob);
-      
-      // Crear elemento <a> para descargar
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receta-medica-${prescripcion?.id || id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Limpiar
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('PDF descargado exitosamente', { id: 'pdf-generation' });
+      pdfService.generarPrescripcion(
+        prescripcion,
+        consulta,
+        paciente,
+        propietario,
+        profesional
+      );
+      toast.success('PDF generado exitosamente', { id: 'pdf-generation' });
     } catch (error: any) {
-      logger.error('Error al descargar PDF de prescripción', error, {
-        action: 'downloadPDF',
+      logger.error('Error al generar PDF de prescripción', error, {
+        action: 'generatePDF',
         prescripcionId: id,
       });
-      const errorMessage = error?.response?.data?.message || 'Error al generar el PDF';
-      toast.error(errorMessage, { id: 'pdf-generation' });
+      toast.error('Error al generar el PDF', { id: 'pdf-generation' });
     }
   };
 

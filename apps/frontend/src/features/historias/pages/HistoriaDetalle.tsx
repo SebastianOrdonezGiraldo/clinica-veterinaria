@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Calendar, User, Activity, FileText, Pill } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, User, Activity, FileText, Pill, Download } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
@@ -9,14 +9,17 @@ import { Skeleton } from '@shared/components/ui/skeleton';
 import { toast } from 'sonner';
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { consultaService } from '@features/historias/services/consultaService';
-import { Paciente, Consulta } from '@core/types';
+import { propietarioService } from '@features/propietarios/services/propietarioService';
+import { Paciente, Consulta, Propietario } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { pdfService } from '@shared/services/pdfService';
 
 export default function HistoriaDetalle() {
   const logger = useLogger('HistoriaDetalle');
   const { id } = useParams();
   const navigate = useNavigate();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [propietario, setPropietario] = useState<Propietario | null>(null);
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +45,21 @@ export default function HistoriaDetalle() {
 
       // Procesar resultados
       if (results[0].status === 'fulfilled') {
-        setPaciente(results[0].value);
+        const pacienteData = results[0].value;
+        setPaciente(pacienteData);
+        
+        // Cargar propietario si está disponible
+        if (pacienteData.propietarioId) {
+          try {
+            const propietarioData = await propietarioService.getById(pacienteData.propietarioId);
+            setPropietario(propietarioData);
+          } catch (error) {
+            logger.warn('Error al cargar propietario', {
+              action: 'loadPropietario',
+              propietarioId: pacienteData.propietarioId,
+            });
+          }
+        }
       } else {
         const error = results[0].reason;
         logger.error('Error al cargar paciente para historia clínica', error, {
@@ -159,6 +176,25 @@ export default function HistoriaDetalle() {
     );
   }
 
+  const handleExportPDF = () => {
+    if (!paciente) {
+      toast.error('No se puede exportar: falta información del paciente');
+      return;
+    }
+
+    try {
+      toast.loading('Generando PDF...', { id: 'pdf-historial' });
+      pdfService.generarHistorialClinico(paciente, propietario, consultas);
+      toast.success('PDF generado exitosamente', { id: 'pdf-historial' });
+    } catch (error: any) {
+      logger.error('Error al generar PDF del historial clínico', error, {
+        action: 'exportPDF',
+        pacienteId: id,
+      });
+      toast.error('Error al generar el PDF', { id: 'pdf-historial' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -169,10 +205,16 @@ export default function HistoriaDetalle() {
           <h1 className="text-3xl font-bold text-foreground">Historia Clínica - {paciente.nombre}</h1>
           <p className="text-muted-foreground mt-1">{paciente.especie} • {paciente.raza}</p>
         </div>
-        <Button className="gap-2" onClick={() => navigate(`/historias/${id}/nueva-consulta`)}>
-          <Plus className="h-4 w-4" />
-          Nueva Consulta
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleExportPDF}>
+            <Download className="h-4 w-4" />
+            Exportar PDF
+          </Button>
+          <Button className="gap-2" onClick={() => navigate(`/historias/${id}/nueva-consulta`)}>
+            <Plus className="h-4 w-4" />
+            Nueva Consulta
+          </Button>
+        </div>
       </div>
 
       <Card>
