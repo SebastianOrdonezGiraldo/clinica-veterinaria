@@ -137,3 +137,34 @@ export interface Prescripcion {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Vacuna {
+  id: string;
+  nombre: string;
+  especie?: string;
+  numeroDosis: number;
+  intervaloDias?: number;
+  descripcion?: string;
+  fabricante?: string;
+  activo?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Vacunacion {
+  id: string;
+  pacienteId: string;
+  vacunaId: string;
+  profesionalId: string;
+  fechaAplicacion: string;
+  numeroDosis: number;
+  proximaDosis?: string;
+  lote?: string;
+  observaciones?: string;
+  pacienteNombre?: string;
+  vacunaNombre?: string;
+  profesionalNombre?: string;
+  especiePaciente?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

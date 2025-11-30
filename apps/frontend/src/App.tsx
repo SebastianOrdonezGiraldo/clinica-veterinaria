@@ -53,6 +53,10 @@ const Productos = lazy(() => import("@features/inventario/pages/Productos"));
 const ProductoForm = lazy(() => import("@features/inventario/pages/ProductoForm"));
 const Movimientos = lazy(() => import("@features/inventario/pages/Movimientos"));
 const MovimientoForm = lazy(() => import("@features/inventario/pages/MovimientoForm"));
+const Vacunas = lazy(() => import("@features/vacunaciones/pages/Vacunas"));
+const VacunaForm = lazy(() => import("@features/vacunaciones/pages/VacunaForm"));
+const Vacunaciones = lazy(() => import("@features/vacunaciones/pages/Vacunaciones"));
+const VacunacionForm = lazy(() => import("@features/vacunaciones/pages/VacunacionForm"));
 const NotFound = lazy(() => import("@shared/components/common/NotFound"));
 
 const queryClient = new QueryClient();
@@ -371,6 +375,47 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <Perfil />
+                  </Suspense>
+                } 
+              />
+              {/* Rutas de Vacunaciones */}
+              <Route 
+                path="/vacunaciones" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Vacunaciones />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/vacunaciones/nueva" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <VacunacionForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/vacunaciones/vacunas" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Vacunas />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/vacunaciones/vacunas/nueva" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <VacunaForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/vacunaciones/vacunas/:id/editar" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <VacunaForm />
                   </Suspense>
                 } 
               />
