@@ -12,6 +12,7 @@ import {
   Stethoscope,
   Package,
   Syringe,
+  Receipt,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@core/auth/AuthContext';
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { title: 'Historias', url: '/historias', icon: FileText, roles: ['ADMIN', 'VET', 'ESTUDIANTE'] },
   { title: 'Prescripciones', url: '/prescripciones', icon: Pill, roles: ['ADMIN', 'VET'] },
   { title: 'Vacunaciones', url: '/vacunaciones', icon: Syringe, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
+  { title: 'Facturación', url: '/facturacion', icon: Receipt, roles: ['ADMIN', 'VET', 'RECEPCION'] },
   { title: 'Inventario', url: '/inventario/productos', icon: Package, roles: ['ADMIN', 'VET', 'RECEPCION', 'ESTUDIANTE'] },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, roles: ['ADMIN', 'VET'] },
   { title: 'Seguridad', url: '/seguridad/roles', icon: Shield, roles: ['ADMIN'] },

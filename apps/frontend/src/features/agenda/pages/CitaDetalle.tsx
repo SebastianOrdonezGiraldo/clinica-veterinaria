@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2, FileText, Pill } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, XCircle, AlertCircle, Loader2, FileText, Pill, Receipt } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card';
 import { Badge } from '@shared/components/ui/badge';
@@ -361,6 +361,20 @@ export default function CitaDetalle() {
               >
                 <Pill className="h-4 w-4" />
                 Realizar Fórmula
+              </Button>
+            )}
+
+            {consultaMasReciente && (
+              <Button
+                onClick={() => {
+                  navigate(`/facturacion/nueva?consultaId=${consultaMasReciente.id}`);
+                }}
+                disabled={isUpdating}
+                variant="outline"
+                className="gap-2"
+              >
+                <Receipt className="h-4 w-4" />
+                Crear Factura
               </Button>
             )}
 

@@ -16,6 +16,12 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Polyfill para global (necesario para sockjs-client)
+      if (typeof global === 'undefined') {
+        var global = globalThis;
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

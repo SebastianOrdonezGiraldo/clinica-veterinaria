@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Input } from '@shared/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@shared/components/ui/dropdown-menu';
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subWeeks, addWeeks } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { citaService, EstadoCita } from '@features/agenda/services/citaService';
 import { usuarioService } from '@features/usuarios/services/usuarioService';
@@ -17,6 +17,8 @@ import { Cita, Usuario, PageResponse } from '@core/types';
 import { toast } from 'sonner';
 import { useLogger } from '@shared/hooks/useLogger';
 import { useApiError } from '@shared/hooks/useApiError';
+import AgendaCalendar from '@features/agenda/components/AgendaCalendar';
+import DisponibilidadProfesionales from '@features/agenda/components/DisponibilidadProfesionales';
 
 const statusColors = {
   CONFIRMADA: 'bg-status-confirmed/10 text-status-confirmed border-status-confirmed/20',
@@ -33,10 +35,11 @@ const statusColors = {
  * MEJORAS IMPLEMENTADAS:
  * - ✓ Paginación del lado del servidor
  * - ✓ Filtros por fecha, estado y profesional
- * - ✓ Calendario con indicadores de días con citas
+ * - ✓ Calendario mejorado con vistas mensual/semanal/diaria
  * - ✓ Estadísticas del día (resumen por estado)
  * - ✓ Acciones rápidas en cada cita
  * - ✓ Búsqueda rápida por nombre
+ * - ✓ Vista de disponibilidad de profesionales
  */
 export default function Agenda() {
   const logger = useLogger('Agenda');
@@ -57,8 +60,8 @@ export default function Agenda() {
   // ESTADO: Veterinarios para filtro
   const [veterinarios, setVeterinarios] = useState<Usuario[]>([]);
   
-  // ESTADO: Fechas con citas para el calendario
-  const [fechasConCitas, setFechasConCitas] = useState<Set<string>>(new Set());
+  // ESTADO: Citas para el calendario (rango amplio)
+  const [citasCalendario, setCitasCalendario] = useState<Cita[]>([]);
   const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
   
   // ESTADO: UI
@@ -71,10 +74,10 @@ export default function Agenda() {
     loadVeterinarios();
   }, []);
 
-  // EFECTO: Cargar fechas con citas del mes actual para el calendario
+  // EFECTO: Cargar citas para el calendario (rango amplio: 2 semanas antes y después)
   useEffect(() => {
-    loadFechasConCitas();
-  }, [selectedDate, filtroVet]);
+    loadCitasCalendario();
+  }, [selectedDate, filtroVet, filtroEstado]);
 
   // EFECTO: Cargar citas cuando cambian fecha, filtros o página
   useEffect(() => {
@@ -82,36 +85,30 @@ export default function Agenda() {
   }, [selectedDate, filtroVet, filtroEstado, currentPage]);
 
   /**
-   * Carga las fechas del mes que tienen citas para marcar en el calendario
+   * Carga citas para el calendario (rango amplio para vistas mensual/semanal/diaria)
    */
-  const loadFechasConCitas = async () => {
+  const loadCitasCalendario = async () => {
     try {
       setIsLoadingCalendar(true);
-      const inicioMes = startOfMonth(selectedDate);
-      const finMes = endOfMonth(selectedDate);
+      // Cargar 2 semanas antes y 2 semanas después de la fecha seleccionada
+      const inicioRango = startOfDay(subWeeks(selectedDate, 2));
+      const finRango = endOfDay(addWeeks(selectedDate, 2));
       
       const searchParams = {
-        fechaInicio: startOfDay(inicioMes).toISOString(),
-        fechaFin: endOfDay(finMes).toISOString(),
+        fechaInicio: inicioRango.toISOString(),
+        fechaFin: finRango.toISOString(),
         profesionalId: filtroVet !== 'todos' ? filtroVet : undefined,
+        estado: filtroEstado !== 'todos' ? filtroEstado : undefined,
         page: 0,
-        size: 1000, // Cargar todas las citas del mes
+        size: 1000, // Cargar todas las citas del rango
         sort: 'fecha,asc',
       };
       
       const result = await citaService.searchWithFilters(searchParams);
-      const fechas = new Set<string>();
-      
-      result.content.forEach(cita => {
-        const fecha = new Date(cita.fecha);
-        const fechaStr = format(fecha, 'yyyy-MM-dd');
-        fechas.add(fechaStr);
-      });
-      
-      setFechasConCitas(fechas);
+      setCitasCalendario(result.content);
     } catch (error) {
-      logger.warn('Error al cargar fechas con citas para calendario', {
-        action: 'loadFechasConCitas',
+      logger.warn('Error al cargar citas para calendario', {
+        action: 'loadCitasCalendario',
       });
     } finally {
       setIsLoadingCalendar(false);
@@ -180,7 +177,7 @@ export default function Agenda() {
       await citaService.updateEstado(citaId, nuevoEstado);
       showSuccess(`Cita ${nuevoEstado === 'CONFIRMADA' ? 'confirmada' : nuevoEstado === 'CANCELADA' ? 'cancelada' : 'actualizada'} exitosamente`);
       await loadCitas();
-      await loadFechasConCitas(); // Actualizar calendario
+      await loadCitasCalendario(); // Actualizar calendario
     } catch (error: any) {
       handleError(error, 'Error al actualizar el estado de la cita');
     } finally {
@@ -199,8 +196,18 @@ export default function Agenda() {
   };
 
   /**
-   * Función para marcar días con citas en el calendario
+   * Función para marcar días con citas en el calendario del filtro
    */
+  const fechasConCitas = useMemo(() => {
+    const fechas = new Set<string>();
+    citasCalendario.forEach(cita => {
+      const fecha = new Date(cita.fecha);
+      const fechaStr = format(fecha, 'yyyy-MM-dd');
+      fechas.add(fechaStr);
+    });
+    return fechas;
+  }, [citasCalendario]);
+
   const modifiers = {
     hasAppointments: (date: Date) => {
       const fechaStr = format(date, 'yyyy-MM-dd');
@@ -210,6 +217,39 @@ export default function Agenda() {
 
   const modifiersClassNames = {
     hasAppointments: 'bg-primary/20 border-primary border-2 font-semibold',
+  };
+
+  /**
+   * Maneja el click en una cita del calendario
+   */
+  const handleCitaClick = (cita: Cita) => {
+    navigate(`/agenda/${cita.id}`);
+  };
+
+  /**
+   * Maneja el drag & drop de una cita (cambiar fecha/hora)
+   */
+  const handleCitaDrag = async (citaId: string, nuevaFecha: Date) => {
+    try {
+      const cita = citasCalendario.find(c => c.id === citaId);
+      if (!cita) return;
+
+      // Actualizar la cita con la nueva fecha
+      await citaService.update(citaId, {
+        ...cita,
+        fecha: nuevaFecha.toISOString(),
+        pacienteId: cita.pacienteId,
+        propietarioId: cita.propietarioId,
+        profesionalId: cita.profesionalId,
+        motivo: cita.motivo || '',
+      });
+
+      showSuccess('Cita movida exitosamente');
+      await loadCitas();
+      await loadCitasCalendario();
+    } catch (error: any) {
+      handleError(error, 'Error al mover la cita');
+    }
   };
 
   /**
@@ -381,40 +421,32 @@ export default function Agenda() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Calendario */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              Calendario
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateChange}
-              modifiers={modifiers}
-              modifiersClassNames={modifiersClassNames}
-              className="rounded-md border"
-            />
-            <div className="mt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded border-2 border-primary bg-primary/20"></div>
-                <span>Días con citas</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Calendario mejorado */}
+      <AgendaCalendar
+        citas={citasCalendario}
+        fechaSeleccionada={selectedDate}
+        onFechaChange={handleDateChange}
+        onCitaClick={handleCitaClick}
+        onCitaDrag={handleCitaDrag}
+        veterinarioId={filtroVet}
+        className="mb-6"
+      />
 
-        {/* Lista de citas */}
-        <Card className="lg:col-span-2">
+      {/* Vista de disponibilidad de profesionales */}
+      <DisponibilidadProfesionales
+        citas={citasCalendario}
+        veterinarios={veterinarios}
+        fechaSeleccionada={selectedDate}
+        className="mb-6"
+      />
+
+      {/* Lista de citas del día */}
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
-                Citas del Día ({citasFiltradas.length})
+                Citas del Día - {format(selectedDate, 'PPP', { locale: es })} ({citasFiltradas.length})
               </div>
               {citasPage && citasPage.totalPages > 1 && (
                 <div className="flex items-center gap-2">
@@ -552,8 +584,7 @@ export default function Agenda() {
               </div>
             )}
           </CardContent>
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 }

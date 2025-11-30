@@ -59,6 +59,9 @@ const VacunaForm = lazy(() => import("@features/vacunaciones/pages/VacunaForm"))
 const Vacunaciones = lazy(() => import("@features/vacunaciones/pages/Vacunaciones"));
 const VacunacionForm = lazy(() => import("@features/vacunaciones/pages/VacunacionForm"));
 const RecordatoriosConfig = lazy(() => import("@features/configuracion/pages/RecordatoriosConfig"));
+const Facturas = lazy(() => import("@features/facturacion/pages/Facturas"));
+const FacturaDetalle = lazy(() => import("@features/facturacion/pages/FacturaDetalle"));
+const FacturaForm = lazy(() => import("@features/facturacion/pages/FacturaForm"));
 const NotFound = lazy(() => import("@shared/components/common/NotFound"));
 
 const queryClient = new QueryClient();
@@ -393,6 +396,30 @@ const App = () => (
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <RecordatoriosConfig />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/facturacion" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Facturas />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/facturacion/nueva" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FacturaForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/facturacion/:id" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FacturaDetalle />
                   </Suspense>
                 } 
               />

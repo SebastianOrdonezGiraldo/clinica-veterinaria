@@ -16,6 +16,10 @@ import { propietarioService } from '@features/propietarios/services/propietarioS
 import { Consulta, Paciente, Propietario } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
 import { useApiError } from '@shared/hooks/useApiError';
+import TemplatePrescripcionSelector from '@features/templates/components/TemplatePrescripcionSelector';
+import { TemplatePrescripcion } from '@features/templates/services/templatePrescripcionService';
+import { templatePrescripcionService } from '@features/templates/services/templatePrescripcionService';
+import { toast } from 'sonner';
 
 interface Medicamento {
   id: string;
@@ -237,10 +241,41 @@ export default function PrescripcionForm() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Medicamentos</CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={agregarMedicamento}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Medicamento
-              </Button>
+              <div className="flex gap-2">
+                <TemplatePrescripcionSelector
+                  onSelect={async (template) => {
+                    // Aplicar template
+                    if (template.indicacionesGenerales) {
+                      setIndicaciones(template.indicacionesGenerales);
+                    }
+                    // Agregar medicamentos del template
+                    if (template.items && template.items.length > 0) {
+                      const nuevosMedicamentos: Medicamento[] = template.items.map((item, index) => ({
+                        id: Date.now().toString() + index,
+                        medicamento: item.medicamento,
+                        presentacion: item.presentacion,
+                        dosis: item.dosis || '',
+                        frecuencia: item.frecuencia || '',
+                        duracionDias: item.duracion ? parseInt(item.duracion) || 0 : 0,
+                        viaAdministracion: 'ORAL' as const,
+                        indicaciones: item.indicaciones,
+                      }));
+                      setMedicamentos(nuevosMedicamentos);
+                    }
+                    // Incrementar contador de uso
+                    try {
+                      await templatePrescripcionService.incrementarUso(template.id);
+                    } catch (error) {
+                      console.warn('Error al incrementar uso del template:', error);
+                    }
+                    toast.success(`Template "${template.nombre}" aplicado`);
+                  }}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={agregarMedicamento}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Medicamento
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

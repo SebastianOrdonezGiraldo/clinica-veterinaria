@@ -16,6 +16,10 @@ import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { consultaService } from '@features/historias/services/consultaService';
 import { Paciente } from '@core/types';
 import { useLogger } from '@shared/hooks/useLogger';
+import { useApiError } from '@shared/hooks/useApiError';
+import TemplateSelector from '@features/templates/components/TemplateSelector';
+import { TemplateConsulta } from '@features/templates/services/templateConsultaService';
+import { templateConsultaService } from '@features/templates/services/templateConsultaService';
 
 const consultaSchema = z.object({
   frecuenciaCardiaca: z.number().positive().optional().or(z.literal('')),
@@ -41,7 +45,7 @@ export default function ConsultaForm() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ConsultaFormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ConsultaFormData>({
     resolver: zodResolver(consultaSchema),
   });
 
@@ -211,6 +215,41 @@ export default function ConsultaForm() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Selector de Templates */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Plantillas</CardTitle>
+              <TemplateSelector
+                tipo="consulta"
+                onSelect={async (template) => {
+                  // Rellenar campos con el template
+                  if (template.examenFisico) {
+                    setValue('examenFisico', template.examenFisico);
+                  }
+                  if (template.diagnostico) {
+                    setValue('diagnostico', template.diagnostico);
+                  }
+                  if (template.tratamiento) {
+                    setValue('tratamiento', template.tratamiento);
+                  }
+                  if (template.observaciones) {
+                    setValue('observaciones', template.observaciones);
+                  }
+                  // Incrementar contador de uso
+                  try {
+                    await templateConsultaService.incrementarUso(template.id);
+                  } catch (error) {
+                    // No mostrar error si falla el incremento
+                    console.warn('Error al incrementar uso del template:', error);
+                  }
+                  toast.success(`Template "${template.nombre}" aplicado`);
+                }}
+              />
+            </div>
+          </CardHeader>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Signos Vitales</CardTitle>
