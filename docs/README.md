@@ -330,8 +330,8 @@ Este proyecto es de uso privado. Todos los derechos reservados.
 
 **Sebastian Ordoñez**
 
-- 📧 Email: [Tu email]
-- 🔗 GitHub: [Tu perfil de GitHub]
+- 📧 Email: sebastian789go@gmail.com
+- 🔗 GitHub: https://github.com/SebastianOrdonezGiraldo
 - 📅 Fecha de inicio: Noviembre 2025
 - 🏗️ Arquitectura: Layered Architecture con Spring Boot y React
 
