@@ -31,6 +31,8 @@ public class FacturaService {
     private final PropietarioRepository propietarioRepository;
     private final ConsultaRepository consultaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ProductoRepository productoRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
 
     /**
      * Genera un número de factura único
@@ -105,8 +107,11 @@ public class FacturaService {
             .consulta(consulta)
             .build();
 
-        // Agregar items
+        // Validar stock y procesar items
         if (dto.getItems() != null) {
+            // Validar stock antes de crear la factura
+            validarStockDisponible(dto.getItems());
+            
             for (int i = 0; i < dto.getItems().size(); i++) {
                 ItemFacturaDTO itemDTO = dto.getItems().get(i);
                 ItemFactura item = ItemFactura.builder()
@@ -125,6 +130,12 @@ public class FacturaService {
         }
 
         factura = facturaRepository.save(factura);
+        
+        // Crear movimientos de inventario para productos facturados
+        if (dto.getItems() != null) {
+            crearMovimientosInventario(factura, dto.getItems());
+        }
+        
         log.info("Factura creada: {}", factura.getNumeroFactura());
         return toDTO(factura);
     }
@@ -356,6 +367,74 @@ public class FacturaService {
             .usuarioNombre(pago.getRegistradoPor() != null ? pago.getRegistradoPor().getNombre() : null)
             .createdAt(pago.getCreatedAt())
             .build();
+    }
+
+    /**
+     * Valida que haya stock suficiente para todos los productos en la factura
+     */
+    private void validarStockDisponible(List<ItemFacturaDTO> items) {
+        for (ItemFacturaDTO item : items) {
+            if (item.getCodigoProducto() != null && !item.getCodigoProducto().isEmpty()) {
+                Producto producto = productoRepository.findByCodigo(item.getCodigoProducto())
+                    .orElse(null);
+                
+                if (producto != null) {
+                    BigDecimal stockDisponible = producto.getStockActual();
+                    BigDecimal cantidadRequerida = item.getCantidad();
+                    
+                    if (stockDisponible.compareTo(cantidadRequerida) < 0) {
+                        throw new RuntimeException(
+                            String.format("Stock insuficiente para el producto %s. Disponible: %s, Requerido: %s",
+                                producto.getNombre(), stockDisponible, cantidadRequerida)
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Crea movimientos de inventario (SALIDA) para los productos facturados
+     */
+    private void crearMovimientosInventario(Factura factura, List<ItemFacturaDTO> items) {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext()
+            .getAuthentication().getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        for (ItemFacturaDTO itemDTO : items) {
+            if (itemDTO.getCodigoProducto() != null && !itemDTO.getCodigoProducto().isEmpty()) {
+                Producto producto = productoRepository.findByCodigo(itemDTO.getCodigoProducto())
+                    .orElse(null);
+                
+                if (producto != null) {
+                    BigDecimal stockAnterior = producto.getStockActual();
+                    BigDecimal cantidad = itemDTO.getCantidad();
+                    BigDecimal stockResultante = stockAnterior.subtract(cantidad);
+                    
+                    // Actualizar stock del producto
+                    producto.setStockActual(stockResultante);
+                    productoRepository.save(producto);
+                    
+                    // Crear movimiento de inventario
+                    MovimientoInventario movimiento = MovimientoInventario.builder()
+                        .producto(producto)
+                        .tipo(MovimientoInventario.TipoMovimiento.SALIDA)
+                        .cantidad(cantidad)
+                        .precioUnitario(itemDTO.getPrecioUnitario())
+                        .motivo("Venta - Factura " + factura.getNumeroFactura())
+                        .usuario(usuario)
+                        .stockAnterior(stockAnterior)
+                        .stockResultante(stockResultante)
+                        .notas("Factura ID: " + factura.getId())
+                        .build();
+                    
+                    movimientoInventarioRepository.save(movimiento);
+                    log.info("Movimiento de inventario creado: {} unidades de {} vendidas en factura {}",
+                        cantidad, producto.getNombre(), factura.getNumeroFactura());
+                }
+            }
+        }
     }
 }
 

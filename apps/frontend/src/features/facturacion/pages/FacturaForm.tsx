@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { facturaService, ItemFactura } from '../services/facturaService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
 import { consultaService } from '@features/historias/services/consultaService';
+import { productoService } from '@features/inventario/services/inventarioService';
 import { Propietario, Consulta } from '@core/types';
+import { Producto } from '@features/inventario/services/inventarioService';
 import { toast } from 'sonner';
 import { useLogger } from '@shared/hooks/useLogger';
 import { useApiError } from '@shared/hooks/useApiError';
@@ -47,6 +49,7 @@ export default function FacturaForm() {
 
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -86,12 +89,14 @@ export default function FacturaForm() {
   const loadInitialData = async () => {
     try {
       setIsLoadingData(true);
-      const [propietariosData, consultasData] = await Promise.all([
+      const [propietariosData, consultasData, productosData] = await Promise.all([
         propietarioService.getAll(),
         consultaService.getAll(),
+        productoService.getAll(),
       ]);
       setPropietarios(propietariosData);
       setConsultas(consultasData);
+      setProductos(productosData);
     } catch (error: any) {
       logger.error('Error al cargar datos del formulario', error);
       handleError(error, 'Error al cargar los datos');
@@ -368,11 +373,43 @@ export default function FacturaForm() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Código Producto</Label>
-                      <Input
-                        {...register(`items.${index}.codigoProducto`)}
-                        placeholder="Código del producto"
-                      />
+                      <Label>Producto del Inventario (Opcional)</Label>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === 'NINGUNO') {
+                            setValue(`items.${index}.codigoProducto`, undefined);
+                            setValue(`items.${index}.descripcion`, '');
+                            setValue(`items.${index}.precioUnitario`, 0);
+                          } else {
+                            const producto = productos.find(p => p.codigo === value);
+                            if (producto) {
+                              setValue(`items.${index}.codigoProducto`, producto.codigo);
+                              setValue(`items.${index}.descripcion`, producto.nombre);
+                              setValue(`items.${index}.precioUnitario`, producto.precioVenta || 0);
+                              setValue(`items.${index}.tipoItem`, 'MEDICAMENTO');
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar producto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NINGUNO">Ninguno (Item manual)</SelectItem>
+                          {productos
+                            .filter(p => p.activo && (p.stockActual || 0) > 0)
+                            .map(producto => (
+                              <SelectItem key={producto.codigo} value={producto.codigo}>
+                                {producto.nombre} - Stock: {producto.stockActual} {producto.unidadMedida}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {watch(`items.${index}.codigoProducto`) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Producto seleccionado del inventario
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label>Cantidad *</Label>
