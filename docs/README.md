@@ -65,6 +65,9 @@ Antes de comenzar, asegúrate de tener instalado:
 - ✅ **Base de Datos**: Esquema completo con relaciones
 - ✅ **Documentación**: Guías completas y detalladas
 - ✅ **Testing**: Datos de prueba incluidos
+- ✅ **Despliegue**: Desplegado en producción (Render)
+- ✅ **CORS**: Configurado correctamente para producción
+- ✅ **Docker**: Dockerfile optimizado para despliegue
 
 ## 📖 Índice de Documentación
 
@@ -97,6 +100,21 @@ Antes de comenzar, asegúrate de tener instalado:
 - **[CHANGELOG.md](./CHANGELOG.md)** - Historial de cambios
 
 ---
+
+## 🌐 Producción
+
+El proyecto está desplegado y funcionando en producción:
+
+- **Frontend**: [https://clinica-veterinaria-frontend-f9us.onrender.com](https://clinica-veterinaria-frontend-f9us.onrender.com)
+- **Backend API**: [https://clinica-veterinaria-backend-1fut.onrender.com](https://clinica-veterinaria-backend-1fut.onrender.com)
+- **Swagger UI**: [https://clinica-veterinaria-backend-1fut.onrender.com/swagger-ui](https://clinica-veterinaria-backend-1fut.onrender.com/swagger-ui)
+
+### 🚀 Despliegue
+
+El proyecto está configurado para desplegarse automáticamente en Render usando `render.yaml`. Para más detalles sobre el despliegue, consulta:
+
+- **[DEPLOYMENT.md](./deployment/DEPLOYMENT.md)** - Guía completa de despliegue
+- **render.yaml** - Configuración de servicios en Render
 
 ## 🚦 Inicio Rápido
 
@@ -273,9 +291,11 @@ El sistema implementa múltiples capas de seguridad:
 - ✅ Autorización basada en roles (RBAC)
 - ✅ Validación de entrada en todos los endpoints
 - ✅ Protección CSRF (deshabilitada para API stateless)
-- ✅ CORS configurado para desarrollo y producción
+- ✅ CORS configurado correctamente para producción
 - ✅ Auditoría de intentos de login
 - ✅ Filtros de seguridad en Spring Security
+- ✅ Variables de entorno para secretos sensibles
+- ✅ HTTPS habilitado en producción
 
 ## 🧪 Testing
 
@@ -317,7 +337,19 @@ Este proyecto es de uso privado. Todos los derechos reservados.
 
 ---
 
-**Última actualización:** Noviembre 2025  
+**Última actualización:** Diciembre 2024  
 **Versión:** 2.0.0  
-**Estado:** ✅ En desarrollo activo
+**Estado:** ✅ **Completado y en producción**
+
+### 🎉 Proyecto Completado
+
+El sistema está completamente funcional y desplegado en producción. Todas las funcionalidades principales han sido implementadas y probadas.
+
+### 📋 Próximos Pasos Recomendados
+
+1. **Pruebas en Producción**: Verificar todas las funcionalidades en el entorno de producción
+2. **Seguridad**: Cambiar contraseñas por defecto y revisar configuración de seguridad
+3. **Monitoreo**: Configurar alertas y monitoreo de errores
+4. **Backups**: Configurar backups automáticos de la base de datos
+5. **Optimización**: Revisar performance y optimizar según sea necesario
 
