@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { usuarioService, UsuarioCreateDTO, UsuarioUpdateDTO, UsuarioSearchParams } from '../services/usuarioService';
 import { Usuario, PageResponse } from '@core/types';
 import { useApiError } from '@shared/hooks/useApiError';
@@ -9,6 +10,14 @@ import { useApiError } from '@shared/hooks/useApiError';
 export function useUsuarios(params: UsuarioSearchParams = {}) {
   const { handleError, showSuccess } = useApiError();
   const queryClient = useQueryClient();
+
+  // Tipo local para aprovechar la respuesta estructurada del backend
+  interface BackendErrorResponse {
+    mensaje: string;
+    status: number;
+    campo?: string;
+    valor?: any;
+  }
 
   const {
     data: usuariosPage,
@@ -28,7 +37,27 @@ export function useUsuarios(params: UsuarioSearchParams = {}) {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
       showSuccess('Usuario creado exitosamente');
     },
-    onError: handleError,
+    onError: (error) => {
+      // Manejo específico: email duplicado al crear usuario
+      if (error instanceof AxiosError) {
+        const response = error.response as AxiosError<BackendErrorResponse>['response'];
+        const data = response?.data;
+
+        if (response?.status === 409 && data?.campo === 'email') {
+          // Mensaje claro para el usuario cuando el correo ya existe
+          const email = data.valor ?? '';
+          const customMessage = email
+            ? `Ya existe un usuario registrado con el correo ${email}.`
+            : 'Ya existe un usuario registrado con ese correo electrónico.';
+
+          handleError(error, customMessage);
+          return;
+        }
+      }
+
+      // Fallback genérico
+      handleError(error);
+    },
   });
 
   const updateMutation = useMutation({
