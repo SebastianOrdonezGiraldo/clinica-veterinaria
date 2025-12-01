@@ -4,7 +4,7 @@ services:
     name: clinica-veterinaria-backend
     env: docker
     dockerfilePath: ./apps/backend/Dockerfile
-    dockerContext: . 
+    dockerContext: ./apps/backend 
     plan: free
     envVars:
       - key: SPRING_PROFILES_ACTIVE
