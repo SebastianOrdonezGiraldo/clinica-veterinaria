@@ -6,9 +6,17 @@ const generateCorrelationId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Determinar baseURL según entorno:
+// - En desarrollo, Vite usará el proxy (`/api` -> http://localhost:8080/api)
+// - En producción (Render), usaremos VITE_API_URL que apunta al backend deployado
+const baseURL =
+  // @ts-expect-error: import.meta.env está disponible en tiempo de build de Vite
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+  '/api';
+
 // Configuración base de axios
 const axiosInstance = axios.create({
-  baseURL: '/api', // El proxy de Vite redirigirá a http://localhost:8080/api
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

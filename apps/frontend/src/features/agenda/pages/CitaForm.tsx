@@ -47,7 +47,6 @@ export default function CitaForm() {
   const [citasVeterinario, setCitasVeterinario] = useState<Cita[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isValidating, setIsValidating] = useState(false);
 
   const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<CitaFormData>({
     resolver: zodResolver(citaSchema),
@@ -64,9 +63,21 @@ export default function CitaForm() {
   // Función para formatear la hora para mostrar
   const formatHoraDisplay = (hora: string | undefined): string => {
     if (!hora) return '';
+
     const [hour, minute] = hora.split(':');
-    const hourNum = parseInt(hour, 10);
-    const hora12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum;
+    const hourNum = Number.parseInt(hour, 10);
+
+    if (Number.isNaN(hourNum)) {
+      return hora;
+    }
+
+    let hora12 = hourNum;
+    if (hourNum === 0) {
+      hora12 = 12;
+    } else if (hourNum > 12) {
+      hora12 = hourNum - 12;
+    }
+
     const ampm = hourNum < 12 ? 'AM' : 'PM';
     return `${hora12}:${minute} ${ampm}`;
   };
@@ -80,7 +91,8 @@ export default function CitaForm() {
     const state = location.state as { pacienteId?: string; propietarioId?: string } | null;
     if (state?.pacienteId) {
       // Recargar pacientes para asegurar que el nuevo esté disponible
-      pacienteService.getAll().then(pacientesData => {
+      pacienteService.searchWithFilters({ page: 0, size: 500 }).then(response => {
+        const pacientesData = response.content;
         setPacientes(pacientesData);
         const paciente = pacientesData.find(p => p.id === state.pacienteId);
         if (paciente) {
@@ -89,7 +101,9 @@ export default function CitaForm() {
           showInfo(`Paciente "${paciente.nombre}" seleccionado`);
         }
         // Limpiar el state para evitar seleccionarlo de nuevo
-        window.history.replaceState({}, document.title);
+        if (globalThis.history?.replaceState) {
+          globalThis.history.replaceState({}, globalThis.document?.title ?? '');
+        }
       }).catch(error => {
         logger.warn('Error al recargar pacientes desde estado', {
           action: 'reloadPacientes',
@@ -98,7 +112,8 @@ export default function CitaForm() {
       });
     } else if (state?.propietarioId) {
       // Si viene de crear propietario, recargar propietarios y seleccionarlo
-      propietarioService.getAll().then(propietariosData => {
+      propietarioService.searchWithFilters({ page: 0, size: 500 }).then(response => {
+        const propietariosData = response.content;
         setPropietarios(propietariosData);
         const propietario = propietariosData.find(p => p.id === state.propietarioId);
         if (propietario) {
@@ -106,7 +121,9 @@ export default function CitaForm() {
           showInfo(`Propietario "${propietario.nombre}" seleccionado`);
         }
         // Limpiar el state para evitar seleccionarlo de nuevo
-        window.history.replaceState({}, document.title);
+        if (globalThis.history?.replaceState) {
+          globalThis.history.replaceState({}, globalThis.document?.title ?? '');
+        }
       }).catch(error => {
         logger.warn('Error al recargar propietarios desde estado', {
           action: 'reloadPropietarios',
@@ -131,13 +148,13 @@ export default function CitaForm() {
       // Usar getVeterinarios() en lugar de getAll() para evitar problemas de permisos
       // Los veterinarios no tienen acceso a getAll() que requiere rol ADMIN
       // El endpoint /api/usuarios/veterinarios está disponible para todos los usuarios autenticados
-      const [pacientesData, propietariosData, veterinariosData] = await Promise.all([
-        pacienteService.getAll(),
-        propietarioService.getAll(),
+      const [pacientesPage, propietariosPage, veterinariosData] = await Promise.all([
+        pacienteService.searchWithFilters({ page: 0, size: 500 }),
+        propietarioService.searchWithFilters({ page: 0, size: 500 }),
         usuarioService.getVeterinarios(),
       ]);
-      setPacientes(pacientesData);
-      setPropietarios(propietariosData);
+      setPacientes(pacientesPage.content);
+      setPropietarios(propietariosPage.content);
       
       // Los veterinarios ya vienen filtrados del backend (solo VET activos)
       // Nota: Si en el futuro necesitas incluir ADMIN como profesionales, 
@@ -179,14 +196,24 @@ export default function CitaForm() {
     if (!profesionalSeleccionado) return;
     
     try {
-      const citas = await citaService.getByProfesional(profesionalSeleccionado);
-      setCitasVeterinario(citas);
-    } catch (error) {
+      const fechaBase = fechaSeleccionada || new Date().toISOString().split('T')[0];
+      const fechaInicio = `${fechaBase}T00:00:00`;
+      const fechaFin = `${fechaBase}T23:59:59`;
+
+      const citasPage = await citaService.searchWithFilters({
+        profesionalId: profesionalSeleccionado,
+        fechaInicio,
+        fechaFin,
+        page: 0,
+        size: 500,
+      });
+      setCitasVeterinario(citasPage.content);
+    } catch (error: any) {
       logger.warn('Error al cargar citas del veterinario para validación', {
         action: 'loadCitasVeterinario',
-        profesionalId: profesionalId,
+        profesionalId: profesionalSeleccionado,
       });
-      // No mostrar error, solo log
+      handleError(error, 'Error al validar disponibilidad del veterinario');
     }
   };
 
@@ -198,6 +225,19 @@ export default function CitaForm() {
     }
   };
 
+  const buildConflictoErrorMessage = (citaConflicto: Cita): string => {
+    const citaFecha = new Date(citaConflicto.fecha);
+    const horaFormateada = citaFecha.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const pacienteConflicto = pacientes.find((p) => p.id === citaConflicto.pacienteId);
+    const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
+
+    return `El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`;
+  };
+
   // Validar si hay conflicto de horario
   const validarDisponibilidad = (fechaHora: string, profesionalId: string): { hayConflicto: boolean; citaConflicto?: Cita } => {
     if (!fechaHora || !profesionalId) {
@@ -205,10 +245,6 @@ export default function CitaForm() {
     }
 
     const fechaHoraObj = new Date(fechaHora);
-    const fechaHoraInicio = new Date(fechaHoraObj);
-    fechaHoraInicio.setMinutes(fechaHoraInicio.getMinutes() - 30); // 30 min antes
-    const fechaHoraFin = new Date(fechaHoraObj);
-    fechaHoraFin.setMinutes(fechaHoraFin.getMinutes() + 30); // 30 min después
 
     // Buscar citas del mismo veterinario en el mismo rango de tiempo
     const citaConflicto = citasVeterinario.find(cita => {
@@ -241,7 +277,6 @@ export default function CitaForm() {
   const onSubmit = async (data: CitaFormData) => {
     try {
       setIsLoading(true);
-      setIsValidating(true);
       
       // Combinar fecha y hora en formato ISO sin zona horaria (hora local)
       // El backend interpretará esto como hora local del servidor
@@ -251,19 +286,9 @@ export default function CitaForm() {
       const validacion = validarDisponibilidad(fechaHora, data.profesionalId);
       
       if (validacion.hayConflicto && validacion.citaConflicto) {
-        const citaFecha = new Date(validacion.citaConflicto.fecha);
-        const horaFormateada = citaFecha.toLocaleTimeString('es-ES', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true 
-        });
-        const pacienteConflicto = pacientes.find(p => p.id === validacion.citaConflicto!.pacienteId);
-        const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
-        
         handleError(
-          new Error(`El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`)
+          new Error(buildConflictoErrorMessage(validacion.citaConflicto))
         );
-        setIsValidating(false);
         setIsLoading(false);
         return;
       }
@@ -274,24 +299,12 @@ export default function CitaForm() {
       // Validar nuevamente después de recargar
       const validacionFinal = validarDisponibilidad(fechaHora, data.profesionalId);
       if (validacionFinal.hayConflicto && validacionFinal.citaConflicto) {
-        const citaFecha = new Date(validacionFinal.citaConflicto.fecha);
-        const horaFormateada = citaFecha.toLocaleTimeString('es-ES', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true 
-        });
-        const pacienteConflicto = pacientes.find(p => p.id === validacionFinal.citaConflicto!.pacienteId);
-        const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
-        
         handleError(
-          new Error(`El veterinario ya tiene una cita a las ${horaFormateada} con ${nombrePaciente}. Por favor, selecciona otra hora.`)
+          new Error(buildConflictoErrorMessage(validacionFinal.citaConflicto))
         );
-        setIsValidating(false);
         setIsLoading(false);
         return;
       }
-      
-      setIsValidating(false);
       
       // Sanitizar inputs de texto antes de enviar
       const citaData = {
@@ -324,7 +337,6 @@ export default function CitaForm() {
       handleError(error, isEdit ? 'Error al actualizar la cita' : 'Error al crear la cita');
     } finally {
       setIsLoading(false);
-      setIsValidating(false);
     }
   };
 
@@ -358,6 +370,18 @@ export default function CitaForm() {
       </div>
     );
   }
+
+  const getSubmitLabel = (): string => {
+    if (isLoading) {
+      return 'Guardando...';
+    }
+    if (isEdit) {
+      return 'Actualizar';
+    }
+    return 'Agendar';
+  };
+
+  const submitLabel = getSubmitLabel();
 
   return (
     <div className="space-y-6">
@@ -415,9 +439,7 @@ export default function CitaForm() {
                         const hour = Math.floor(i / 2);
                         const minute = (i % 2) * 30;
                         const horaStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                        const hora12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                        const ampm = hour < 12 ? 'AM' : 'PM';
-                        const displayHora = `${hora12}:${String(minute).padStart(2, '0')} ${ampm}`;
+                        const displayHora = formatHoraDisplay(horaStr);
 
                         // Verificar si esta hora tiene conflicto
                         const fechaHora = fechaSeleccionada && horaStr ? `${fechaSeleccionada}T${horaStr}:00` : '';
@@ -439,22 +461,17 @@ export default function CitaForm() {
                   </Select>
                   {horaSeleccionada && fechaSeleccionada && profesionalSeleccionado && (() => {
                     const fechaHora = `${fechaSeleccionada}T${horaSeleccionada}:00`;
-                    const validacion = validarDisponibilidad(fechaHora, profesionalSeleccionado);
-                    if (validacion.hayConflicto && validacion.citaConflicto) {
-                      const citaFecha = new Date(validacion.citaConflicto.fecha);
-                      const horaFormateada = citaFecha.toLocaleTimeString('es-ES', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true,
-                      });
-                      const pacienteConflicto = pacientes.find((p) => p.id === validacion.citaConflicto!.pacienteId);
-                      const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
+                    const { hayConflicto, citaConflicto } = validarDisponibilidad(fechaHora, profesionalSeleccionado);
+
+                    if (hayConflicto && citaConflicto) {
+                      const mensaje = buildConflictoErrorMessage(citaConflicto);
                       return (
                         <p className="text-sm text-destructive font-medium">
-                          ⚠️ Esta hora está ocupada. El veterinario tiene una cita a las {horaFormateada} con {nombrePaciente}.
+                          ⚠️ {mensaje}
                         </p>
                       );
                     }
+
                     return (
                       <p className="text-sm text-muted-foreground">
                         Hora seleccionada: {formatHoraDisplay(horaSeleccionada)}
@@ -645,7 +662,7 @@ export default function CitaForm() {
               </Button>
               <Button type="submit" className="gap-2" disabled={isLoading || isLoadingData}>
                 <Save className="h-4 w-4" />
-                {isLoading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Agendar'}
+                {submitLabel}
               </Button>
             </div>
           </CardContent>
