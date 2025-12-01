@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Configuración principal de Spring Security para la aplicación.
@@ -117,27 +118,40 @@ public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     
     // Leer orígenes desde propiedad (separados por coma)
-    List<String> origins = Arrays.asList(allowedOrigins.split(","));
+    // Limpiar espacios en blanco y filtrar valores vacíos
+    List<String> origins = Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isEmpty())
+            .collect(Collectors.toList());
     
     // Log para diagnóstico
     log.info("🔧 Configurando CORS con orígenes permitidos: {}", origins);
     
-    // Usar setAllowedOriginPatterns en lugar de setAllowedOrigins
-    // Esto funciona mejor con HTTPS y credenciales
-    configuration.setAllowedOriginPatterns(origins);
+    // Cuando se usan credenciales, es mejor usar setAllowedOrigins con orígenes exactos
+    // setAllowedOriginPatterns puede tener problemas con credenciales en algunas versiones
+    if (!origins.isEmpty()) {
+        // Si hay un solo origen con "*", usar setAllowedOriginPatterns
+        // De lo contrario, usar setAllowedOrigins para orígenes exactos
+        if (origins.size() == 1 && origins.get(0).equals("*")) {
+            configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+            configuration.setAllowCredentials(false); // No se pueden usar credenciales con "*"
+        } else {
+            configuration.setAllowedOrigins(origins);
+            configuration.setAllowCredentials(true);
+        }
+    }
     
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     // Permitir todos los headers para máxima compatibilidad con diferentes clientes
     // Esto es necesario porque algunos navegadores envían headers adicionales en preflight
     configuration.setAllowedHeaders(Arrays.asList("*"));
     configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Correlation-ID"));
-    configuration.setAllowCredentials(true);
     configuration.setMaxAge(3600L); // Cache de preflight por 1 hora
     
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     
-    log.info("✅ CORS configurado exitosamente");
+    log.info("✅ CORS configurado exitosamente con {} orígenes permitidos", origins.size());
     return source;
 }
 
