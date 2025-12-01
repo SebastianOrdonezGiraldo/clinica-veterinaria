@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +32,9 @@ public class DiagnosticoController {
 
     @Value("${spring.mail.username:}")
     private String mailUsername;
+
+    @Value("${cors.allowed-origins}")
+    private String corsOrigins;
 
     /**
      * Endpoint de salud del sistema
@@ -72,6 +76,36 @@ public class DiagnosticoController {
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error al diagnosticar email: {}", e.getMessage(), e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("configuracionOk", false);
+            error.put("mensaje", "Error al verificar configuración: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
+    /**
+     * Verifica la configuración de CORS
+     */
+    @GetMapping("/cors")
+    public ResponseEntity<Map<String, Object>> diagnosticarCors() {
+        log.info("GET /api/diagnostico/cors - Verificando configuración de CORS");
+        
+        Map<String, Object> resultado = new HashMap<>();
+        
+        try {
+            // Leer y parsear los orígenes permitidos
+            String[] origenes = corsOrigins != null ? corsOrigins.split(",") : new String[0];
+            
+            resultado.put("origenesConfigurados", Arrays.asList(origenes));
+            resultado.put("cantidadOrigenes", origenes.length);
+            resultado.put("configuracionOk", origenes.length > 0);
+            resultado.put("mensaje", origenes.length > 0 
+                ? "CORS configurado con " + origenes.length + " origen(es)" 
+                : "No hay orígenes CORS configurados. Revisa la variable CORS_ALLOWED_ORIGINS");
+            
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al diagnosticar CORS: {}", e.getMessage(), e);
             Map<String, Object> error = new HashMap<>();
             error.put("configuracionOk", false);
             error.put("mensaje", "Error al verificar configuración: " + e.getMessage());

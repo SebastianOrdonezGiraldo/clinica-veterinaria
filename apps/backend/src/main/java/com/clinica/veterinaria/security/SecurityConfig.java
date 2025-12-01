@@ -1,8 +1,9 @@
 package com.clinica.veterinaria.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
-import org. springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -73,6 +74,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
@@ -116,14 +118,26 @@ public CorsConfigurationSource corsConfigurationSource() {
     
     // Leer orígenes desde propiedad (separados por coma)
     List<String> origins = Arrays.asList(allowedOrigins.split(","));
-    configuration.setAllowedOrigins(origins);
+    
+    // Log para diagnóstico
+    log.info("🔧 Configurando CORS con orígenes permitidos: {}", origins);
+    
+    // Usar setAllowedOriginPatterns en lugar de setAllowedOrigins
+    // Esto funciona mejor con HTTPS y credenciales
+    configuration.setAllowedOriginPatterns(origins);
     
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Correlation-ID"));
+    // Permitir todos los headers para máxima compatibilidad con diferentes clientes
+    // Esto es necesario porque algunos navegadores envían headers adicionales en preflight
+    configuration.setAllowedHeaders(Arrays.asList("*"));
+    configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Correlation-ID"));
     configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L); // Cache de preflight por 1 hora
     
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
+    
+    log.info("✅ CORS configurado exitosamente");
     return source;
 }
 
