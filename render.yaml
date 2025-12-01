@@ -4,7 +4,7 @@ services:
     name: clinica-veterinaria-backend
     env: docker
     dockerfilePath: ./apps/backend/Dockerfile
-    dockerContext: ./apps/backend
+    dockerContext: .   # ← CAMBIO: contexto desde la raíz del repo
     plan: free
     envVars:
       - key: SPRING_PROFILES_ACTIVE
@@ -36,7 +36,6 @@ services:
         generateValue: true
       - key: JWT_EXPIRATION
         value: 86400000
-      # CORRECCIÓN: CORS debe apuntar al FRONTEND (ajustar cuando tengas la URL)
       - key: CORS_ALLOWED_ORIGINS
         value: https://clinica-veterinaria-frontend.onrender.com
       - key: SWAGGER_ENABLED
@@ -51,7 +50,7 @@ services:
     plan: free
     envVars:
       - key: VITE_API_URL
-        value: https://clinica-veterinaria-backend-1fut.onrender.com/api
+        value: https://clinica-veterinaria-backend-1fut.onrender. com/api
 
 databases:
   - name: clinica-veterinaria-db
