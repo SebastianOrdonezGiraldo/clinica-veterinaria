@@ -197,5 +197,12 @@ export const facturaService = {
     });
     return response.data;
   },
+
+  async downloadPdf(id: string): Promise<Blob> {
+    const response = await axios.get(`/facturas/${id}/pdf`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 

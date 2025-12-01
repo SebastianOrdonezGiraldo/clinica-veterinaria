@@ -6,6 +6,7 @@ import com.clinica.veterinaria.dto.PagoDTO;
 import com.clinica.veterinaria.entity.Factura;
 import com.clinica.veterinaria.repository.UsuarioRepository;
 import com.clinica.veterinaria.service.FacturaService;
+import com.clinica.veterinaria.service.FacturaPdfService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import java.util.Map;
 public class FacturaController {
 
     private final FacturaService facturaService;
+    private final FacturaPdfService facturaPdfService;
     private final UsuarioRepository usuarioRepository;
 
     @GetMapping
@@ -123,6 +125,22 @@ public class FacturaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin) {
         return ResponseEntity.ok(facturaService.getEstadisticasFinancieras(fechaInicio, fechaFin));
+    }
+
+    @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VET', 'RECEPCION')")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        try {
+            FacturaDTO factura = facturaService.findById(id);
+            byte[] pdfBytes = facturaPdfService.generatePdf(factura);
+            
+            return ResponseEntity.ok()
+                .header("Content-Type", "application/pdf")
+                .header("Content-Disposition", "attachment; filename=\"factura-" + factura.getNumeroFactura() + ".pdf\"")
+                .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
 

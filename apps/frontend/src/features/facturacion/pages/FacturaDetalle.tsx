@@ -123,6 +123,24 @@ export default function FacturaDetalle() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+    try {
+      const blob = await facturaService.downloadPdf(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `factura-${factura?.numeroFactura || id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showSuccess('PDF descargado exitosamente');
+    } catch (error: any) {
+      handleError(error, 'Error al descargar el PDF');
+    }
+  };
+
   const formatearMoneda = (valor: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -245,7 +263,7 @@ export default function FacturaDetalle() {
               Cancelar Factura
             </Button>
           )}
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleDownloadPdf}>
             <Download className="h-4 w-4 mr-2" />
             Descargar PDF
           </Button>

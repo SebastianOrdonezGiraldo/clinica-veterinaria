@@ -238,14 +238,14 @@ export default function FacturaForm() {
               <div>
                 <Label>Consulta (Opcional)</Label>
                 <Select
-                  value={consultaId || ''}
-                  onValueChange={(value) => setValue('consultaId', value)}
+                  value={consultaId || undefined}
+                  onValueChange={(value) => setValue('consultaId', value === 'NINGUNA' ? undefined : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar consulta" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ninguna</SelectItem>
+                    <SelectItem value="NINGUNA">Ninguna</SelectItem>
                     {consultas.map(consulta => (
                       <SelectItem key={consulta.id} value={consulta.id}>
                         {new Date(consulta.fecha).toLocaleDateString('es-ES')} - {consulta.pacienteNombre}
