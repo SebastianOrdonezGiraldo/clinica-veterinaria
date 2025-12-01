@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/
 import { pacienteService } from '@features/pacientes/services/pacienteService';
 import { consultaService } from '@features/historias/services/consultaService';
 import { propietarioService } from '@features/propietarios/services/propietarioService';
+import HistorialMedicoCompleto from '@features/historias/components/HistorialMedicoCompleto';
 import { Paciente, Consulta, Propietario } from '@core/types';
 import { toast } from 'sonner';
 import { useLogger } from '@shared/hooks/useLogger';
@@ -198,58 +199,7 @@ export default function PacienteDetalle() {
         </TabsContent>
 
         <TabsContent value="historial" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Historial de Atenciones</CardTitle>
-                <Button onClick={() => navigate(`/historias/${paciente.id}`)} className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Ver Historia Completa
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {consultas.length > 0 ? (
-                <div className="space-y-3">
-                  {consultas.slice(0, 3).map((consulta) => (
-                    <div key={consulta.id} className="p-3 rounded-lg border border-border hover:bg-accent/50 cursor-pointer" onClick={() => navigate(`/historias/${paciente.id}`)}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {new Date(consulta.fecha).toLocaleDateString('es-ES', {
-                                day: '2-digit',
-                                month: 'long',
-                                year: 'numeric'
-                              })}
-                            </span>
-                          </div>
-                          {consulta.profesionalNombre && (
-                            <p className="text-sm text-muted-foreground">
-                              Atendido por {consulta.profesionalNombre}
-                            </p>
-                          )}
-                          {consulta.diagnostico && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              <Badge variant="outline" className="text-xs">
-                                {consulta.diagnostico}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">Sin atenciones registradas</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {id && <HistorialMedicoCompleto pacienteId={id} />}
         </TabsContent>
       </Tabs>
     </div>
