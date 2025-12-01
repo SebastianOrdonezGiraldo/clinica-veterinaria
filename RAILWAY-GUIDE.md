@@ -94,10 +94,29 @@ Asegúrate de que tengas:
 # Perfil de Spring
 SPRING_PROFILES_ACTIVE=prod
 
-# Base de datos (usa referencias de Railway)
-DB_URL=${{Postgres.DATABASE_URL}}
-DB_USERNAME=${{Postgres.PGUSER}}
-DB_PASSWORD=${{Postgres.PGPASSWORD}}
+# Base de datos (IMPORTANTE: NO usar DATABASE_URL automático de Railway)
+# ⚠️ Railway genera DATABASE_URL automáticamente pero puede usar endpoint público (genera costos)
+# ⚠️ NO uses: ${{Postgres.DATABASE_URL}} o ${{Postgres.DATABASE_PUBLIC_URL}}
+# ✅ Construye DB_URL manualmente usando RAILWAY_PRIVATE_DOMAIN (gratis, conexión interna)
+# Railway proporciona DATABASE_URL como postgresql:// pero Spring necesita jdbc:postgresql://
+# Opción 1: Usar RAILWAY_PRIVATE_DOMAIN directamente (RECOMENDADO)
+# Nota: Reemplaza 'Postgres' con el nombre exacto de tu servicio PostgreSQL
+DB_URL=jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/railway
+DB_USERNAME=${{Postgres.POSTGRES_USER}}
+DB_PASSWORD=${{Postgres.POSTGRES_PASSWORD}}
+
+# Nota: Si prefieres usar vetclinic_dev, primero créala en PostgreSQL:
+# CREATE DATABASE vetclinic_dev;
+# Luego cambia 'railway' por 'vetclinic_dev' en DB_URL
+
+# Opción 2: Usar PGHOST (que apunta a RAILWAY_PRIVATE_DOMAIN)
+# DB_URL=jdbc:postgresql://${{Postgres.PGHOST}}:5432/vetclinic_dev
+# DB_USERNAME=${{Postgres.PGUSER}}
+# DB_PASSWORD=${{Postgres.PGPASSWORD}}
+
+# Opción 2: Si Railway ya proporciona DATABASE_URL, convertirla
+# DB_URL=jdbc:${{Postgres.DATABASE_URL}}
+# (Reemplaza postgresql:// por jdbc:postgresql://)
 
 # JWT (genera uno seguro)
 JWT_SECRET=GENERA_UN_SECRETO_SEGURO_AQUI_MIN_32_CARACTERES
@@ -218,7 +237,19 @@ CORS_ALLOWED_ORIGINS=https://clinica-veterinaria-frontend.railway.app
 1. Revisa los logs en Railway
 2. Verifica que todas las variables de entorno estén configuradas
 3. Asegúrate de que `JWT_SECRET` tenga al menos 32 caracteres
-4. Verifica que `DB_URL` use la referencia correcta: `${{Postgres.DATABASE_URL}}`
+4. **IMPORTANTE**: Verifica que `DB_URL` tenga el formato correcto:
+   ```env
+   DB_URL=jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}
+   ```
+   O si usas `DATABASE_URL`, conviértela:
+   ```env
+   DB_URL=jdbc:${{Postgres.DATABASE_URL}}
+   ```
+   (Esto reemplazará `postgresql://` por `jdbc:postgresql://`)
+
+**Error común**: "Driver claims to not accept jdbcUrl"
+- **Causa**: La URL no tiene el prefijo `jdbc:`
+- **Solución**: Asegúrate de que `DB_URL` comience con `jdbc:postgresql://`
 
 ### Frontend no se conecta al backend
 
@@ -244,11 +275,76 @@ CORS_ALLOWED_ORIGINS=https://clinica-veterinaria-frontend.railway.app
 
 **Solución**:
 1. Verifica que el servicio PostgreSQL esté "Active"
-2. En el backend, asegúrate de usar las referencias de Railway:
-   - `DB_URL=${{Postgres.DATABASE_URL}}`
-   - `DB_USERNAME=${{Postgres.PGUSER}}`
-   - `DB_PASSWORD=${{Postgres.PGPASSWORD}}`
-3. Verifica que los servicios estén conectados en "Settings"
+2. En el backend, asegúrate de usar las referencias de Railway con **RAILWAY_PRIVATE_DOMAIN**:
+   ```env
+   DB_URL=jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/vetclinic_dev
+   DB_USERNAME=${{Postgres.POSTGRES_USER}}
+   DB_PASSWORD=${{Postgres.POSTGRES_PASSWORD}}
+   ```
+3. **⚠️ IMPORTANTE**: NO uses `DATABASE_PUBLIC_URL` o `RAILWAY_TCP_PROXY_DOMAIN` (generan costos)
+4. Verifica que los servicios estén conectados en "Settings"
+
+### Error: "database does not exist"
+
+**Problema**: `FATAL: database "vetclinic_dev" does not exist`
+
+**Causa**: Railway creó la BD con nombre por defecto `railway`, pero estás intentando conectar a `vetclinic_dev`
+
+**Solución 1 - Usar la BD existente (Rápido)**:
+```env
+# En Backend → Variables, cambia el nombre de la BD:
+DB_URL=jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/railway
+```
+
+**Solución 2 - Crear la BD vetclinic_dev (Recomendado)**:
+
+1. **Opción A: Usar Railway CLI**
+   ```bash
+   # Instalar Railway CLI
+   npm i -g @railway/cli
+   
+   # Conectar a PostgreSQL
+   railway connect postgres
+   
+   # Crear la BD
+   psql -U postgres -c "CREATE DATABASE vetclinic_dev;"
+   ```
+
+2. **Opción B: Usar Query Tab en Railway**
+   - Ve a tu servicio PostgreSQL
+   - Haz clic en "Query" o "Connect"
+   - Ejecuta: `CREATE DATABASE vetclinic_dev;`
+
+3. **Opción C: Cambiar POSTGRES_DB antes de crear**
+   - Ve a PostgreSQL → Settings → Variables
+   - Cambia `POSTGRES_DB` de `railway` a `vetclinic_dev`
+   - **⚠️ Esto recreará la BD** (pierdes datos si hay)
+   - Railway recreará el servicio con el nuevo nombre
+
+**Solución 3 - Usar script de inicialización**:
+Crea un archivo SQL y configúralo en Railway para que se ejecute automáticamente.
+
+### Advertencia de Egress Fees
+
+**Problema**: Railway muestra advertencia sobre `DATABASE_PUBLIC_URL` o `RAILWAY_TCP_PROXY_DOMAIN`
+
+**Solución**:
+- **NO uses** `DATABASE_URL` automático de Railway (puede usar endpoint público)
+- **NO uses** `DATABASE_PUBLIC_URL` (usa endpoint público, genera costos)
+- **NO uses** `RAILWAY_TCP_PROXY_DOMAIN` (genera costos)
+- **USA** `RAILWAY_PRIVATE_DOMAIN` o `PGHOST` (endpoint privado, gratis)
+- Configuración correcta:
+  ```env
+  DB_URL=jdbc:postgresql://${{Postgres.RAILWAY_PRIVATE_DOMAIN}}:5432/vetclinic_dev
+  DB_USERNAME=${{Postgres.POSTGRES_USER}}
+  DB_PASSWORD=${{Postgres.POSTGRES_PASSWORD}}
+  ```
+- O usando PGHOST (que ya apunta a RAILWAY_PRIVATE_DOMAIN):
+  ```env
+  DB_URL=jdbc:postgresql://${{Postgres.PGHOST}}:5432/vetclinic_dev
+  DB_USERNAME=${{Postgres.PGUSER}}
+  DB_PASSWORD=${{Postgres.PGPASSWORD}}
+  ```
 
 ## 📊 Monitoreo
 
