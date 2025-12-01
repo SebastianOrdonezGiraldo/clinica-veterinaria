@@ -1,5 +1,4 @@
 services:
-  # Backend Spring Boot
   - type: web
     name: clinica-veterinaria-backend
     env: docker
@@ -9,10 +8,20 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: DB_URL
+
+      # Host/puerto/nombre desde la base de datos de Render
+      - key: DB_HOST
         fromDatabase:
           name: clinica-veterinaria-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: clinica-veterinaria-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: clinica-veterinaria-db
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           name: clinica-veterinaria-db
@@ -21,6 +30,7 @@ services:
         fromDatabase:
           name: clinica-veterinaria-db
           property: password
+
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
@@ -29,20 +39,3 @@ services:
         value: https://clinica-veterinaria-frontend.onrender.com
       - key: SWAGGER_ENABLED
         value: false
-
-  # Frontend React
-  - type: web
-    name: clinica-veterinaria-frontend
-    env: static
-    buildCommand: cd apps/frontend && npm ci && npm run build
-    staticPublishPath: apps/frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://clinica-veterinaria-backend.onrender.com/api
-
-databases:
-  - name: clinica-veterinaria-db
-    plan: free
-    databaseName: vetclinic
-    user: veterinaria
-
