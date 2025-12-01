@@ -2,6 +2,7 @@ package com.clinica.veterinaria.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org. springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -75,6 +76,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    @Value("${cors.allowed-origins}")
+private String allowedOrigins;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
@@ -108,22 +111,21 @@ public class SecurityConfig {
      * Configura CORS
      */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Permitir múltiples puertos de desarrollo (Vite puede usar diferentes puertos)
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:5173",  // Puerto por defecto de Vite
-            "http://localhost:5174",  // Puerto alternativo de Vite
-            "http://localhost:3000"   // Puerto por defecto de Create React App
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Correlation-ID"));
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    
+    // Leer orígenes desde propiedad (separados por coma)
+    List<String> origins = Arrays.asList(allowedOrigins.split(","));
+    configuration.setAllowedOrigins(origins);
+    
+    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Correlation-ID"));
+    configuration.setAllowCredentials(true);
+    
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}
 
     /**
      * Configura la cadena de filtros de seguridad
