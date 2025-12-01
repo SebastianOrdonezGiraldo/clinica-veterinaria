@@ -98,13 +98,20 @@ export const useApiError = () => {
       const status = error.response?.status;
       const url = error.config?.url || 'unknown';
       const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
+      const data = error.response?.data;
+
+      // Asegurar que la descripción del toast sea siempre un string (React no acepta objetos como children)
+      const description =
+        data && typeof (data as any).detalle === 'string'
+          ? (data as any).detalle
+          : undefined;
       
       // Log estructurado del error
       loggerService.logApiError(
         method,
         url,
         status || 0,
-        error.response?.data,
+        data,
         0, // duration no disponible aquí
         error.config?.headers?.['X-Correlation-ID'] as string || 'unknown'
       );
@@ -113,7 +120,7 @@ export const useApiError = () => {
       if (status !== 401) {
         toast.error(message, {
           duration: 5000,
-          description: error.response?.data?.detalle,
+          description,
         });
       }
     } else if (error instanceof Error) {
