@@ -1838,6 +1838,1657 @@
 				}
 			],
 			"description": "Endpoints de diagnóstico para verificar configuración del sistema."
+		},
+		{
+			"name": "12. Historial Médico",
+			"item": [
+				{
+					"name": "Historial Completo por Paciente",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/historial-medico/paciente/{{pacienteId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"historial-medico",
+								"paciente",
+								"{{pacienteId}}"
+							]
+						},
+						"description": "Devuelve el historial médico completo del paciente (consultas, vacunaciones, prescripciones, etc.). Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				}
+			],
+			"description": "Consultas agregadas de historia clínica completas a partir de múltiples módulos."
+		},
+		{
+			"name": "13. Facturas",
+			"item": [
+				{
+					"name": "Listar Facturas (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Lista facturas con paginación. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Facturas por Propietario (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/propietario/{{propietarioId}}?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"propietario",
+								"{{propietarioId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Lista facturas de un propietario concreto. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Facturas por Estado (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/estado/PENDIENTE?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"estado",
+								"PENDIENTE"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Filtra facturas por estado (PENDIENTE, PAGADA, CANCELADA, etc.). Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Facturas por Rango de Fechas (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/fechas?fechaInicio=2025-01-01&fechaFin=2025-01-31&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"fechas"
+							],
+							"query": [
+								{
+									"key": "fechaInicio",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "fechaFin",
+									"value": "2025-01-31"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Busca facturas en un rango de fechas. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Factura por Número",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/numero/FAC-0001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"numero",
+								"FAC-0001"
+							]
+						},
+						"description": "Obtiene una factura a partir de su número. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Factura por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/{{facturaId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"{{facturaId}}"
+							]
+						},
+						"description": "Obtiene los detalles de una factura por ID. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Estadísticas Financieras",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/estadisticas?fechaInicio=2025-01-01&fechaFin=2025-01-31",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"estadisticas"
+							],
+							"query": [
+								{
+									"key": "fechaInicio",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "fechaFin",
+									"value": "2025-01-31"
+								}
+							]
+						},
+						"description": "Retorna estadísticas financieras (totales, promedios, etc.) en un rango de fechas. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Descargar Factura en PDF",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/facturas/{{facturaId}}/pdf",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"facturas",
+								"{{facturaId}}",
+								"pdf"
+							]
+						},
+						"description": "Descarga el PDF de una factura. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				}
+			],
+			"description": "Módulo de facturación (facturas, estadísticas y descarga de PDF)."
+		},
+		{
+			"name": "14. Vacunas",
+			"item": [
+				{
+					"name": "Listar Vacunas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas"
+							]
+						},
+						"description": "Lista todos los tipos de vacunas disponibles. Requiere usuario autenticado con rol ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunas (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas/page?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas",
+								"page"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Obtiene vacunas con paginación. Requiere usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Vacunas (Search)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas/search?nombre=&especie=&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": ""
+								},
+								{
+									"key": "especie",
+									"value": ""
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Búsqueda de vacunas por nombre y especie con paginación. Requiere usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunas Activas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas/activas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas",
+								"activas"
+							]
+						},
+						"description": "Obtiene la lista de vacunas activas (no deshabilitadas)."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunas por Especie",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas/especie/Canino",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas",
+								"especie",
+								"Canino"
+							]
+						},
+						"description": "Filtra vacunas por especie (por ejemplo Canino, Felino, etc.)."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacuna por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunas/{{vacunaId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunas",
+								"{{vacunaId}}"
+							]
+						},
+						"description": "Obtiene una vacuna específica por su ID."
+					},
+					"response": []
+				}
+			],
+			"description": "Catálogo de tipos de vacunas configurables en el sistema."
+		},
+		{
+			"name": "15. Vacunaciones",
+			"item": [
+				{
+					"name": "Vacunaciones (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listado paginado de registros de vacunación. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunaciones por Paciente (lista completa)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones/paciente/{{pacienteId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones",
+								"paciente",
+								"{{pacienteId}}"
+							]
+						},
+						"description": "Lista todas las vacunaciones de un paciente."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunaciones por Paciente (paginado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones/paciente/{{pacienteId}}/page?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones",
+								"paciente",
+								"{{pacienteId}}",
+								"page"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listado paginado de vacunaciones de un paciente."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunaciones Próximas a Vencer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones/proximas?dias=30",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones",
+								"proximas"
+							],
+							"query": [
+								{
+									"key": "dias",
+									"value": "30"
+								}
+							]
+						},
+						"description": "Obtiene vacunaciones próximas a vencer dentro de N días. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Vacunaciones Vencidas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones/vencidas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones",
+								"vencidas"
+							]
+						},
+						"description": "Obtiene las vacunaciones ya vencidas. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Última Vacunación por Paciente y Vacuna",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/vacunaciones/paciente/{{pacienteId}}/vacuna/{{vacunaId}}/ultima",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"vacunaciones",
+								"paciente",
+								"{{pacienteId}}",
+								"vacuna",
+								"{{vacunaId}}",
+								"ultima"
+							]
+						},
+						"description": "Obtiene la última aplicación de una vacuna concreta en un paciente."
+					},
+					"response": []
+				}
+			],
+			"description": "Registros de vacunación por paciente y gestión de recordatorios."
+		},
+		{
+			"name": "16. Inventario - Productos",
+			"item": [
+				{
+					"name": "Productos Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos"
+							]
+						},
+						"description": "Lista todos los productos activos del inventario. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Todos los Productos (incluye inactivos)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"all"
+							]
+						},
+						"description": "Lista todos los productos (activos e inactivos). Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Producto por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/{{productoId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"{{productoId}}"
+							]
+						},
+						"description": "Obtiene un producto específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Producto por Código",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/codigo/PROD-001",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"codigo",
+								"PROD-001"
+							]
+						},
+						"description": "Busca un producto por su código único. Devuelve 404 si no existe."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Productos (nombre/código)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/buscar?nombre=&codigo=&soloActivos=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"buscar"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": ""
+								},
+								{
+									"key": "codigo",
+									"value": ""
+								},
+								{
+									"key": "soloActivos",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Busca productos por nombre o código. Requiere usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Productos por Categoría",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/categoria/{{categoriaId}}?soloActivos=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"categoria",
+								"{{categoriaId}}"
+							],
+							"query": [
+								{
+									"key": "soloActivos",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Obtiene productos pertenecientes a una categoría concreta."
+					},
+					"response": []
+				},
+				{
+					"name": "Productos con Stock Bajo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/stock-bajo",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"stock-bajo"
+							]
+						},
+						"description": "Lista productos cuyo stock actual está por debajo del mínimo configurado. Requiere roles ADMIN, VET o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Productos con Sobrestock",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/sobrestock",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"sobrestock"
+							]
+						},
+						"description": "Lista productos con stock por encima del máximo deseado. Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Valor Total del Inventario",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/productos/valor-total",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"productos",
+								"valor-total"
+							]
+						},
+						"description": "Calcula el valor monetario total del inventario. Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				}
+			],
+			"description": "Catálogo de productos del inventario y vistas de stock/valor."
+		},
+		{
+			"name": "17. Inventario - Proveedores",
+			"item": [
+				{
+					"name": "Proveedores Activos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/proveedores",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"proveedores"
+							]
+						},
+						"description": "Lista proveedores activos. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Todos los Proveedores",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/proveedores/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"proveedores",
+								"all"
+							]
+						},
+						"description": "Lista proveedores activos e inactivos. Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Proveedor por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/proveedores/{{proveedorId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"proveedores",
+								"{{proveedorId}}"
+							]
+						},
+						"description": "Obtiene un proveedor por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Proveedores por Nombre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/proveedores/buscar?nombre=&soloActivos=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"proveedores",
+								"buscar"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": ""
+								},
+								{
+									"key": "soloActivos",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Busca proveedores por nombre, opcionalmente solo activos."
+					},
+					"response": []
+				}
+			],
+			"description": "Módulo de gestión de proveedores del inventario."
+		},
+		{
+			"name": "18. Inventario - Categorías",
+			"item": [
+				{
+					"name": "Categorías Activas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"categorias"
+							]
+						},
+						"description": "Lista categorías de productos activas. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Todas las Categorías",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/categorias/all",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"categorias",
+								"all"
+							]
+						},
+						"description": "Lista todas las categorías (activas e inactivas). Requiere roles ADMIN o RECEPCION."
+					},
+					"response": []
+				},
+				{
+					"name": "Categoría por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/categorias/{{categoriaId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"categorias",
+								"{{categoriaId}}"
+							]
+						},
+						"description": "Obtiene una categoría específica por su ID."
+					},
+					"response": []
+				}
+			],
+			"description": "Clasificación de productos del inventario por categorías."
+		},
+		{
+			"name": "19. Inventario - Movimientos",
+			"item": [
+				{
+					"name": "Movimientos por Producto",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/movimientos/producto/{{productoId}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"movimientos",
+								"producto",
+								"{{productoId}}"
+							]
+						},
+						"description": "Obtiene todos los movimientos de inventario de un producto concreto. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Movimientos por Tipo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/movimientos/tipo/ENTRADA",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"movimientos",
+								"tipo",
+								"ENTRADA"
+							]
+						},
+						"description": "Filtra movimientos por tipo (ENTRADA, SALIDA o AJUSTE). Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Movimientos por Rango de Fechas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/movimientos/fecha?fechaInicio=2025-01-01T00:00:00&fechaFin=2025-01-31T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"movimientos",
+								"fecha"
+							],
+							"query": [
+								{
+									"key": "fechaInicio",
+									"value": "2025-01-01T00:00:00"
+								},
+								{
+									"key": "fechaFin",
+									"value": "2025-01-31T23:59:59"
+								}
+							]
+						},
+						"description": "Obtiene movimientos de inventario en un rango de fechas. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				},
+				{
+					"name": "Historial de Producto (Rango Fechas)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/inventario/movimientos/historial?productoId={{productoId}}&fechaInicio=2025-01-01T00:00:00&fechaFin=2025-01-31T23:59:59",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"inventario",
+								"movimientos",
+								"historial"
+							],
+							"query": [
+								{
+									"key": "productoId",
+									"value": "{{productoId}}"
+								},
+								{
+									"key": "fechaInicio",
+									"value": "2025-01-01T00:00:00"
+								},
+								{
+									"key": "fechaFin",
+									"value": "2025-01-31T23:59:59"
+								}
+							]
+						},
+						"description": "Obtiene el historial de movimientos de un producto en un rango de fechas. Requiere roles ADMIN, VET, RECEPCION o ESTUDIANTE."
+					},
+					"response": []
+				}
+			],
+			"description": "Movimientos de inventario (entradas, salidas y ajustes)."
+		},
+		{
+			"name": "20. Portal Clientes (JWT Cliente)",
+			"item": [
+				{
+					"name": "Mi Perfil (Cliente Autenticado)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/clientes/mi-perfil",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clientes",
+								"mi-perfil"
+							]
+						},
+						"description": "Devuelve la información del propietario autenticado (usa token JWT de cliente en Authorization: Bearer {{jwt_token}} o variable separada si la creas)."
+					},
+					"response": []
+				},
+				{
+					"name": "Mis Citas (Cliente)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/clientes/mis-citas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clientes",
+								"mis-citas"
+							]
+						},
+						"description": "Lista todas las citas del cliente autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Mis Mascotas (Cliente)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/clientes/mis-mascotas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clientes",
+								"mis-mascotas"
+							]
+						},
+						"description": "Lista todas las mascotas asociadas al cliente autenticado."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints del portal de clientes autenticados (propietarios)."
+		},
+		{
+			"name": "21. Público - Veterinarios y Citas",
+			"item": [
+				{
+					"name": "Listar Veterinarios Públicos",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/public/veterinarios",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"veterinarios"
+							]
+						},
+						"description": "Endpoint público que lista los veterinarios activos disponibles para agendar citas."
+					},
+					"response": []
+				},
+				{
+					"name": "Horas Ocupadas de un Veterinario en una Fecha",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/public/veterinarios/{{veterinarioId}}/horas-ocupadas?fecha=2025-01-20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"veterinarios",
+								"{{veterinarioId}}",
+								"horas-ocupadas"
+							],
+							"query": [
+								{
+									"key": "fecha",
+									"value": "2025-01-20"
+								}
+							]
+						},
+						"description": "Devuelve las horas ya ocupadas de un veterinario en una fecha (para mostrar disponibilidad en agenda pública)."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Cita Pública (sin autenticación)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fecha\": \"2025-01-20T10:00:00\",\n  \"motivo\": \"Control anual\",\n  \"profesionalId\": 1,\n  \"propietarioNuevo\": {\n    \"nombre\": \"Juan Pérez\",\n    \"email\": \"juan@example.com\",\n    \"telefono\": \"555-1234\",\n    \"documento\": \"12345678\"\n  },\n  \"pacienteNuevo\": {\n    \"nombre\": \"Max\",\n    \"especie\": \"Perro\",\n    \"raza\": \"Labrador\",\n    \"sexo\": \"M\",\n    \"edadMeses\": 36\n  },\n  \"observaciones\": \"Primera visita\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public/citas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"citas"
+							]
+						},
+						"description": "Endpoint público para agendar una cita sin autenticación. Puede usar IDs existentes o crear propietario/paciente nuevos."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints públicos relacionados con la agenda de citas."
+		},
+		{
+			"name": "22. Público - Clientes & Password Reset",
+			"item": [
+				{
+					"name": "Establecer Password Inicial de Cliente",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"cliente@example.com\",\n  \"password\": \"nuevoPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public/clientes/establecer-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"clientes",
+								"establecer-password"
+							]
+						},
+						"description": "Permite a un propietario que fue creado sin contraseña establecerla por primera vez. ENDPOINT PÚBLICO."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset - Forgot (Usuario staff)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@clinica.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public/password/forgot-usuario",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"password",
+								"forgot-usuario"
+							]
+						},
+						"description": "Solicita recuperación de contraseña para un usuario del sistema. Siempre responde éxito aunque el email no exista."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset - Forgot (Cliente)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"cliente@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public/password/forgot-cliente",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"password",
+								"forgot-cliente"
+							]
+						},
+						"description": "Solicita recuperación de contraseña para un propietario/cliente. Siempre responde éxito aunque el email no exista."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset - Reset con Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"token_recibido_por_email\",\n  \"password\": \"nuevoPassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public/password/reset",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"password",
+								"reset"
+							]
+						},
+						"description": "Resetea la contraseña usando un token de recuperación válido. ENDPOINT PÚBLICO."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset - Validar Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/public/password/validate-token?token=token_recibido_por_email",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"public",
+								"password",
+								"validate-token"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "token_recibido_por_email"
+								}
+							]
+						},
+						"description": "Valida si un token de recuperación existe, está vigente y no ha sido usado."
+					},
+					"response": []
+				}
+			],
+			"description": "Flujos públicos de clientes (establecer password inicial y recuperación de contraseña)."
+		},
+		{
+			"name": "23. Templates (Consultas y Prescripciones)",
+			"item": [
+				{
+					"name": "Templates de Consulta - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/consultas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"consultas"
+							]
+						},
+						"description": "Lista todos los templates de consulta configurados. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Templates de Consulta - Por Categoría",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/consultas/categoria/GENERAL",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"consultas",
+								"categoria",
+								"GENERAL"
+							]
+						},
+						"description": "Filtra templates de consulta por categoría. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Templates de Consulta - Buscar por Nombre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/consultas/search?nombre=Control",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"consultas",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Control"
+								}
+							]
+						},
+						"description": "Busca templates de consulta por nombre. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Templates de Prescripción - Listar",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/prescripciones",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"prescripciones"
+							]
+						},
+						"description": "Lista todos los templates de prescripción configurados. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				},
+				{
+					"name": "Templates de Prescripción - Categorías",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/prescripciones/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"prescripciones",
+								"categorias"
+							]
+						},
+						"description": "Lista las categorías de templates de prescripción disponibles."
+					},
+					"response": []
+				},
+				{
+					"name": "Templates de Prescripción - Buscar por Nombre",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/templates/prescripciones/search?nombre=Amoxicilina",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"templates",
+								"prescripciones",
+								"search"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Amoxicilina"
+								}
+							]
+						},
+						"description": "Busca templates de prescripción por nombre. Requiere roles ADMIN o VET."
+					},
+					"response": []
+				}
+			],
+			"description": "Plantillas reutilizables para consultas y prescripciones."
+		},
+		{
+			"name": "24. Logs & Email Tests (DEV)",
+			"item": [
+				{
+					"name": "Enviar Log desde Frontend",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nivel\": \"ERROR\",\n  \"mensaje\": \"Error en UI\",\n  \"detalle\": \"Stacktrace o información adicional\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/logs/frontend",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"frontend"
+							]
+						},
+						"description": "Endpoint para que el frontend envíe logs estructurados al backend."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logs/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logs",
+								"health"
+							]
+						},
+						"description": "Health check específico del sistema de logging."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Email - Bienvenida Usuario (DEV)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/test/email/bienvenida-usuario?email=test@example.com&nombre=Usuario%20Prueba&rol=VET",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"bienvenida-usuario"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "test@example.com"
+								},
+								{
+									"key": "nombre",
+									"value": "Usuario Prueba"
+								},
+								{
+									"key": "rol",
+									"value": "VET"
+								}
+							]
+						},
+						"description": "Prueba el envío de email de bienvenida para usuarios del sistema. Solo disponible en perfil 'dev' y rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Email - Todos (DEV)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/test/email/todos?email=test@example.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"email",
+								"todos"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "test@example.com"
+								}
+							]
+						},
+						"description": "Prueba todos los tipos de correos (bienvenida usuario, bienvenida cliente, cambio password, confirmación cita, etc.). Solo disponible en perfil 'dev' y rol ADMIN."
+					},
+					"response": []
+				}
+			],
+			"description": "Herramientas de desarrollo: logs frontend y pruebas de email (solo perfil dev)."
 		}
 	],
 	"auth": {
