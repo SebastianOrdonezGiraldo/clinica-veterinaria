@@ -9,13 +9,26 @@ WORKDIR /app
 # Copiar todo el contexto para detectar la estructura del proyecto
 COPY . /tmp/build
 
+# Debug: mostrar estructura de directorios
+RUN echo "=== Estructura de directorios ===" && \
+    ls -la /tmp/build/ && \
+    echo "=== Buscando apps/backend ===" && \
+    ls -la /tmp/build/apps/ 2>/dev/null || echo "No existe apps/" && \
+    echo "=== Buscando apps/backend/src ===" && \
+    ls -la /tmp/build/apps/backend/ 2>/dev/null || echo "No existe apps/backend/"
+
 # Detectar y copiar pom.xml (funciona desde raíz o apps/backend)
 RUN if [ -f /tmp/build/apps/backend/pom.xml ]; then \
+        echo "Copiando pom.xml desde apps/backend/" && \
         cp /tmp/build/apps/backend/pom.xml /app/pom.xml; \
     elif [ -f /tmp/build/pom.xml ]; then \
+        echo "Copiando pom.xml desde raíz" && \
         cp /tmp/build/pom.xml /app/pom.xml; \
     else \
-        echo "Error: pom.xml no encontrado" && exit 1; \
+        echo "Error: pom.xml no encontrado" && \
+        echo "Buscando en:" && \
+        find /tmp/build -name "pom.xml" -type f 2>/dev/null || echo "No se encontró pom.xml" && \
+        exit 1; \
     fi
 
 # Descargar dependencias (se cachean si no cambia pom.xml)
@@ -23,11 +36,20 @@ RUN mvn dependency:go-offline -B || true
 
 # Detectar y copiar código fuente (funciona desde raíz o apps/backend)
 RUN if [ -d /tmp/build/apps/backend/src ]; then \
-        cp -r /tmp/build/apps/backend/src /app/src; \
+        echo "Copiando src desde apps/backend/" && \
+        cp -r /tmp/build/apps/backend/src /app/src && \
+        echo "Verificando src copiado:" && \
+        ls -la /app/src/; \
     elif [ -d /tmp/build/src ]; then \
-        cp -r /tmp/build/src /app/src; \
+        echo "Copiando src desde raíz" && \
+        cp -r /tmp/build/src /app/src && \
+        echo "Verificando src copiado:" && \
+        ls -la /app/src/; \
     else \
-        echo "Error: directorio src no encontrado" && exit 1; \
+        echo "Error: directorio src no encontrado" && \
+        echo "Buscando directorios src:" && \
+        find /tmp/build -type d -name "src" 2>/dev/null || echo "No se encontró ningún directorio src" && \
+        exit 1; \
     fi
 
 # Limpiar contexto temporal para reducir tamaño de imagen
