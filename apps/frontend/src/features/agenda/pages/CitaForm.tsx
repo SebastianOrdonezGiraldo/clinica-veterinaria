@@ -378,211 +378,238 @@ export default function CitaForm() {
           <CardHeader>
             <CardTitle>Información de la Cita</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="pacienteId">Paciente *</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => navigate('/pacientes/nuevo', { 
-                      state: { returnTo: location.pathname } 
-                    })}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Nuevo
-                  </Button>
-                </div>
-                <Select 
-                  value={watch('pacienteId')} 
-                  onValueChange={handlePacienteChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione paciente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pacientes.map((paciente) => (
-                      <SelectItem key={paciente.id} value={paciente.id}>
-                        {paciente.nombre} ({paciente.especie})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.pacienteId && (
-                  <p className="text-sm text-destructive">{errors.pacienteId.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="propietarioId">Propietario *</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => navigate('/propietarios/nuevo', { 
-                      state: { returnTo: location.pathname } 
-                    })}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Nuevo
-                  </Button>
-                </div>
-                <Select 
-                  value={watch('propietarioId')} 
-                  onValueChange={(value) => setValue('propietarioId', value)}
-                  disabled={!!pacienteSeleccionado}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione propietario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {propietarios.map((prop) => (
-                      <SelectItem key={prop.id} value={prop.id}>
-                        {prop.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.propietarioId && (
-                  <p className="text-sm text-destructive">{errors.propietarioId.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="profesionalId">Veterinario *</Label>
-                <Select 
-                  value={watch('profesionalId')} 
-                  onValueChange={(value) => setValue('profesionalId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione veterinario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {veterinarios.length > 0 ? (
-                      veterinarios.map((vet) => (
-                        <SelectItem key={vet.id} value={vet.id}>
-                          {vet.nombre} {vet.rol === 'ADMIN' ? '(Admin)' : ''}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-vets" disabled>
-                        No hay veterinarios disponibles
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.profesionalId && (
-                  <p className="text-sm text-destructive">{errors.profesionalId.message}</p>
-                )}
-                {veterinarios.length === 0 && !isLoadingData && (
-                  <p className="text-sm text-muted-foreground">
-                    No hay veterinarios registrados. Contacta al administrador.
+          <CardContent className="space-y-8">
+            {/* Bloque 1: Datos de agenda (primero fecha/hora/veterinario/estado) */}
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Primero selecciona la fecha, hora y profesional para reservar correctamente el espacio en agenda.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="fecha">Fecha *</Label>
+                  <Input
+                    id="fecha"
+                    type="date"
+                    {...register('fecha')}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Solo se permiten fechas de hoy en adelante.
                   </p>
-                )}
-              </div>
+                  {errors.fecha && (
+                    <p className="text-sm text-destructive">{errors.fecha.message}</p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="estado">Estado</Label>
-                <Select 
-                  value={watch('estado')} 
-                  onValueChange={(value) => setValue('estado', value as EstadoCita)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDIENTE">Pendiente</SelectItem>
-                    <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
-                    <SelectItem value="ATENDIDA">Atendida</SelectItem>
-                    <SelectItem value="CANCELADA">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.estado && (
-                  <p className="text-sm text-destructive">{errors.estado.message}</p>
-                )}
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hora">Hora *</Label>
+                  <Select
+                    value={horaSeleccionada}
+                    onValueChange={(value) => setValue('hora', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccione hora" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const hour = Math.floor(i / 2);
+                        const minute = (i % 2) * 30;
+                        const horaStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                        const hora12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                        const ampm = hour < 12 ? 'AM' : 'PM';
+                        const displayHora = `${hora12}:${String(minute).padStart(2, '0')} ${ampm}`;
 
-              <div className="space-y-2">
-                <Label htmlFor="fecha">Fecha *</Label>
-                <Input
-                  id="fecha"
-                  type="date"
-                  {...register('fecha')}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-                {errors.fecha && (
-                  <p className="text-sm text-destructive">{errors.fecha.message}</p>
-                )}
-              </div>
+                        // Verificar si esta hora tiene conflicto
+                        const fechaHora = fechaSeleccionada && horaStr ? `${fechaSeleccionada}T${horaStr}:00` : '';
+                        const tieneConflicto = profesionalSeleccionado && fechaHora
+                          ? validarDisponibilidad(fechaHora, profesionalSeleccionado).hayConflicto
+                          : false;
 
-              <div className="space-y-2">
-                <Label htmlFor="hora">Hora *</Label>
-                <Select
-                  value={horaSeleccionada}
-                  onValueChange={(value) => setValue('hora', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccione hora" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {Array.from({ length: 48 }, (_, i) => {
-                      const hour = Math.floor(i / 2);
-                      const minute = (i % 2) * 30;
-                      const horaStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                      const hora12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                      const ampm = hour < 12 ? 'AM' : 'PM';
-                      const displayHora = `${hora12}:${String(minute).padStart(2, '0')} ${ampm}`;
-                      
-                      // Verificar si esta hora tiene conflicto
-                      const fechaHora = fechaSeleccionada && horaStr ? `${fechaSeleccionada}T${horaStr}:00` : '';
-                      const tieneConflicto = profesionalSeleccionado && fechaHora 
-                        ? validarDisponibilidad(fechaHora, profesionalSeleccionado).hayConflicto
-                        : false;
-                      
+                        return (
+                          <SelectItem
+                            key={horaStr}
+                            value={horaStr}
+                            className={tieneConflicto ? 'cursor-pointer text-destructive' : 'cursor-pointer'}
+                          >
+                            {displayHora} {tieneConflicto ? '(⚠️ Ocupada)' : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  {horaSeleccionada && fechaSeleccionada && profesionalSeleccionado && (() => {
+                    const fechaHora = `${fechaSeleccionada}T${horaSeleccionada}:00`;
+                    const validacion = validarDisponibilidad(fechaHora, profesionalSeleccionado);
+                    if (validacion.hayConflicto && validacion.citaConflicto) {
+                      const citaFecha = new Date(validacion.citaConflicto.fecha);
+                      const horaFormateada = citaFecha.toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      });
+                      const pacienteConflicto = pacientes.find((p) => p.id === validacion.citaConflicto!.pacienteId);
+                      const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
                       return (
-                        <SelectItem 
-                          key={horaStr} 
-                          value={horaStr} 
-                          className={tieneConflicto ? "cursor-pointer text-destructive" : "cursor-pointer"}
-                        >
-                          {displayHora} {tieneConflicto ? '(⚠️ Ocupada)' : ''}
-                        </SelectItem>
+                        <p className="text-sm text-destructive font-medium">
+                          ⚠️ Esta hora está ocupada. El veterinario tiene una cita a las {horaFormateada} con {nombrePaciente}.
+                        </p>
                       );
-                    })}
-                  </SelectContent>
-                </Select>
-                {horaSeleccionada && fechaSeleccionada && profesionalSeleccionado && (() => {
-                  const fechaHora = `${fechaSeleccionada}T${horaSeleccionada}:00`;
-                  const validacion = validarDisponibilidad(fechaHora, profesionalSeleccionado);
-                  if (validacion.hayConflicto && validacion.citaConflicto) {
-                    const citaFecha = new Date(validacion.citaConflicto.fecha);
-                    const horaFormateada = citaFecha.toLocaleTimeString('es-ES', { 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: true 
-                    });
-                    const pacienteConflicto = pacientes.find(p => p.id === validacion.citaConflicto!.pacienteId);
-                    const nombrePaciente = pacienteConflicto?.nombre || 'otro paciente';
+                    }
                     return (
-                      <p className="text-sm text-destructive font-medium">
-                        ⚠️ Esta hora está ocupada. El veterinario tiene una cita a las {horaFormateada} con {nombrePaciente}.
+                      <p className="text-sm text-muted-foreground">
+                        Hora seleccionada: {formatHoraDisplay(horaSeleccionada)}
                       </p>
                     );
-                  }
-                  return (
+                  })()}
+                  {errors.hora && (
+                    <p className="text-sm text-destructive">{errors.hora.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="profesionalId">Veterinario *</Label>
+                  <Select
+                    value={watch('profesionalId')}
+                    onValueChange={(value) => setValue('profesionalId', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione veterinario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {veterinarios.length > 0 ? (
+                        veterinarios.map((vet) => (
+                          <SelectItem key={vet.id} value={vet.id}>
+                            {vet.nombre} {vet.rol === 'ADMIN' ? '(Admin)' : ''}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-vets" disabled>
+                          No hay veterinarios disponibles
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.profesionalId && (
+                    <p className="text-sm text-destructive">{errors.profesionalId.message}</p>
+                  )}
+                  {veterinarios.length === 0 && !isLoadingData && (
                     <p className="text-sm text-muted-foreground">
-                      Hora seleccionada: {formatHoraDisplay(horaSeleccionada)}
+                      No hay veterinarios registrados. Contacta al administrador.
                     </p>
-                  );
-                })()}
-                {errors.hora && (
-                  <p className="text-sm text-destructive">{errors.hora.message}</p>
-                )}
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Select
+                    value={watch('estado')}
+                    onValueChange={(value) => setValue('estado', value as EstadoCita)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PENDIENTE">Pendiente</SelectItem>
+                      <SelectItem value="CONFIRMADA">Confirmada</SelectItem>
+                      <SelectItem value="ATENDIDA">Atendida</SelectItem>
+                      <SelectItem value="CANCELADA">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Por defecto las nuevas citas se crean como <span className="font-medium">Pendiente</span>.
+                  </p>
+                  {errors.estado && (
+                    <p className="text-sm text-destructive">{errors.estado.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bloque 2: Paciente y propietario */}
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Luego asocia la cita al paciente y propietario correctos. Al elegir un paciente, el propietario se completa automáticamente.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="pacienteId">Paciente *</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() =>
+                        navigate('/pacientes/nuevo', {
+                          state: { returnTo: location.pathname },
+                        })
+                      }
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nuevo
+                    </Button>
+                  </div>
+                  <Select value={watch('pacienteId')} onValueChange={handlePacienteChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione paciente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pacientes.map((paciente) => (
+                        <SelectItem key={paciente.id} value={paciente.id}>
+                          {paciente.nombre} ({paciente.especie})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Al seleccionar un paciente, se asignará automáticamente su propietario.
+                  </p>
+                  {errors.pacienteId && (
+                    <p className="text-sm text-destructive">{errors.pacienteId.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="propietarioId">Propietario *</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() =>
+                        navigate('/propietarios/nuevo', {
+                          state: { returnTo: location.pathname },
+                        })
+                      }
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nuevo
+                    </Button>
+                  </div>
+                  <Select
+                    value={watch('propietarioId')}
+                    onValueChange={(value) => setValue('propietarioId', value)}
+                    disabled={!!pacienteSeleccionado}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione propietario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {propietarios.map((prop) => (
+                        <SelectItem key={prop.id} value={prop.id}>
+                          {prop.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Si eliges primero el paciente, el propietario quedará bloqueado para evitar inconsistencias.
+                  </p>
+                  {errors.propietarioId && (
+                    <p className="text-sm text-destructive">{errors.propietarioId.message}</p>
+                  )}
+                </div>
               </div>
             </div>
 
