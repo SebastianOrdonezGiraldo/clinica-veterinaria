@@ -1,0 +1,26 @@
+# fly.toml para Backend
+# Generado con: fly launch
+
+app = "clinica-veterinaria-backend"
+primary_region = "iad"
+
+[build]
+  dockerfile = "apps/backend/Dockerfile"
+
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+  SERVER_PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
