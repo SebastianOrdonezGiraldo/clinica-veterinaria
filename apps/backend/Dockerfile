@@ -6,14 +6,32 @@ FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Copiar archivos de configuración de Maven primero (para cache)
-COPY pom.xml .
+# Copiar todo el contexto para detectar la estructura del proyecto
+COPY . /tmp/build
+
+# Detectar y copiar pom.xml (funciona desde raíz o apps/backend)
+RUN if [ -f /tmp/build/apps/backend/pom.xml ]; then \
+        cp /tmp/build/apps/backend/pom.xml /app/pom.xml; \
+    elif [ -f /tmp/build/pom.xml ]; then \
+        cp /tmp/build/pom.xml /app/pom.xml; \
+    else \
+        echo "Error: pom.xml no encontrado" && exit 1; \
+    fi
 
 # Descargar dependencias (se cachean si no cambia pom.xml)
 RUN mvn dependency:go-offline -B || true
 
-# Copiar código fuente
-COPY src ./src
+# Detectar y copiar código fuente (funciona desde raíz o apps/backend)
+RUN if [ -d /tmp/build/apps/backend/src ]; then \
+        cp -r /tmp/build/apps/backend/src /app/src; \
+    elif [ -d /tmp/build/src ]; then \
+        cp -r /tmp/build/src /app/src; \
+    else \
+        echo "Error: directorio src no encontrado" && exit 1; \
+    fi
+
+# Limpiar contexto temporal para reducir tamaño de imagen
+RUN rm -rf /tmp/build
 
 # Compilar la aplicación
 RUN mvn clean package -DskipTests
