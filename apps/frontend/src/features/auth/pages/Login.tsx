@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@core/auth/AuthContext';
 import { Button } from '@shared/components/ui/button';
@@ -15,7 +15,7 @@ export default function Login() {
   const { login, userType } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -29,17 +29,22 @@ export default function Login() {
       } else {
         navigate('/dashboard');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Credenciales inválidas');
+    } catch (error: unknown) {
+      let message = 'Credenciales inválidas';
+
+      if (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string') {
+        message = (error as any).message;
+      }
+
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div 
+    <main 
       className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4"
-      role="main"
       aria-label="Página de inicio de sesión"
     >
       <Card className="w-full max-w-md">
@@ -136,16 +141,6 @@ export default function Login() {
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">Usuarios del sistema:</p>
-              <div className="text-xs space-y-1 text-muted-foreground">
-                <p>• admin@clinica.com (Admin) - Contraseña: <span className="font-medium">admin123</span></p>
-                <p>• carlos@clinica.com (Veterinario) - Contraseña: <span className="font-medium">vet123</span></p>
-                <p>• ana@clinica.com (Recepción) - Contraseña: <span className="font-medium">recep123</span></p>
-                <p>• juan@clinica.com (Estudiante) - Contraseña: <span className="font-medium">est123</span></p>
-              </div>
-            </div>
-            
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">
                 ¿Eres cliente?{' '}
@@ -162,6 +157,6 @@ export default function Login() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
